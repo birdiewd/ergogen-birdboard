@@ -18,7 +18,7 @@ No local tooling or submodule is needed, because the UI bundles the ceoloide foo
 
 | Output | Names |
 |---|---|
-| PCBs (24) | `corne_{mx,lpmx,choc,choc2}_{hs,solder}_{pico,zero,helios}`: switch type, hotswap or solder pads, MCU |
+| PCBs (8) | `corne_{mx,lpmx,choc,choc2}_{zero,helios}`: switch type and MCU (hotswap only) |
 | Top plates (STL) | `plate_mx`, `plate_lpmx`, `plate_choc`, `plate_choc2` |
 | Case tray (STL) | `tray` |
 
@@ -45,19 +45,19 @@ Switch types: MX, low-profile MX (Gateron KS-27/KS-33), Choc v1, Choc v2.
   middle top to bottom, ring bottom to top, pinky top to bottom, outer bottom to top.
   Each key's `led_in` /
   `led_out` is set per key in `points:`, so reorder the chain there. LEDs are powered from
-  the MCU's 5V pin (Pico VBUS, Helios RAW, Zero 5V). Only the Helios `RGB_5V` pin gives a
-  5V data signal; on the Pico and Zero the data line is 3.3V, which is out of spec for a
+  the MCU's 5V pin (Helios RAW, Zero 5V). Only the Helios `RGB_5V` pin gives a
+  5V data signal; on the Zero the data line is 3.3V, which is out of spec for a
   5V WS2812B but usually works.
-- **MCU area:** a 25 x 56 mm zone to the right of the inner column is reserved for the
-  MCU (sized for a Pico), so plates and tray are identical for every MCU.
+- **MCU area:** a 25 x 40 mm zone to the right of the inner column is reserved for the
+  MCU (sized for the Helios and the RP2040-Zero), so plates and tray are identical for either.
 
 Pin assignments (rows and columns can be swapped freely in `config.yaml`):
 
-| Net | Pico v1 | RP2040-Zero | Helios |
-|---|---|---|---|
-| outer / pinky / ring / middle / index / inner | GP2 to GP7 | GP0 to GP5 | GP2 to GP7 |
-| top / home / bottom / thumb | GP8 / GP9 / GP10 / GP11 | GP6 / GP7 / GP8 / GP9 | GP8 / GP9 / GP10 / GP11 |
-| LED data | GP12 | GP10 | RGB_5V (GP25) |
+| Net | RP2040-Zero | Helios |
+|---|---|---|
+| outer / pinky / ring / middle / index / inner | GP0 to GP5 | GP2 to GP7 |
+| top / home / bottom / thumb | GP6 / GP7 / GP8 / GP9 | GP8 / GP9 / GP10 / GP11 |
+| LED data | GP10 | RGB_5V (GP25) |
 
 `tools/gen_pcbs.py` regenerates the PCB list from those tables if you change them
 (optional; the UI only reads `config.yaml`).
@@ -84,7 +84,6 @@ Not done: counterbore for the screw heads in the tray floor (2 mm floor is thin)
 | Layout, outlines, plates, tray | written, **not yet loaded in the UI** |
 | Switch and diode footprints | use ceoloide footprints |
 | WS2812B 5050 | converted (`footprints/custom/led_ws2812b_5050.js`); wired, one front and one back LED per key |
-| Pico v1 | converted (`footprints/custom/mcu_pico_v1.js`); wired |
 | Helios | converted (`footprints/custom/mcu_helios.js`, variant `Helios_AC`); pins named by GPIO; wired |
 | RP2040-Zero | converted (`custom/mcu_rp2040_zero`); pinout checked against a published diagram; wired |
 | Fabrication guide | `docs/fabrication.md` |
