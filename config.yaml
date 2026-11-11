@@ -43,10 +43,10 @@ units:
   hole_print: 2.4     # clearance hole in printed parts (plate, tray floor) for an M2 screw
   hole_pcb: 2.2       # NPTH drill in the PCB
 
-  mcu_zone_w: 25      # reserved board width; fits the RP2040-Zero (20.5mm) plus margin
-  mcu_zone_h: 40      # reserved board height for the MCU (the RP2040-Zero is 23.5mm long, so there is spare room)
+  mcu_zone_w: 23      # reserved board width; the RP2040-Zero footprint is 20.5mm wide
+  mcu_zone_h: 40.7    # zone height below mcu_up: RP2040-Zero (25.7mm incl. USB end) + 2 gap + USB-C module strip (12 + 1.5 margins)
   mcu_x: kx/2 + pad/2 + mcu_zone_w/2 - 1   # MCU centre, from matrix_inner_top
-  mcu_up: 12.5        # MCU (and zone top) sit this far above the top key edge; the strip under the MCU holds the USB-C module
+  mcu_up: 2           # zone top and MCU sit this far above the top key edge
   mcu_zero_y: ky/2 + pad/2 + mcu_up - 15.7     # origin is 13.7 from the USB end + 2 margin
 
   # ---- USB-C link between the halves (4-pin breakout module under the MCU) ----
@@ -56,7 +56,7 @@ units:
   link_edge_x: mcu_x + mcu_zone_w/2        # right edge of the board here
   link_back_dx: 2.54                       # back-layer pad row is this much further out
   link_pin_x: link_edge_x - 12.6 - link_back_dx   # pad row of the front-layer module
-  link_y: ky/2 + pad/2 - mcu_zone_h + 7.5  # module centre, in the strip below the MCU
+  link_y: ky/2 + pad/2 + mcu_up - 35.65    # module centre: 2 below the MCU's bottom edge, then half the module (6)
   link_notch_w: 13                         # tray wall cutout for the plug (y)
   link_notch_z: 2                          # wall left uncut above the tray floor (z)
 

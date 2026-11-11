@@ -47,10 +47,10 @@ Switch types: MX, low-profile MX (Gateron KS-27/KS-33), Choc v1, Choc v2.
   `led_out` is set per key in `points:`, so reorder the chain there. LEDs are powered from
   the RP2040-Zero's 5V pin. The data line is 3.3V, which is out of spec for a
   5V WS2812B but usually works.
-- **MCU area:** a 25 x 40 mm zone to the right of the inner column is reserved for the
+- **MCU area:** a 23 x 42.7 mm zone to the right of the inner column is reserved for the
   MCU (sized for the RP2040-Zero).
-  The zone and the MCU sit `mcu_up` (12.5 mm) above the top key edge, which frees a strip under
-  the MCU for the USB-C link module.
+  The zone and the MCU sit `mcu_up` (2 mm) above the top key edge; the zone height is the RP2040-Zero plus a
+  strip under it for the USB-C link module.
 
 - **Half-to-half link:** a 4-pin USB-C female breakout module (12 x 13.8 mm, pads V / D- / D+ / G
   at 2.54 mm) in the strip under the MCU, opening toward the middle (its shell tip is flush with the right edge of the board). Solder a straight 1x4 male header into
