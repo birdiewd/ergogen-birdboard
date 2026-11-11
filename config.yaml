@@ -105,12 +105,13 @@ points:
             bottom: { led_in: led_2, led_out: led_3 }   # LED #3
             home: { led_in: led_1, led_out: led_2 }   # LED #2
             top: { led_in: led_data, led_out: led_1 }   # LED #1
-        center:                       # one extra key, bottom row only, on the center side of the inner column
+        center:                       # one extra key, bottom row only, center side of the inner column;
+                                      # electrically part of the thumb row (row_net: thumb below)
           key.column_net: center
           rows:
             top: { skip: true }
             home: { skip: true }
-            bottom: { led_in: led_3, led_out: led_4 }   # LED #4
+            bottom: { row_net: thumb, led_in: led_3, led_out: led_4 }   # LED #4; wired into the thumb row
       rows:
         bottom:
           row_net: bottom
