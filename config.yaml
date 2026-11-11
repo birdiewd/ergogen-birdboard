@@ -46,20 +46,20 @@ units:
   mcu_zone_w: 25      # reserved board width; fits the RP2040-Zero (20.5mm) plus margin
   mcu_zone_h: 40      # reserved board height; fits the Helios (35mm) plus margin
   mcu_x: kx/2 + pad/2 + mcu_zone_w/2 - 1   # MCU centre, from matrix_inner_top
-  mcu_helios_y: ky/2 + pad/2 - 20.6        # origin is 18.6 from the USB end + 2 margin
-  mcu_zero_y: ky/2 + pad/2 - 15.7          # origin is 13.7 from the USB end + 2 margin
+  mcu_up: 12.5        # MCU (and zone top) sit this far above the top key edge; the strip under the MCU holds the USB-C module
+  mcu_helios_y: ky/2 + pad/2 + mcu_up - 20.6   # origin is 18.6 from the USB end + 2 margin
+  mcu_zero_y: ky/2 + pad/2 + mcu_up - 15.7     # origin is 13.7 from the USB end + 2 margin
 
-  # ---- USB-C link between the halves (4-pin breakout module on the inner edge) ----
-  # All positions are from matrix_inner_top. The module is 12 (y) x 13.8 (x) mm, pad row
-  # 2.1 mm behind its back edge, USB-C opening toward +x (the middle of the keyboard).
-  link_pin_x: mcu_x + mcu_zone_w/2    # pad row, front-layer module
-  link_y: ky/2 + pad/2 - mcu_zone_h/2 # centred on the MCU area
-  link_back_dx: 2.54                  # back-layer pad row is this much further out
-  link_len: 17.5                      # board extension: from link_pin_x - 2 to link_pin_x - 2 + link_len
-  link_w: 15                          # board extension height
-  link_edge_x: link_pin_x - 2 + link_len   # outer edge of the extended board
-  link_notch_w: 13                    # tray wall cutout for the plug (y)
-  link_notch_z: 2                     # wall left uncut above the tray floor (z)
+  # ---- USB-C link between the halves (4-pin breakout module under the MCU) ----
+  # Positions are from matrix_inner_top. The module is 12 (y) x 13.8 (x) mm plus ~0.9 mm of
+  # connector shell, pad row 2.1 mm behind its back edge, USB-C opening toward +x (the middle
+  # of the keyboard). Its shell tip is flush with the right edge of the MCU zone.
+  link_edge_x: mcu_x + mcu_zone_w/2        # right edge of the board here
+  link_back_dx: 2.54                       # back-layer pad row is this much further out
+  link_pin_x: link_edge_x - 12.6 - link_back_dx   # pad row of the front-layer module
+  link_y: ky/2 + pad/2 - mcu_zone_h + 7.5  # module centre, in the strip below the MCU
+  link_notch_w: 13                         # tray wall cutout for the plug (y)
+  link_notch_z: 2                          # wall left uncut above the tray floor (z)
 
   # ---- per-key offsets (mm, from the key centre; +y is toward the top of the key) ----
   # NOT VERIFIED in the UI: LED and diode placement; tune after previewing the PCB.
@@ -177,18 +177,10 @@ outlines:
   _mcu_area:
     - what: rectangle
       bound: false
-      size: [mcu_zone_w, mcu_zone_h]
+      size: [mcu_zone_w, mcu_zone_h + mcu_up]
       adjust:
         ref: matrix_inner_top
-        shift: [mcu_x, ky/2 + pad/2 - mcu_zone_h/2]
-  # Extension of the board to the right of the MCU area, for the USB-C link module.
-  _link_area:
-    - what: rectangle
-      bound: false
-      size: [link_len, link_w]
-      adjust:
-        ref: matrix_inner_top
-        shift: [link_pin_x - 2 + link_len/2, link_y]
+        shift: [mcu_x, ky/2 + pad/2 + mcu_up - (mcu_zone_h + mcu_up)/2]
   # Cutout in the tray wall for the USB-C plug.
   _link_notch:
     - what: rectangle
@@ -215,9 +207,6 @@ outlines:
     - what: outline
       name: _mcu_area
       fillet: 2
-    - what: outline
-      name: _link_area
-      fillet: 2
   # Plate outline, same shape with sharp corners (no fillet).
   board_plate:
     - what: outline
@@ -226,8 +215,6 @@ outlines:
       name: _thumb_fill
     - what: outline
       name: _mcu_area
-    - what: outline
-      name: _link_area
 
   # ---- M2 mounting holes: same positions in plate, tray floor and PCB (see pcbs) ----
   _mount_holes:

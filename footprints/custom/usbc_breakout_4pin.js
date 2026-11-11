@@ -7,7 +7,7 @@
 // GND; D- is left unconnected).
 //
 // Geometry (footprint origin = centre of the pad row, +x = direction of the USB-C opening,
-// breakout board extends 2.1 mm behind the pad row and 11.7 mm in front of it, 12 mm wide):
+// breakout board extends 2.1 mm behind the pad row and 11.7 mm in front of it (plus ~0.9 mm of connector shell), 12 mm wide):
 //   F side (module on the front layer, opening toward +x):  V at the bottom, then D-, D+, G going up
 //   B side (module on the back layer,  opening toward +x):  V at the top,    then D-, D+, G going down
 // The right half is this PCB flipped, so it needs the B set. Both sets exist on the PCB
@@ -54,8 +54,8 @@ module.exports = {
     const line = (x1, y1, x2, y2, layer, w) => `
     (fp_line (start ${x1} ${y1}) (end ${x2} ${y2})
       (stroke (width ${w}) (type solid)) (layer ${L(layer)}))`;
-    // breakout board outline: x from -2.1 to 11.7, y +-6
-    const x0 = -2.1, x1 = 11.7, h = 6;
+    // breakout outline: x from -2.1 to 12.6 (incl. shell), y +-6
+    const x0 = -2.1, x1 = 12.6, h = 6; // 11.7 board + ~0.9 shell
     for (const layer of ['Fab', 'CrtYd']) {
       out += line(x0, -h, x1, -h, layer, 0.1);
       out += line(x1, -h, x1, h, layer, 0.1);
