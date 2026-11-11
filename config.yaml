@@ -400,7 +400,6 @@ pcbs:
         adjust:
           shift: [mcu_x, mcu_helios_y]
         params:
-          mount: both          # both | th | smd
           GP2: outer
           GP3: pinky
           GP4: ring
