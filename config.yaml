@@ -60,6 +60,14 @@ units:
   link_notch_w: 13                         # tray wall cutout for the plug (y)
   link_notch_z: 2                          # wall left uncut above the tray floor (z)
 
+  # ---- MCU / USB-C cover (separate plate over the MCU area; the switch plate stops at the keys) ----
+  cover_gap: 0.5       # gap between the switch plate and the cover
+  cover_x0: kx/2 + pad/2 + cover_gap     # cover left edge, from matrix_inner_top
+  cover_hole_dx: 8     # the two top holes sit this far either side of the MCU centre
+  cover_hole_top: 1.8  # ... and this far below the top edge of the zone
+  cover_hole_left: 2.6 # the two strip holes: distance right of the inner key column's board edge
+  cover_hole_dy: 3.5   # ... and this far above/below the USB-C module centre
+
   # ---- per-key offsets (mm, from the key centre; +y is toward the top of the key) ----
   # NOT VERIFIED in the UI: LED and diode placement; tune after previewing the PCB.
   diode_mx_y: -5       # diode south of the switch
@@ -220,8 +228,6 @@ outlines:
       name: _keys
     - what: outline
       name: _thumb_fill
-    - what: outline
-      name: _mcu_area
 
   # ---- M2 mounting holes: same positions in plate, tray floor and PCB (see pcbs) ----
   _mount_holes:
@@ -275,6 +281,26 @@ outlines:
       adjust:
         ref: lower_l_ring_low
         shift: [kx/2, ky/2]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_inner_top
+        shift: [mcu_x - cover_hole_dx, ky/2 + pad/2 + mcu_up - cover_hole_top]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_inner_top
+        shift: [mcu_x + cover_hole_dx, ky/2 + pad/2 + mcu_up - cover_hole_top]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_inner_top
+        shift: [kx/2 + pad/2 + cover_hole_left, link_y + cover_hole_dy]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_inner_top
+        shift: [kx/2 + pad/2 + cover_hole_left, link_y - cover_hole_dy]
 
   # ---- switch cutouts ----
   _cut_mx:
@@ -336,6 +362,14 @@ outlines:
       name: _mount_holes
       operation: subtract
 
+  # ---- MCU / USB-C cover ----
+  cover:
+    - what: outline
+      name: _cover_area
+    - what: outline
+      name: _mount_holes
+      operation: subtract
+
   # ---- tray (shared by all switch types) ----
   _tray_outer:
     - what: outline
@@ -371,6 +405,10 @@ cases:
   plate_choc2:
     - what: outline
       name: plate_choc2
+      extrude: plate_t
+  cover:
+    - what: outline
+      name: cover
       extrude: plate_t
   tray:
     - what: outline
@@ -570,6 +608,42 @@ pcbs:
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
+      hole_11: &hole_11
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [mcu_x - cover_hole_dx, ky/2 + pad/2 + mcu_up - cover_hole_top]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_12: &hole_12
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [mcu_x + cover_hole_dx, ky/2 + pad/2 + mcu_up - cover_hole_top]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_13: &hole_13
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [kx/2 + pad/2 + cover_hole_left, link_y + cover_hole_dy]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_14: &hole_14
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [kx/2 + pad/2 + cover_hole_left, link_y - cover_hole_dy]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
 
   corne_lpmx_zero:
     template: kicad8
@@ -601,6 +675,10 @@ pcbs:
       hole_8: *hole_8
       hole_9: *hole_9
       hole_10: *hole_10
+      hole_11: *hole_11
+      hole_12: *hole_12
+      hole_13: *hole_13
+      hole_14: *hole_14
 
   corne_choc_zero:
     template: kicad8
@@ -661,6 +739,10 @@ pcbs:
       hole_8: *hole_8
       hole_9: *hole_9
       hole_10: *hole_10
+      hole_11: *hole_11
+      hole_12: *hole_12
+      hole_13: *hole_13
+      hole_14: *hole_14
 
   corne_choc2_zero:
     template: kicad8
@@ -694,3 +776,7 @@ pcbs:
       hole_8: *hole_8
       hole_9: *hole_9
       hole_10: *hole_10
+      hole_11: *hole_11
+      hole_12: *hole_12
+      hole_13: *hole_13
+      hole_14: *hole_14

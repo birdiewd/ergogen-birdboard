@@ -49,6 +49,11 @@ HOLES = [
     ("thumbs_t_mid_cluster", "[kx/2 + 1, ky/2 * 0.4]"),
     ("lower_l_outer_low", "[kx/2, ky/2]"),
     ("lower_l_ring_low", "[kx/2, ky/2]"),
+    # cover holes (MCU / USB-C cover), all from matrix_inner_top
+    ("matrix_inner_top", "[mcu_x - cover_hole_dx, ky/2 + pad/2 + mcu_up - cover_hole_top]"),
+    ("matrix_inner_top", "[mcu_x + cover_hole_dx, ky/2 + pad/2 + mcu_up - cover_hole_top]"),
+    ("matrix_inner_top", "[kx/2 + pad/2 + cover_hole_left, link_y + cover_hole_dy]"),
+    ("matrix_inner_top", "[kx/2 + pad/2 + cover_hole_left, link_y - cover_hole_dy]"),
 ]
 
 out = []
