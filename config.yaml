@@ -275,33 +275,13 @@ outlines:
     - what: circle
       radius: hole_print / 2
       adjust:
-        ref: matrix_outer_bottom
-        shift: [kx/2, ky/2]
-    - what: circle
-      radius: hole_print / 2
-      adjust:
         ref: matrix_ring_top
         shift: [kx/2, -ky/2]
     - what: circle
       radius: hole_print / 2
       adjust:
-        ref: matrix_ring_bottom
-        shift: [kx/2, ky/2]
-    - what: circle
-      radius: hole_print / 2
-      adjust:
         ref: matrix_index_top
         shift: [kx/2, -ky/2]
-    - what: circle
-      radius: hole_print / 2
-      adjust:
-        ref: matrix_index_bottom
-        shift: [kx/2, ky/2]
-    - what: circle
-      radius: hole_print / 2
-      adjust:
-        ref: thumbs_t_near_cluster
-        shift: [kx/2 + 1, ky/2 * 0.4]
     - what: circle
       radius: hole_print / 2
       adjust:
@@ -327,11 +307,6 @@ outlines:
       adjust:
         ref: matrix_inner_top
         shift: [mcu_x + cover_hole_dx, ky/2 + pad/2 + mcu_up - cover_hole_top]
-    - what: circle
-      radius: hole_print / 2
-      adjust:
-        ref: matrix_inner_top
-        shift: [kx/2 + pad/2 + cover_hole_left, link_y + cover_hole_dy]
     - what: circle
       radius: hole_print / 2
       adjust:
@@ -566,31 +541,13 @@ pcbs:
       hole_2: &hole_2
         what: ceoloide/mounting_hole_npth
         where:
-          ref: matrix_outer_bottom
-        adjust:
-          shift: [kx/2, ky/2]
-        params:
-          hole_size: hole_pcb
-          hole_drill: hole_pcb
-      hole_3: &hole_3
-        what: ceoloide/mounting_hole_npth
-        where:
           ref: matrix_ring_top
         adjust:
           shift: [kx/2, -ky/2]
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
-      hole_4: &hole_4
-        what: ceoloide/mounting_hole_npth
-        where:
-          ref: matrix_ring_bottom
-        adjust:
-          shift: [kx/2, ky/2]
-        params:
-          hole_size: hole_pcb
-          hole_drill: hole_pcb
-      hole_5: &hole_5
+      hole_3: &hole_3
         what: ceoloide/mounting_hole_npth
         where:
           ref: matrix_index_top
@@ -599,25 +556,7 @@ pcbs:
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
-      hole_6: &hole_6
-        what: ceoloide/mounting_hole_npth
-        where:
-          ref: matrix_index_bottom
-        adjust:
-          shift: [kx/2, ky/2]
-        params:
-          hole_size: hole_pcb
-          hole_drill: hole_pcb
-      hole_7: &hole_7
-        what: ceoloide/mounting_hole_npth
-        where:
-          ref: thumbs_t_near_cluster
-        adjust:
-          shift: [kx/2 + 1, ky/2 * 0.4]
-        params:
-          hole_size: hole_pcb
-          hole_drill: hole_pcb
-      hole_8: &hole_8
+      hole_4: &hole_4
         what: ceoloide/mounting_hole_npth
         where:
           ref: thumbs_t_mid_cluster
@@ -626,7 +565,7 @@ pcbs:
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
-      hole_9: &hole_9
+      hole_5: &hole_5
         what: ceoloide/mounting_hole_npth
         where:
           ref: lower_l_outer_low
@@ -635,7 +574,7 @@ pcbs:
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
-      hole_10: &hole_10
+      hole_6: &hole_6
         what: ceoloide/mounting_hole_npth
         where:
           ref: lower_l_ring_low
@@ -644,7 +583,7 @@ pcbs:
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
-      hole_11: &hole_11
+      hole_7: &hole_7
         what: ceoloide/mounting_hole_npth
         where:
           ref: matrix_inner_top
@@ -653,7 +592,7 @@ pcbs:
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
-      hole_12: &hole_12
+      hole_8: &hole_8
         what: ceoloide/mounting_hole_npth
         where:
           ref: matrix_inner_top
@@ -662,16 +601,7 @@ pcbs:
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
-      hole_13: &hole_13
-        what: ceoloide/mounting_hole_npth
-        where:
-          ref: matrix_inner_top
-        adjust:
-          shift: [kx/2 + pad/2 + cover_hole_left, link_y + cover_hole_dy]
-        params:
-          hole_size: hole_pcb
-          hole_drill: hole_pcb
-      hole_14: &hole_14
+      hole_9: &hole_9
         what: ceoloide/mounting_hole_npth
         where:
           ref: matrix_inner_top
@@ -710,11 +640,6 @@ pcbs:
       hole_7: *hole_7
       hole_8: *hole_8
       hole_9: *hole_9
-      hole_10: *hole_10
-      hole_11: *hole_11
-      hole_12: *hole_12
-      hole_13: *hole_13
-      hole_14: *hole_14
 
   corne_choc_zero:
     template: kicad8
@@ -774,11 +699,6 @@ pcbs:
       hole_7: *hole_7
       hole_8: *hole_8
       hole_9: *hole_9
-      hole_10: *hole_10
-      hole_11: *hole_11
-      hole_12: *hole_12
-      hole_13: *hole_13
-      hole_14: *hole_14
 
   corne_choc2_zero:
     template: kicad8
@@ -811,8 +731,3 @@ pcbs:
       hole_7: *hole_7
       hole_8: *hole_8
       hole_9: *hole_9
-      hole_10: *hole_10
-      hole_11: *hole_11
-      hole_12: *hole_12
-      hole_13: *hole_13
-      hole_14: *hole_14
