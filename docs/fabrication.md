@@ -3,7 +3,7 @@
 Ergogen outputs a KiCad 8 board (`.kicad_pcb`), not Gerbers. The Gerber, drill,
 BOM and pick-and-place files the fabs need are exported from KiCad. The
 outputs from the web UI: download the PCB for the variant you want (for example
-`corne_choc_helios`).
+`corne_choc_zero`).
 
 ## 1. Prepare the board in KiCad
 

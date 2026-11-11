@@ -12,7 +12,6 @@ the originals' license/attribution in the converted file header.
 |---|---|---|
 | WS2812B 5050 | Official KiCad footprint library, `LED_SMD.pretty`, `LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm` | Pin 3 is marked on the package, not pin 1. Check orientation. |
 | RP2040-Zero | Community footprint (for example `dj505/RP2040-Zero-KiCAD`) or `crides/kleeb` | Converted from a community footprint. Its pad numbers do not follow Waveshare numbering, so pins are named by position. Check pad 1 = 5V, on the same side as the USB-C end, against your board. |
-| 0xCB Helios | ebastler's `marbastlib`, library `marbastlib-xp-promicroish` (folder `footprints`) | The `xp` prefix means experimental: confirm against a built board before ordering. Converted variant: `Helios_AC` (SMD edge pads, USB pointing away from the PCB). Only the castellated Helios is supported; the older through-hole version is not on sale at the shop used, so no header footprint is provided. The footprint has pad numbers only. GPIO names come from the Helios rev1.0 board (`0xCB-dev/0xCB-Helios`, CERN-OHL-S-2.0), matched pad by pad by position. |
 
 ## Switches (already covered by the ceoloide library)
 

@@ -18,7 +18,7 @@ No local tooling or submodule is needed, because the UI bundles the ceoloide foo
 
 | Output | Names |
 |---|---|
-| PCBs (8) | `corne_{mx,lpmx,choc,choc2}_{zero,helios}`: switch type and MCU (hotswap only) |
+| PCBs (4) | `corne_{mx,lpmx,choc,choc2}_zero`: switch type (RP2040-Zero, hotswap only) |
 | Top plates (STL) | `plate_mx`, `plate_lpmx`, `plate_choc`, `plate_choc2` |
 | Case tray (STL) | `tray` |
 
@@ -45,18 +45,17 @@ Switch types: MX, low-profile MX (Gateron KS-27/KS-33), Choc v1, Choc v2.
   middle top to bottom, ring bottom to top, pinky top to bottom, outer bottom to top.
   Each key's `led_in` /
   `led_out` is set per key in `points:`, so reorder the chain there. LEDs are powered from
-  the MCU's 5V pin (Helios RAW, Zero 5V). Only the Helios `RGB_5V` pin gives a
-  5V data signal; on the Zero the data line is 3.3V, which is out of spec for a
+  the RP2040-Zero's 5V pin. The data line is 3.3V, which is out of spec for a
   5V WS2812B but usually works.
 - **MCU area:** a 25 x 40 mm zone to the right of the inner column is reserved for the
-  MCU (sized for the Helios and the RP2040-Zero), so plates and tray are identical for either.
+  MCU (sized for the RP2040-Zero).
   The zone and the MCU sit `mcu_up` (12.5 mm) above the top key edge, which frees a strip under
   the MCU for the USB-C link module.
 
 - **Half-to-half link:** a 4-pin USB-C female breakout module (12 x 13.8 mm, pads V / D- / D+ / G
   at 2.54 mm) in the strip under the MCU, opening toward the middle (its shell tip is flush with the right edge of the board). Solder a straight 1x4 male header into
   the breakout from its underside, then plug it into the four PCB holes so it lies flat. Wiring: V to
-  the MCU 5V rail (5V / RAW), D+ to GP12 (`link`, single-wire serial, QMK half-duplex), G to GND, D-
+  the MCU 5V rail (5V), D+ to GP12 (`link`, single-wire serial, QMK half-duplex), G to GND, D-
   unconnected. Use a plain C-to-C cable. **Do not plug the link port into a PC or charger**: the
   5V rail is shared between the halves. The footprint is `custom/usbc_breakout_4pin`; the front set
   is for the left half, the back set (`link_back`, 2.54 mm further out, reversed pad order) for the
@@ -65,12 +64,12 @@ Switch types: MX, low-profile MX (Gateron KS-27/KS-33), Choc v1, Choc v2.
 
 Pin assignments (rows and columns can be swapped freely in `config.yaml`):
 
-| Net | RP2040-Zero | Helios |
-|---|---|---|
-| outer / pinky / ring / middle / index / inner | GP0 to GP5 | GP2 to GP7 |
-| top / home / bottom / thumb | GP6 / GP7 / GP8 / GP9 | GP8 / GP9 / GP10 / GP11 |
-| LED data | GP10 | RGB_5V (GP25) |
-| half-to-half link (USB-C D+) | GP12 | GP12 |
+| Net | RP2040-Zero |
+|---|---|
+| outer / pinky / ring / middle / index / inner | GP0 to GP5 |
+| top / home / bottom / thumb | GP6 / GP7 / GP8 / GP9 |
+| LED data | GP10 |
+| half-to-half link (USB-C D+) | GP12 |
 
 `tools/gen_pcbs.py` regenerates the PCB list from those tables if you change them
 (optional; the UI only reads `config.yaml`).
@@ -98,7 +97,6 @@ Not done: counterbore for the screw heads in the tray floor (2 mm floor is thin)
 | Switch and diode footprints | use ceoloide footprints |
 | WS2812B 5050 | converted (`footprints/custom/led_ws2812b_5050.js`); wired, one front and one back LED per key |
 | USB-C link | `footprints/custom/usbc_breakout_4pin.js`, hand-written from the listing image; not yet loaded in the UI |
-| Helios | converted (`footprints/custom/mcu_helios.js`, variant `Helios_AC`); pins named by GPIO; wired |
 | RP2040-Zero | converted (`custom/mcu_rp2040_zero`); pinout checked against a published diagram; wired |
 | Fabrication guide | `docs/fabrication.md` |
 
