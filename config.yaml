@@ -196,6 +196,14 @@ outlines:
       adjust:
         ref: matrix_inner_top
         shift: [mcu_x, ky/2 + pad/2 + mcu_up - (mcu_zone_h + mcu_up)/2]
+  # Cover over the MCU and the USB-C module: the whole MCU zone, minus a small gap to the switch plate.
+  _cover_area:
+    - what: rectangle
+      bound: false
+      size: [link_edge_x - cover_x0, mcu_zone_h + mcu_up]
+      adjust:
+        ref: matrix_inner_top
+        shift: [(cover_x0 + link_edge_x)/2, ky/2 + pad/2 + mcu_up - (mcu_zone_h + mcu_up)/2]
   # Cutout in the tray wall for the USB-C plug.
   _link_notch:
     - what: rectangle
