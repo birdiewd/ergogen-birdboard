@@ -37,12 +37,16 @@ Switch types: MX, low-profile MX (Gateron KS-27/KS-33), Choc v1, Choc v2.
 - **Diodes:** through-hole 1N4148 (DO-35 axial) via `include_tht: true` on the ceoloide
   `diode_tht_sod123` footprint. That footprint also keeps the SOD-123 SMD pads, so an SMD
   diode would fit too. Wired switch (`colrow`) to row net.
+- **Lower-left keys:** three extra keys under the outer, pinky and ring columns, directly below the
+  bottom row (far side from the thumb cluster). They use their column's net and the `thumb` row net,
+  so no extra MCU pins are needed. The thumb cluster sits under the middle column to clear them.
 - **LEDs:** WS2812B 5050 on the top side of both halves. Every key has two LED footprints on
   the same nets, `led` on the front layer and `led_back` on the back layer. Left half:
   populate the front set. Right half (the same PCB flipped): populate the back set, which
-  is then on top. 21 keys, chained `led_data` -> `led_1` ... `led_21`.
+  is then on top. 24 keys, chained `led_data` -> `led_1` ... `led_24`.
   Chain order: inner column top to bottom, thumbs far to near, index bottom to top,
-  middle top to bottom, ring bottom to top, pinky top to bottom, outer bottom to top.
+  middle top to bottom, lower ring key, ring bottom to top, pinky top to bottom, lower pinky key,
+  lower outer key, outer bottom to top.
   Each key's `led_in` /
   `led_out` is set per key in `points:`, so reorder the chain there. LEDs are powered from
   the RP2040-Zero's 5V pin. The data line is 3.3V, which is out of spec for a
