@@ -40,7 +40,7 @@ Switch types: MX, low-profile MX (Gateron KS-27/KS-33), Choc v1, Choc v2.
 - **LEDs:** WS2812B 5050 on the top side of both halves. Every key has two LED footprints on
   the same nets, `led` on the front layer and `led_back` on the back layer. Left half:
   populate the front set. Right half (the same PCB flipped): populate the back set, which
-  is then on top. 21 keys, chained `led_data` -> `led_1` ... `led_21`.
+  is then on top. 22 keys, chained `led_data` -> `led_1` ... `led_21`.
   Chain order: inner column top to bottom, thumbs far to near, index bottom to top,
   middle top to bottom, ring bottom to top, pinky top to bottom, outer bottom to top.
   Each key's `led_in` /
