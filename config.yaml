@@ -59,6 +59,8 @@ units:
   link_y: ky/2 + pad/2 + mcu_up - 35.65    # module centre: 2 below the MCU's bottom edge, then half the module (6)
   link_notch_w: 13                         # tray wall cutout for the plug (y)
   link_notch_z: 2                          # wall left uncut above the tray floor (z)
+  usb_notch_w: 13                          # tray wall cutout for the RP2040-Zero's USB-C plug (x)
+  usb_notch_z: 2                           # wall left uncut above the tray floor (z)
 
   # ---- thumb cluster placement ----
   thumb_shift_x: 0.8kx - 4   # cluster x shift from matrix_middle_bottom (original layout was -0.2kx)
@@ -216,6 +218,14 @@ outlines:
       adjust:
         ref: matrix_inner_top
         shift: [link_edge_x + (tol + wall_t)/2, link_y]
+  # Cutout in the top wall of the tray for the RP2040-Zero's USB-C port (the Zero's USB end faces +y).
+  _usb_notch:
+    - what: rectangle
+      bound: false
+      size: [usb_notch_w, tol + wall_t + 2]
+      adjust:
+        ref: matrix_inner_top
+        shift: [mcu_x, ky/2 + pad/2 + mcu_up + (tol + wall_t)/2]
   # Slightly larger rectangles under the thumb keys. Without them the thumb cluster only
   # just touches the bottom row and leaves small enclosed gaps in the board and plates.
   _thumb_fill:
@@ -433,6 +443,11 @@ cases:
       name: _link_notch
       extrude: tray_h - link_notch_z
       shift: [0, 0, floor_t + link_notch_z]
+      operation: subtract
+    - what: outline
+      name: _usb_notch
+      extrude: tray_h - usb_notch_z
+      shift: [0, 0, floor_t + usb_notch_z]
       operation: subtract
 
 pcbs:

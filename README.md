@@ -97,7 +97,7 @@ Stack, bottom to top: tray floor, standoffs, PCB, standoffs, plate. Hole sizes a
 Standoff heights depend on your switch: the plate-to-PCB gap must match the switch's
 plate-to-PCB distance, and `tray_h` must be tall enough for the lot.
 
-Not done: counterbore for the screw heads in the tray floor (2 mm floor is thin), a tray cutout for the RP2040-Zero's own USB-C port (the link port already has one).
+Not done: counterbore for the screw heads in the tray floor (2 mm floor is thin).
 
 ## Status
 
@@ -123,7 +123,7 @@ Things to check in the UI after the first load:
   clash with the hotswap sockets (sockets are on the opposite layer from the switch)
 - the 9 mounting holes clear the switches, sockets and diodes on the PCB, and the thumb hole
   (my reconstruction of the thumb layout is approximate)
-- no USB cutout in the tray yet
+- the tray notches for the two USB-C ports (`usb_notch_*` at the top for the Zero, `link_notch_*` on the right for the link port): width and height above the floor
 
 ## Layout
 
