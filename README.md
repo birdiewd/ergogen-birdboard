@@ -5,7 +5,8 @@ Personal templates for custom keyboards, built for the
 
 Current design: **Corne-style** split, 6 columns x 3 rows (an extra outer column beside
 the pinky), 3 thumb keys, and one extra key (`center`) on the center side of the inner column,
-bottom row only. The left half is defined; flip the same PCB for the right.
+bottom row only, wired into the thumb row (diode to the `thumb` row net, column net
+`center`). The left half is defined; flip the same PCB for the right.
 
 ## Use it
 
