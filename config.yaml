@@ -39,6 +39,10 @@ units:
 
   # ---- MCU area (right of the inner column, top aligned with the top key) ----
   thumb_fill: 3       # thumb-key board rectangles are this much larger, to close the gaps to the bottom row
+  # ---- M2 standoff mounting holes (tray floor, PCB, plate share the same 8 positions) ----
+  hole_print: 2.4     # clearance hole in printed parts (plate, tray floor) for an M2 screw
+  hole_pcb: 2.2       # NPTH drill in the PCB
+
   mcu_zone_w: 25      # reserved board width; fits a Pico (21mm) plus margin
   mcu_zone_h: 56      # reserved board height; fits a Pico (51mm) plus margin
   mcu_x: kx/2 + pad/2 + mcu_zone_w/2 - 1   # MCU centre, from matrix_inner_top
@@ -176,6 +180,49 @@ outlines:
     - what: outline
       name: _mcu_area
 
+  # ---- M2 mounting holes: same positions in plate, tray floor and PCB (see pcbs) ----
+  _mount_holes:
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_outer_top
+        shift: [kx/2, -ky/2]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_outer_bottom
+        shift: [kx/2, ky/2]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_ring_top
+        shift: [kx/2, -ky/2]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_ring_bottom
+        shift: [kx/2, ky/2]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_index_top
+        shift: [kx/2, -ky/2]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_index_bottom
+        shift: [kx/2, ky/2]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: thumbs_t_near_cluster
+        shift: [kx/2 + 1, ky/2 * 0.4]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: thumbs_t_mid_cluster
+        shift: [kx/2 + 1, ky/2 * 0.4]
+
   # ---- switch cutouts ----
   _cut_mx:
     - what: rectangle
@@ -205,11 +252,17 @@ outlines:
     - what: outline
       name: _cut_mx
       operation: subtract
+    - what: outline
+      name: _mount_holes
+      operation: subtract
   plate_lpmx:
     - what: outline
       name: board_plate
     - what: outline
       name: _cut_lpmx
+      operation: subtract
+    - what: outline
+      name: _mount_holes
       operation: subtract
   plate_choc:
     - what: outline
@@ -217,11 +270,17 @@ outlines:
     - what: outline
       name: _cut_choc
       operation: subtract
+    - what: outline
+      name: _mount_holes
+      operation: subtract
   plate_choc2:
     - what: outline
       name: board_plate
     - what: outline
       name: _cut_choc2
+      operation: subtract
+    - what: outline
+      name: _mount_holes
       operation: subtract
 
   # ---- tray (shared by all switch types) ----
@@ -232,6 +291,9 @@ outlines:
   tray_floor:
     - what: outline
       name: _tray_outer
+    - what: outline
+      name: _mount_holes
+      operation: subtract
   tray_wall:
     - what: outline
       name: _tray_outer
@@ -339,6 +401,78 @@ pcbs:
           vdd: "VBUS"
         adjust:
           shift: [0, led_mx_y]
+      hole_1: &hole_1
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_outer_top
+        adjust:
+          shift: [kx/2, -ky/2]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_2: &hole_2
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_outer_bottom
+        adjust:
+          shift: [kx/2, ky/2]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_3: &hole_3
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_ring_top
+        adjust:
+          shift: [kx/2, -ky/2]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_4: &hole_4
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_ring_bottom
+        adjust:
+          shift: [kx/2, ky/2]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_5: &hole_5
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_index_top
+        adjust:
+          shift: [kx/2, -ky/2]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_6: &hole_6
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_index_bottom
+        adjust:
+          shift: [kx/2, ky/2]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_7: &hole_7
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: thumbs_t_near_cluster
+        adjust:
+          shift: [kx/2 + 1, ky/2 * 0.4]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_8: &hole_8
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: thumbs_t_mid_cluster
+        adjust:
+          shift: [kx/2 + 1, ky/2 * 0.4]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
 
   corne_mx_hs_zero:
     template: kicad8
@@ -396,6 +530,14 @@ pcbs:
           vdd: "5V"
         adjust:
           shift: [0, led_mx_y]
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_mx_hs_helios:
     template: kicad8
@@ -452,6 +594,14 @@ pcbs:
           vdd: "RAW"
         adjust:
           shift: [0, led_mx_y]
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_mx_solder_pico:
     template: kicad8
@@ -472,6 +622,14 @@ pcbs:
       mcu: *mcu_pico
       led: *led_pico_mx
       led_back: *led_back_pico_mx
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_mx_solder_zero:
     template: kicad8
@@ -492,6 +650,14 @@ pcbs:
       mcu: *mcu_zero
       led: *led_zero_mx
       led_back: *led_back_zero_mx
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_mx_solder_helios:
     template: kicad8
@@ -512,6 +678,14 @@ pcbs:
       mcu: *mcu_helios
       led: *led_helios_mx
       led_back: *led_back_helios_mx
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_lpmx_hs_pico:
     template: kicad8
@@ -531,6 +705,14 @@ pcbs:
       mcu: *mcu_pico
       led: *led_pico_mx
       led_back: *led_back_pico_mx
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_lpmx_hs_zero:
     template: kicad8
@@ -550,6 +732,14 @@ pcbs:
       mcu: *mcu_zero
       led: *led_zero_mx
       led_back: *led_back_zero_mx
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_lpmx_hs_helios:
     template: kicad8
@@ -569,6 +759,14 @@ pcbs:
       mcu: *mcu_helios
       led: *led_helios_mx
       led_back: *led_back_helios_mx
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_lpmx_solder_pico:
     template: kicad8
@@ -588,6 +786,14 @@ pcbs:
       mcu: *mcu_pico
       led: *led_pico_mx
       led_back: *led_back_pico_mx
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_lpmx_solder_zero:
     template: kicad8
@@ -607,6 +813,14 @@ pcbs:
       mcu: *mcu_zero
       led: *led_zero_mx
       led_back: *led_back_zero_mx
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_lpmx_solder_helios:
     template: kicad8
@@ -626,6 +840,14 @@ pcbs:
       mcu: *mcu_helios
       led: *led_helios_mx
       led_back: *led_back_helios_mx
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_choc_hs_pico:
     template: kicad8
@@ -674,6 +896,14 @@ pcbs:
           vdd: "VBUS"
         adjust:
           shift: [0, led_choc_y]
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_choc_hs_zero:
     template: kicad8
@@ -713,6 +943,14 @@ pcbs:
           vdd: "5V"
         adjust:
           shift: [0, led_choc_y]
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_choc_hs_helios:
     template: kicad8
@@ -752,6 +990,14 @@ pcbs:
           vdd: "RAW"
         adjust:
           shift: [0, led_choc_y]
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_choc_solder_pico:
     template: kicad8
@@ -773,6 +1019,14 @@ pcbs:
       mcu: *mcu_pico
       led: *led_pico_choc
       led_back: *led_back_pico_choc
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_choc_solder_zero:
     template: kicad8
@@ -794,6 +1048,14 @@ pcbs:
       mcu: *mcu_zero
       led: *led_zero_choc
       led_back: *led_back_zero_choc
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_choc_solder_helios:
     template: kicad8
@@ -815,6 +1077,14 @@ pcbs:
       mcu: *mcu_helios
       led: *led_helios_choc
       led_back: *led_back_helios_choc
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_choc2_hs_pico:
     template: kicad8
@@ -836,6 +1106,14 @@ pcbs:
       mcu: *mcu_pico
       led: *led_pico_choc
       led_back: *led_back_pico_choc
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_choc2_hs_zero:
     template: kicad8
@@ -857,6 +1135,14 @@ pcbs:
       mcu: *mcu_zero
       led: *led_zero_choc
       led_back: *led_back_zero_choc
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_choc2_hs_helios:
     template: kicad8
@@ -878,6 +1164,14 @@ pcbs:
       mcu: *mcu_helios
       led: *led_helios_choc
       led_back: *led_back_helios_choc
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_choc2_solder_pico:
     template: kicad8
@@ -899,6 +1193,14 @@ pcbs:
       mcu: *mcu_pico
       led: *led_pico_choc
       led_back: *led_back_pico_choc
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_choc2_solder_zero:
     template: kicad8
@@ -920,6 +1222,14 @@ pcbs:
       mcu: *mcu_zero
       led: *led_zero_choc
       led_back: *led_back_zero_choc
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8
 
   corne_choc2_solder_helios:
     template: kicad8
@@ -941,3 +1251,11 @@ pcbs:
       mcu: *mcu_helios
       led: *led_helios_choc
       led_back: *led_back_helios_choc
+      hole_1: *hole_1
+      hole_2: *hole_2
+      hole_3: *hole_3
+      hole_4: *hole_4
+      hole_5: *hole_5
+      hole_6: *hole_6
+      hole_7: *hole_7
+      hole_8: *hole_8

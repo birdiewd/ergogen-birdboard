@@ -48,6 +48,18 @@ SWITCHES = {
 }
 MOUNTS = {"hs": True, "solder": False}
 
+# M2 mounting holes. Keep in sync with `_mount_holes` in config.yaml (same refs and shifts).
+HOLES = [
+    ("matrix_outer_top", "[kx/2, -ky/2]"),
+    ("matrix_outer_bottom", "[kx/2, ky/2]"),
+    ("matrix_ring_top", "[kx/2, -ky/2]"),
+    ("matrix_ring_bottom", "[kx/2, ky/2]"),
+    ("matrix_index_top", "[kx/2, -ky/2]"),
+    ("matrix_index_bottom", "[kx/2, ky/2]"),
+    ("thumbs_t_near_cluster", "[kx/2 + 1, ky/2 * 0.4]"),
+    ("thumbs_t_mid_cluster", "[kx/2 + 1, ky/2 * 0.4]"),
+]
+
 out = []
 w = out.append
 w("pcbs:")
@@ -147,6 +159,21 @@ for sname, sw in SWITCHES.items():
                     w(f"          vdd: \"{mcu['vdd']}\"")
                     w("        adjust:")
                     w(f"          shift: [0, led_{fam}_y]")
+            for n, (href, hshift) in enumerate(HOLES, 1):
+                hn = f"hole_{n}"
+                if hn in defined:
+                    w(f"      {hn}: *{hn}")
+                else:
+                    defined.add(hn)
+                    w(f"      {hn}: &{hn}")
+                    w("        what: ceoloide/mounting_hole_npth")
+                    w("        where:")
+                    w(f"          ref: {href}")
+                    w("        adjust:")
+                    w(f"          shift: {hshift}")
+                    w("        params:")
+                    w("          hole_size: hole_pcb")
+                    w("          hole_drill: hole_pcb")
             w("")
 
 text = CONFIG.read_text()
