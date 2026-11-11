@@ -71,7 +71,6 @@ points:
   key:
     spread: kx
     padding: ky
-    tags: has_led         # LED footprints are placed on keys with this tag
   zones:
     matrix:
       anchor:
@@ -124,41 +123,26 @@ points:
           row_net: home
         top:
           row_net: top
-    # Extra thumb-row key: right of the inner column, level with the bottom row.
-    # It is the first (rightmost) column of the thumb row and takes the inner column net;
-    # the three cluster keys below shifted one column to the left (ring/middle/index).
-    thumb_in:
-      key:
-        row_net: thumb
-        column_net: inner
-        tags: thumb_key       # no has_led tag: this key has no LED
-      anchor:
-        ref: matrix_inner_bottom
-        shift: [kx, 0]
-      columns:
-        t_in: {}
-      rows:
-        cluster:
     thumbs:
       key:
         row_net: thumb          # thumb keys form a 4th row on the matrix
-        tags: [thumb_key, has_led]
+        tags: thumb_key
       anchor:
         ref: matrix_middle_bottom
         shift: [-0.2kx, -1.15ky]
       columns:
         t_near:
-          key.column_net: ring
+          key.column_net: middle
           rows:
             cluster: { led_in: led_5, led_out: led_6 }   # LED #6
         t_mid:
-          key.column_net: middle
+          key.column_net: index
           key.splay: -12
           key.origin: [-0.5kx, -0.5ky]
           rows:
             cluster: { led_in: led_4, led_out: led_5 }   # LED #5
         t_far:
-          key.column_net: index
+          key.column_net: inner
           key.splay: -12
           key.origin: [-0.5kx, -0.5ky]
           rows:
@@ -423,7 +407,7 @@ pcbs:
           GP12: link
       led: &led_zero_mx
         what: custom/led_ws2812b_5050
-        where: has_led       # every key except the extra thumb key
+        where: true
         params:
           side: F
           din: "{{led_in}}"
@@ -433,7 +417,7 @@ pcbs:
           shift: [0, led_mx_y]
       led_back: &led_back_zero_mx
         what: custom/led_ws2812b_5050
-        where: has_led       # every key except the extra thumb key
+        where: true
         params:
           side: B
           din: "{{led_in}}"
@@ -592,7 +576,7 @@ pcbs:
       mcu: *mcu_zero
       led: &led_zero_choc
         what: custom/led_ws2812b_5050
-        where: has_led       # every key except the extra thumb key
+        where: true
         params:
           side: F
           din: "{{led_in}}"
@@ -602,7 +586,7 @@ pcbs:
           shift: [0, led_choc_y]
       led_back: &led_back_zero_choc
         what: custom/led_ws2812b_5050
-        where: has_led       # every key except the extra thumb key
+        where: true
         params:
           side: B
           din: "{{led_in}}"

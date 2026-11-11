@@ -139,7 +139,7 @@ for sname, sw in SWITCHES.items():
                     defined.add(la)
                     w(f"      {lname}: &{la}")
                     w("        what: custom/led_ws2812b_5050")
-                    w("        where: has_led       # every key except the extra thumb key")
+                    w("        where: true")
                     w("        params:")
                     w(f"          side: {lside}")
                     w('          din: "{{led_in}}"')
