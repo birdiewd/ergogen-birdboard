@@ -4,9 +4,7 @@ Personal templates for custom keyboards, built for the
 [ceoloide Ergogen web UI](https://ergogen.ceoloide.com) (Ergogen v4.3.0 fork).
 
 Current design: **Corne-style** split, 6 columns x 3 rows (an extra outer column beside
-the pinky), 3 thumb keys, and one extra key (`center`) on the center side of the inner column,
-bottom row only, wired into the thumb row (diode to the `thumb` row net, column net
-`center`). The left half is defined; flip the same PCB for the right.
+the pinky) plus 3 thumb keys. The left half is defined; flip the same PCB for the right.
 
 ## Use it
 
@@ -42,8 +40,8 @@ Switch types: MX, low-profile MX (Gateron KS-27/KS-33), Choc v1, Choc v2.
 - **LEDs:** WS2812B 5050 on the top side of both halves. Every key has two LED footprints on
   the same nets, `led` on the front layer and `led_back` on the back layer. Left half:
   populate the front set. Right half (the same PCB flipped): populate the back set, which
-  is then on top. 22 keys, chained `led_data` -> `led_1` ... `led_22`.
-  Chain order: inner column top to bottom, center key, thumbs far to near, index bottom to top,
+  is then on top. 21 keys, chained `led_data` -> `led_1` ... `led_21`.
+  Chain order: inner column top to bottom, thumbs far to near, index bottom to top,
   middle top to bottom, ring bottom to top, pinky top to bottom, outer bottom to top.
   Each key's `led_in` /
   `led_out` is set per key in `points:`, so reorder the chain there. LEDs are powered from
@@ -59,7 +57,6 @@ Pin assignments (rows and columns can be swapped freely in `config.yaml`):
 |---|---|---|
 | outer / pinky / ring / middle / index / inner | GP0 to GP5 | GP2 to GP7 |
 | top / home / bottom / thumb | GP6 / GP7 / GP8 / GP9 | GP8 / GP9 / GP10 / GP11 |
-| center (extra key) | GP11 | GP12 |
 | LED data | GP10 | RGB_5V (GP25) |
 
 `tools/gen_pcbs.py` regenerates the PCB list from those tables if you change them
