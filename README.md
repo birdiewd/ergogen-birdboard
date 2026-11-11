@@ -30,7 +30,9 @@ Outlines: the PCB and tray use `board` (corners rounded, fillet 2). The plates u
 `board_plate`, the same shape with sharp corners and without the MCU area: the switch plate stops
 at the keys, and a separate `cover` (`_cover_area`) spans the MCU and the USB-C module. `board_plate` includes `_thumb_fill`, slightly larger
 rectangles under the thumb keys (`thumb_fill` in `units:`) that close small enclosed gaps
-between the thumb cluster and the bottom row.
+between the thumb cluster and the bottom row. `_thumb_gap` fills the gap between the lower row of keys
+and the thumb cluster, and `_tall_fill` makes the far thumb key (t_far) a 1.5u portrait key in the
+board and plate outline (the switch cutout stays square; the keycap outline on the PCB is still 1u).
 
 Switch types: MX, low-profile MX (Gateron KS-27/KS-33), Choc v1, Choc v2.
 

@@ -60,6 +60,9 @@ units:
   link_notch_w: 13                         # tray wall cutout for the plug (y)
   link_notch_z: 2                          # wall left uncut above the tray floor (z)
 
+  # ---- thumb cluster placement ----
+  thumb_shift_x: 0.8kx - 4   # cluster x shift from matrix_middle_bottom (original layout was -0.2kx)
+
   # ---- MCU / USB-C cover (separate plate over the MCU area; the switch plate stops at the keys) ----
   cover_gap: 0.5       # gap between the switch plate and the cover
   cover_x0: kx/2 + pad/2 + cover_gap     # cover left edge, from matrix_inner_top
@@ -162,7 +165,7 @@ points:
         tags: thumb_key
       anchor:
         ref: matrix_middle_bottom
-        shift: [0.8kx - 4, -1.15ky]    # original was [-0.2kx, ...]; one unit right, then 4mm back left
+        shift: [thumb_shift_x, -1.15ky]
       columns:
         t_near:
           key.column_net: middle
@@ -176,6 +179,7 @@ points:
             cluster: { led_in: led_4, led_out: led_5 }   # LED #5
         t_far:
           key.column_net: inner
+          key.tags: [thumb_key, tall]   # 1.5u key in portrait: the board and plate outline is 1.5u tall
           key.splay: -12
           key.origin: [-0.5kx, -0.5ky]
           rows:
@@ -219,6 +223,20 @@ outlines:
       where: thumb_key
       bound: false
       size: [kx + pad + thumb_fill, ky + pad + thumb_fill]
+  # t_far is a 1.5u key in portrait: extend its rectangle to 1.5u in the key's own (rotated) frame.
+  _tall_fill:
+    - what: rectangle
+      where: tall
+      bound: false
+      size: [kx + pad + thumb_fill, 1.5ky + pad + thumb_fill]
+  # Fills the gap in the board and plates between the lower row of keys (l_ring) and the thumb cluster (t_near).
+  _thumb_gap:
+    - what: rectangle
+      bound: false
+      size: [thumb_shift_x + 2, ky + pad + thumb_fill/2]
+      adjust:
+        aggregate:
+          parts: [lower_l_ring_low, thumbs_t_near_cluster]
   # PCB and tray outline, corners rounded.
   board:
     - what: outline
@@ -226,6 +244,12 @@ outlines:
       fillet: 2
     - what: outline
       name: _thumb_fill
+      fillet: 2
+    - what: outline
+      name: _tall_fill
+      fillet: 2
+    - what: outline
+      name: _thumb_gap
       fillet: 2
     - what: outline
       name: _mcu_area
@@ -236,6 +260,10 @@ outlines:
       name: _keys
     - what: outline
       name: _thumb_fill
+    - what: outline
+      name: _tall_fill
+    - what: outline
+      name: _thumb_gap
 
   # ---- M2 mounting holes: same positions in plate, tray floor and PCB (see pcbs) ----
   _mount_holes:
