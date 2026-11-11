@@ -43,11 +43,15 @@ units:
   hole_print: 2.4     # clearance hole in printed parts (plate, tray floor) for an M2 screw
   hole_pcb: 2.2       # NPTH drill in the PCB
 
-  mcu_zone_w: 23      # reserved board width; the RP2040-Zero footprint is 20.5mm wide
-  mcu_zone_h: 40.7    # zone height below mcu_up: RP2040-Zero (25.7mm incl. USB end) + 2 gap + USB-C module strip (12 + 1.5 margins)
+  mcu_w: 20.5         # RP2040-Zero footprint width
+  mcu_pad_x: 5        # board padding left and right of the MCU (the cover standoff holes sit in it)
+  mcu_zone_w: mcu_w + 2*mcu_pad_x
   mcu_x: kx/2 + pad/2 + mcu_zone_w/2 - 1   # MCU centre, from matrix_inner_top
-  mcu_up: 2           # zone top and MCU sit this far above the top key edge
-  mcu_zero_y: ky/2 + pad/2 + mcu_up - 15.7     # origin is 13.7 from the USB end + 2 margin
+  mcu_up: 0           # board top edge of the MCU zone sits this far above the top key edge
+  zone_top: ky/2 + pad/2 + mcu_up          # top edge of the MCU zone (from matrix_inner_top)
+  usb_overhang: 1     # the Zero's USB-C connector hangs this far over the top edge of the board
+  mcu_zero_y: zone_top + usb_overhang - 13.716   # footprint origin is 13.716 from the connector tip
+  mcu_bottom_y: mcu_zero_y - 11.94         # bottom of the Zero's pads
 
   # ---- USB-C link between the halves (4-pin breakout module under the MCU) ----
   # Positions are from matrix_inner_top. The module is 12 (y) x 13.8 (x) mm plus ~0.9 mm of
@@ -56,7 +60,9 @@ units:
   link_edge_x: mcu_x + mcu_zone_w/2        # right edge of the board here
   link_back_dx: 2.54                       # back-layer pad row is this much further out
   link_pin_x: link_edge_x - 12.6 - link_back_dx   # pad row of the front-layer module
-  link_y: ky/2 + pad/2 + mcu_up - 35.65    # module centre: 2 below the MCU's bottom edge, then half the module (6)
+  link_y: mcu_bottom_y - 2 - 6             # module centre: 2 below the MCU's bottom edge, then half the module (6)
+  zone_bottom: link_y - 6 - 1              # 1 mm of board below the module
+  mcu_zone_h: zone_top - zone_bottom       # total height of the MCU / USB-C zone
   link_notch_w: 13                         # tray wall cutout for the plug (y)
   link_notch_z: 2                          # wall left uncut above the tray floor (z)
   usb_notch_w: 13                          # tray wall cutout for the RP2040-Zero's USB-C plug (x)
@@ -68,8 +74,8 @@ units:
   # ---- MCU / USB-C cover (separate plate over the MCU area; the switch plate stops at the keys) ----
   cover_gap: 0.5       # gap between the switch plate and the cover
   cover_x0: kx/2 + pad/2 + cover_gap     # cover left edge, from matrix_inner_top
-  cover_hole_dx: 8     # the two top holes sit this far either side of the MCU centre
-  cover_hole_top: 1.8  # ... and this far below the top edge of the zone
+  cover_hole_side: mcu_w/2 + mcu_pad_x/2   # the two side holes sit in the padding either side of the MCU
+  cover_hole_dy0: 3    # ... this far above the MCU footprint origin
   cover_hole_left: 2.6 # the two strip holes: distance right of the inner key column's board edge
   cover_hole_dy: 3.5   # ... and this far above/below the USB-C module centre
 
@@ -198,18 +204,18 @@ outlines:
   _mcu_area:
     - what: rectangle
       bound: false
-      size: [mcu_zone_w, mcu_zone_h + mcu_up]
+      size: [mcu_zone_w, mcu_zone_h]
       adjust:
         ref: matrix_inner_top
-        shift: [mcu_x, ky/2 + pad/2 + mcu_up - (mcu_zone_h + mcu_up)/2]
+        shift: [mcu_x, zone_top - mcu_zone_h/2]
   # Cover over the MCU and the USB-C module: the whole MCU zone, minus a small gap to the switch plate.
   _cover_area:
     - what: rectangle
       bound: false
-      size: [link_edge_x - cover_x0, mcu_zone_h + mcu_up]
+      size: [link_edge_x - cover_x0, mcu_zone_h]
       adjust:
         ref: matrix_inner_top
-        shift: [(cover_x0 + link_edge_x)/2, ky/2 + pad/2 + mcu_up - (mcu_zone_h + mcu_up)/2]
+        shift: [(cover_x0 + link_edge_x)/2, zone_top - mcu_zone_h/2]
   # Cutout in the tray wall for the USB-C plug.
   _link_notch:
     - what: rectangle
@@ -225,7 +231,7 @@ outlines:
       size: [usb_notch_w, tol + wall_t + 2]
       adjust:
         ref: matrix_inner_top
-        shift: [mcu_x, ky/2 + pad/2 + mcu_up + (tol + wall_t)/2]
+        shift: [mcu_x, zone_top + (tol + wall_t)/2]
   # Slightly larger rectangles under the thumb keys. Without them the thumb cluster only
   # just touches the bottom row and leaves small enclosed gaps in the board and plates.
   _thumb_fill:
@@ -311,12 +317,12 @@ outlines:
       radius: hole_print / 2
       adjust:
         ref: matrix_inner_top
-        shift: [mcu_x - cover_hole_dx, ky/2 + pad/2 + mcu_up - cover_hole_top]
+        shift: [mcu_x - cover_hole_side, mcu_zero_y + cover_hole_dy0]
     - what: circle
       radius: hole_print / 2
       adjust:
         ref: matrix_inner_top
-        shift: [mcu_x + cover_hole_dx, ky/2 + pad/2 + mcu_up - cover_hole_top]
+        shift: [mcu_x + cover_hole_side, mcu_zero_y + cover_hole_dy0]
     - what: circle
       radius: hole_print / 2
       adjust:
@@ -603,7 +609,7 @@ pcbs:
         where:
           ref: matrix_inner_top
         adjust:
-          shift: [mcu_x - cover_hole_dx, ky/2 + pad/2 + mcu_up - cover_hole_top]
+          shift: [mcu_x - cover_hole_side, mcu_zero_y + cover_hole_dy0]
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
@@ -612,7 +618,7 @@ pcbs:
         where:
           ref: matrix_inner_top
         adjust:
-          shift: [mcu_x + cover_hole_dx, ky/2 + pad/2 + mcu_up - cover_hole_top]
+          shift: [mcu_x + cover_hole_side, mcu_zero_y + cover_hole_dy0]
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
