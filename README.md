@@ -41,7 +41,7 @@ Switch types: MX, low-profile MX (Gateron KS-27/KS-33), Choc v1, Choc v2.
   diode would fit too. Wired switch (`colrow`) to row net.
 - **Lower-left keys:** three extra keys under the outer, pinky and ring columns, directly below the
   bottom row (far side from the thumb cluster). They use their column's net and the `thumb` row net,
-  so no extra MCU pins are needed. The thumb cluster sits under the middle column to clear them.
+  so no extra MCU pins are needed.
 - **LEDs:** WS2812B 5050 on the top side of both halves. Every key has two LED footprints on
   the same nets, `led` on the front layer and `led_back` on the back layer. Left half:
   populate the front set. Right half (the same PCB flipped): populate the back set, which
