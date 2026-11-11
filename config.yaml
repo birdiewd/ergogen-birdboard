@@ -154,7 +154,7 @@ points:
         tags: thumb_key
       anchor:
         ref: matrix_middle_bottom
-        shift: [-0.2kx, -1.15ky]
+        shift: [0, -1.15ky]    # was [-0.2kx, ...]; moved right so t_near clears the extra ring-column key
       columns:
         t_near:
           key.column_net: middle
