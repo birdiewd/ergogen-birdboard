@@ -38,6 +38,7 @@ units:
   tol: 0.3            # gap between board outline and tray wall
 
   # ---- MCU area (right of the inner column, top aligned with the top key) ----
+  thumb_fill: 3       # thumb-key board rectangles are this much larger, to close the gaps to the bottom row
   mcu_zone_w: 25      # reserved board width; fits a Pico (21mm) plus margin
   mcu_zone_h: 56      # reserved board height; fits a Pico (51mm) plus margin
   mcu_x: kx/2 + pad/2 + mcu_zone_w/2 - 1   # MCU centre, from matrix_inner_top
@@ -111,6 +112,7 @@ points:
     thumbs:
       key:
         row_net: thumb          # thumb keys form a 4th row on the matrix
+        tags: thumb_key
       anchor:
         ref: matrix_middle_bottom
         shift: [-0.2kx, -1.15ky]
@@ -147,13 +149,32 @@ outlines:
       adjust:
         ref: matrix_inner_top
         shift: [mcu_x, ky/2 + pad/2 - mcu_zone_h/2]
+  # Slightly larger rectangles under the thumb keys. Without them the thumb cluster only
+  # just touches the bottom row and leaves small enclosed gaps in the board and plates.
+  _thumb_fill:
+    - what: rectangle
+      where: thumb_key
+      bound: false
+      size: [kx + pad + thumb_fill, ky + pad + thumb_fill]
+  # PCB and tray outline, corners rounded.
   board:
     - what: outline
       name: _keys
       fillet: 2
     - what: outline
+      name: _thumb_fill
+      fillet: 2
+    - what: outline
       name: _mcu_area
       fillet: 2
+  # Plate outline, same shape with sharp corners (no fillet).
+  board_plate:
+    - what: outline
+      name: _keys
+    - what: outline
+      name: _thumb_fill
+    - what: outline
+      name: _mcu_area
 
   # ---- switch cutouts ----
   _cut_mx:
@@ -180,25 +201,25 @@ outlines:
   # ---- top plates, one per switch type ----
   plate_mx:
     - what: outline
-      name: board
+      name: board_plate
     - what: outline
       name: _cut_mx
       operation: subtract
   plate_lpmx:
     - what: outline
-      name: board
+      name: board_plate
     - what: outline
       name: _cut_lpmx
       operation: subtract
   plate_choc:
     - what: outline
-      name: board
+      name: board_plate
     - what: outline
       name: _cut_choc
       operation: subtract
   plate_choc2:
     - what: outline
-      name: board
+      name: board_plate
     - what: outline
       name: _cut_choc2
       operation: subtract

@@ -25,6 +25,11 @@ No local tooling or submodule is needed, because the UI bundles the ceoloide foo
 Tunable values (spacing, cutouts, plate thickness, wall height) are in the
 `units:` block at the top of `config.yaml`.
 
+Outlines: the PCB and tray use `board` (corners rounded, fillet 2). The plates use
+`board_plate`, the same shape with sharp corners. Both include `_thumb_fill`, slightly larger
+rectangles under the thumb keys (`thumb_fill` in `units:`) that close small enclosed gaps
+between the thumb cluster and the bottom row.
+
 Switch types: MX, low-profile MX (Gateron KS-27/KS-33), Choc v1, Choc v2.
 
 ## Electronics
