@@ -47,6 +47,8 @@ HOLES = [
     ("matrix_index_bottom", "[kx/2, ky/2]"),
     ("thumbs_t_near_cluster", "[kx/2 + 1, ky/2 * 0.4]"),
     ("thumbs_t_mid_cluster", "[kx/2 + 1, ky/2 * 0.4]"),
+    ("lower_l_outer_low", "[kx/2, ky/2]"),
+    ("lower_l_ring_low", "[kx/2, ky/2]"),
 ]
 
 out = []

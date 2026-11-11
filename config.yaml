@@ -265,6 +265,16 @@ outlines:
       adjust:
         ref: thumbs_t_mid_cluster
         shift: [kx/2 + 1, ky/2 * 0.4]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: lower_l_outer_low
+        shift: [kx/2, ky/2]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: lower_l_ring_low
+        shift: [kx/2, ky/2]
 
   # ---- switch cutouts ----
   _cut_mx:
@@ -542,6 +552,24 @@ pcbs:
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
+      hole_9: &hole_9
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: lower_l_outer_low
+        adjust:
+          shift: [kx/2, ky/2]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_10: &hole_10
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: lower_l_ring_low
+        adjust:
+          shift: [kx/2, ky/2]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
 
   corne_lpmx_zero:
     template: kicad8
@@ -571,6 +599,8 @@ pcbs:
       hole_6: *hole_6
       hole_7: *hole_7
       hole_8: *hole_8
+      hole_9: *hole_9
+      hole_10: *hole_10
 
   corne_choc_zero:
     template: kicad8
@@ -629,6 +659,8 @@ pcbs:
       hole_6: *hole_6
       hole_7: *hole_7
       hole_8: *hole_8
+      hole_9: *hole_9
+      hole_10: *hole_10
 
   corne_choc2_zero:
     template: kicad8
@@ -660,3 +692,5 @@ pcbs:
       hole_6: *hole_6
       hole_7: *hole_7
       hole_8: *hole_8
+      hole_9: *hole_9
+      hole_10: *hole_10
