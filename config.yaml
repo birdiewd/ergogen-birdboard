@@ -162,7 +162,7 @@ points:
         tags: thumb_key
       anchor:
         ref: matrix_middle_bottom
-        shift: [-0.2kx, -1.15ky]
+        shift: [0.8kx, -1.15ky]    # original was [-0.2kx, ...]; one unit further right
       columns:
         t_near:
           key.column_net: middle
