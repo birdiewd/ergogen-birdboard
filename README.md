@@ -1,0 +1,93 @@
+# Ergogen keyboards
+
+Personal templates for custom keyboards, built for the
+[ceoloide Ergogen web UI](https://ergogen.ceoloide.com) (Ergogen v4.3.0 fork).
+
+Current design: **Corne-style** split, 6 columns x 3 rows (an extra outer column beside
+the pinky) plus 3 thumb keys. The left half is defined; flip the same PCB for the right.
+
+## Use it
+
+1. Push this repo to GitHub.
+2. In the web UI choose **From Repo** and enter the repo URL.
+3. The UI reads `config.yaml` and everything under `footprints/`.
+
+No local tooling or submodule is needed, because the UI bundles the ceoloide footprints.
+
+## What you get from `config.yaml`
+
+| Output | Names |
+|---|---|
+| PCBs (24) | `corne_{mx,lpmx,choc,choc2}_{hs,solder}_{pico,zero,helios}`: switch type, hotswap or solder pads, MCU |
+| Top plates (STL) | `plate_mx`, `plate_lpmx`, `plate_choc`, `plate_choc2` |
+| Case tray (STL) | `tray` |
+
+Tunable values (spacing, cutouts, plate thickness, wall height) are in the
+`units:` block at the top of `config.yaml`.
+
+Switch types: MX, low-profile MX (Gateron KS-27/KS-33), Choc v1, Choc v2.
+
+## Electronics
+
+- **Diodes:** through-hole 1N4148 (DO-35 axial) via `include_tht: true` on the ceoloide
+  `diode_tht_sod123` footprint. That footprint also keeps the SOD-123 SMD pads, so an SMD
+  diode would fit too. Wired switch (`colrow`) to row net.
+- **LEDs:** WS2812B 5050 on the top side of both halves. Every key has two LED footprints on
+  the same nets, `led` on the front layer and `led_back` on the back layer. Left half:
+  populate the front set. Right half (the same PCB flipped): populate the back set, which
+  is then on top. 21 keys, chained `led_data` -> `led_1` ... `led_21`.
+  Chain order: inner column top to bottom, thumbs far to near, index bottom to top,
+  middle top to bottom, ring bottom to top, pinky top to bottom, outer bottom to top.
+  Each key's `led_in` /
+  `led_out` is set per key in `points:`, so reorder the chain there. LEDs are powered from
+  the MCU's 5V pin (Pico VBUS, Helios RAW, Zero 5V). Only the Helios `RGB_5V` pin gives a
+  5V data signal; on the Pico and Zero the data line is 3.3V, which is out of spec for a
+  5V WS2812B but usually works.
+- **MCU area:** a 25 x 56 mm zone to the right of the inner column is reserved for the
+  MCU (sized for a Pico), so plates and tray are identical for every MCU.
+
+Pin assignments (rows and columns can be swapped freely in `config.yaml`):
+
+| Net | Pico v1 | RP2040-Zero | Helios |
+|---|---|---|---|
+| outer / pinky / ring / middle / index / inner | GP2 to GP7 | GP0 to GP5 | GP2 to GP7 |
+| top / home / bottom / thumb | GP8 / GP9 / GP10 / GP11 | GP6 / GP7 / GP8 / GP9 | GP8 / GP9 / GP10 / GP11 |
+| LED data | GP12 | GP10 | RGB_5V (GP25) |
+
+`tools/gen_pcbs.py` regenerates the PCB list from those tables if you change them
+(optional; the UI only reads `config.yaml`).
+
+## Status
+
+| Item | Status |
+|---|---|
+| Layout, outlines, plates, tray | written, **not yet loaded in the UI** |
+| Switch and diode footprints | use ceoloide footprints |
+| WS2812B 5050 | converted (`footprints/custom/led_ws2812b_5050.js`); wired, one front and one back LED per key |
+| Pico v1 | converted (`footprints/custom/mcu_pico_v1.js`); wired |
+| Helios | converted (`footprints/custom/mcu_helios.js`, variant `Helios_AC`); pins named by GPIO; wired |
+| RP2040-Zero | converted (`custom/mcu_rp2040_zero`); pinout checked against a published diagram; wired |
+| Fabrication guide | `docs/fabrication.md` |
+
+Things to check in the UI after the first load:
+- stagger and thumb splay look right (they are approximations of the Corne)
+- plate cutout sizes for low-profile MX and Choc v2 against your switch datasheets
+- `hotswap` on the Gateron low-profile footprint is accepted
+- the tray wall height fits your switch, plate and PCB stack
+- LED and diode placement (`led_*_y`, `diode_*_y` in `units:`): MX and low-profile MX put the
+  LED north of the switch; Choc puts it south and moves the diode to the lower edge. Not
+  verified visually
+- the MCU sits inside the board outline for all three MCUs (`mcu_*_y` in `units:`)
+- the two LED sets (front and back) sit exactly on top of each other; check they do not
+  clash with the hotswap sockets (sockets are on the opposite layer from the switch)
+- no mounting holes and no USB cutout in the tray yet
+
+## Layout
+
+```
+config.yaml                 board definition
+footprints/custom/          custom footprints (MCUs, LED)
+tools/gen_pcbs.py           optional: regenerates the PCB list in config.yaml
+docs/fabrication.md         KiCad export and JLCPCB / PCBWay ordering
+docs/footprint-sources.md   where each footprint comes from
+```

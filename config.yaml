@@ -1,0 +1,923 @@
+# Corne-style 3x5 + 3 thumb keyboard (left half).
+#
+# Loaded by https://ergogen.ceoloide.com via "From Repo". The ceoloide footprint
+# library is bundled in the UI, so `ceoloide/<name>` footprints need no submodule.
+# Custom footprints live in ./footprints/ and are referenced as `custom/<file_name>`.
+#
+# Design notes
+#  - Only the LEFT half is defined. For the right half, flip the same PCB over
+#    (switch footprints are `reversible`) and mirror the 3D prints in your slicer.
+#  - One shared key layout (MX spacing, 19.05mm) serves every switch type. Plates
+#    differ per switch via the cutout units below.
+#  - NOT YET VERIFIED in the UI: stagger/splay values (tune visually), cutout and
+#    plate sizes for low-profile MX and Choc v2, and the `hotswap` param on the
+#    Gateron low-profile footprint. See README.md.
+
+meta:
+  engine: 4.1.0   # minimum version for the KiCad 8 footprints
+  name: corne
+  version: 0.1
+
+units:
+  # ---- key spacing ----
+  kx: U           # 19.05mm, used for every switch type
+  ky: U
+  pad: 3          # board margin around each key rectangle
+
+  # ---- plate cutouts (mm, square) ----
+  mx_cut: 14
+  lpmx_cut: 14    # Gateron KS-33 low-profile MX; check your switch datasheet
+  choc_cut: 13.8  # Kailh Choc v1
+  choc2_cut: 13.8 # Choc v2 / mini; check datasheet, adjust if needed
+
+  # ---- 3D print dimensions (mm) ----
+  plate_t: 1.5        # top plate thickness (Choc clips need ~1.2-1.5)
+  floor_t: 2          # tray floor thickness
+  wall_t: 2.4         # tray wall thickness
+  tray_h: 8           # tray wall height; raise for MX + PCB + hotswap stack
+  tol: 0.3            # gap between board outline and tray wall
+
+  # ---- MCU area (right of the inner column, top aligned with the top key) ----
+  mcu_zone_w: 25      # reserved board width; fits a Pico (21mm) plus margin
+  mcu_zone_h: 56      # reserved board height; fits a Pico (51mm) plus margin
+  mcu_x: kx/2 + pad/2 + mcu_zone_w/2 - 1   # MCU centre, from matrix_inner_top
+  mcu_pico_y: ky/2 + pad/2 - 28            # footprint origin = module centre
+  mcu_helios_y: ky/2 + pad/2 - 20.6        # origin is 18.6 from the USB end + 2 margin
+  mcu_zero_y: ky/2 + pad/2 - 15.7          # origin is 13.7 from the USB end + 2 margin
+
+  # ---- per-key offsets (mm, from the key centre; +y is toward the top of the key) ----
+  # NOT VERIFIED in the UI: LED and diode placement; tune after previewing the PCB.
+  diode_mx_y: -5       # diode south of the switch
+  diode_choc_y: -8.5   # Choc: hotswap/pins and LED take the middle, diode moved to the lower edge
+  led_mx_y: 5.9        # LED north of the switch (MX pins are on the south side)
+  led_choc_y: -4.7     # LED south of the switch (Choc pins are on the north side)
+
+points:
+  key:
+    spread: kx
+    padding: ky
+  zones:
+    matrix:
+      anchor:
+        shift: [100, -100]
+      columns:
+        outer:
+          key.column_net: outer
+          rows:
+            bottom: { led_in: led_18, led_out: led_19 }   # LED #19
+            home: { led_in: led_19, led_out: led_20 }   # LED #20
+            top: { led_in: led_20, led_out: led_21 }   # LED #21
+        pinky:
+          key.column_net: pinky
+          rows:
+            bottom: { led_in: led_17, led_out: led_18 }   # LED #18
+            home: { led_in: led_16, led_out: led_17 }   # LED #17
+            top: { led_in: led_15, led_out: led_16 }   # LED #16
+        ring:
+          key.stagger: 3
+          key.column_net: ring
+          rows:
+            bottom: { led_in: led_12, led_out: led_13 }   # LED #13
+            home: { led_in: led_13, led_out: led_14 }   # LED #14
+            top: { led_in: led_14, led_out: led_15 }   # LED #15
+        middle:
+          key.stagger: 3
+          key.column_net: middle
+          rows:
+            bottom: { led_in: led_11, led_out: led_12 }   # LED #12
+            home: { led_in: led_10, led_out: led_11 }   # LED #11
+            top: { led_in: led_9, led_out: led_10 }   # LED #10
+        index:
+          key.stagger: -3
+          key.column_net: index
+          rows:
+            bottom: { led_in: led_6, led_out: led_7 }   # LED #7
+            home: { led_in: led_7, led_out: led_8 }   # LED #8
+            top: { led_in: led_8, led_out: led_9 }   # LED #9
+        inner:
+          key.stagger: -2
+          key.column_net: inner
+          rows:
+            bottom: { led_in: led_2, led_out: led_3 }   # LED #3
+            home: { led_in: led_1, led_out: led_2 }   # LED #2
+            top: { led_in: led_data, led_out: led_1 }   # LED #1
+      rows:
+        bottom:
+          row_net: bottom
+        home:
+          row_net: home
+        top:
+          row_net: top
+    thumbs:
+      key:
+        row_net: thumb          # thumb keys form a 4th row on the matrix
+      anchor:
+        ref: matrix_middle_bottom
+        shift: [-0.2kx, -1.15ky]
+      columns:
+        t_near:
+          key.column_net: middle
+          rows:
+            cluster: { led_in: led_5, led_out: led_6 }   # LED #6
+        t_mid:
+          key.column_net: index
+          key.splay: -12
+          key.origin: [-0.5kx, -0.5ky]
+          rows:
+            cluster: { led_in: led_4, led_out: led_5 }   # LED #5
+        t_far:
+          key.column_net: inner
+          key.splay: -12
+          key.origin: [-0.5kx, -0.5ky]
+          rows:
+            cluster: { led_in: led_3, led_out: led_4 }   # LED #4
+      rows:
+        cluster:
+
+outlines:
+  _keys:
+    - what: rectangle
+      where: true
+      bound: false
+      size: [kx + pad, ky + pad]
+  _mcu_area:
+    - what: rectangle
+      bound: false
+      size: [mcu_zone_w, mcu_zone_h]
+      adjust:
+        ref: matrix_inner_top
+        shift: [mcu_x, ky/2 + pad/2 - mcu_zone_h/2]
+  board:
+    - what: outline
+      name: _keys
+      fillet: 2
+    - what: outline
+      name: _mcu_area
+      fillet: 2
+
+  # ---- switch cutouts ----
+  _cut_mx:
+    - what: rectangle
+      where: true
+      bound: false
+      size: mx_cut
+  _cut_lpmx:
+    - what: rectangle
+      where: true
+      bound: false
+      size: lpmx_cut
+  _cut_choc:
+    - what: rectangle
+      where: true
+      bound: false
+      size: choc_cut
+  _cut_choc2:
+    - what: rectangle
+      where: true
+      bound: false
+      size: choc2_cut
+
+  # ---- top plates, one per switch type ----
+  plate_mx:
+    - what: outline
+      name: board
+    - what: outline
+      name: _cut_mx
+      operation: subtract
+  plate_lpmx:
+    - what: outline
+      name: board
+    - what: outline
+      name: _cut_lpmx
+      operation: subtract
+  plate_choc:
+    - what: outline
+      name: board
+    - what: outline
+      name: _cut_choc
+      operation: subtract
+  plate_choc2:
+    - what: outline
+      name: board
+    - what: outline
+      name: _cut_choc2
+      operation: subtract
+
+  # ---- tray (shared by all switch types) ----
+  _tray_outer:
+    - what: outline
+      name: board
+      expand: tol + wall_t
+  tray_floor:
+    - what: outline
+      name: _tray_outer
+  tray_wall:
+    - what: outline
+      name: _tray_outer
+    - what: outline
+      name: board
+      expand: tol
+      operation: subtract
+
+cases:
+  plate_mx:
+    - what: outline
+      name: plate_mx
+      extrude: plate_t
+  plate_lpmx:
+    - what: outline
+      name: plate_lpmx
+      extrude: plate_t
+  plate_choc:
+    - what: outline
+      name: plate_choc
+      extrude: plate_t
+  plate_choc2:
+    - what: outline
+      name: plate_choc2
+      extrude: plate_t
+  tray:
+    - what: outline
+      name: tray_floor
+      extrude: floor_t
+    - what: outline
+      name: tray_wall
+      extrude: tray_h
+      shift: [0, 0, floor_t]   # wall sits on top of the floor
+
+pcbs:
+  # 4 switch types x hotswap (_hs) / solder x 3 MCUs = 24 PCBs, named
+  #   corne_<switch>_<hs|solder>_<pico|zero|helios>
+  # Generated by tools/gen_pcbs.py; editing this file by hand is fine too.
+  # Shared parts use YAML anchors (&name / *name), defined at first use.
+  # Nets: columns outer/pinky/ring/middle/index/inner, rows top/home/bottom/thumb,
+  # LED chain led_data -> led_1 ... led_21 (see the per-key led_in/led_out in `points`).
+
+  corne_mx_hs_pico:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_mx
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: true
+          reversible: true
+          include_keycap: true
+      diode: &diode_mx
+        what: ceoloide/diode_tht_sod123
+        where: true
+        params:
+          from: "{{colrow}}"
+          to: "{{row_net}}"
+          include_tht: true     # through-hole (DO-35 / 1N4148) pads
+          reversible: true
+        adjust:
+          shift: [0, diode_mx_y]
+      mcu: &mcu_pico
+        # Raspberry Pi Pico v1. All signals on the left edge (pins 4-17).
+        what: custom/mcu_pico_v1
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [mcu_x, mcu_pico_y]
+        params:
+          mount: both          # both | th | smd
+          GP2: outer
+          GP3: pinky
+          GP4: ring
+          GP5: middle
+          GP6: index
+          GP7: inner
+          GP8: top
+          GP9: home
+          GP10: bottom
+          GP11: thumb
+          GP12: led_data
+      led: &led_pico_mx
+        what: custom/led_ws2812b_5050
+        where: true
+        params:
+          side: F
+          din: "{{led_in}}"
+          dout: "{{led_out}}"
+          vdd: "VBUS"
+        adjust:
+          shift: [0, led_mx_y]
+      led_back: &led_back_pico_mx
+        what: custom/led_ws2812b_5050
+        where: true
+        params:
+          side: B
+          din: "{{led_in}}"
+          dout: "{{led_out}}"
+          vdd: "VBUS"
+        adjust:
+          shift: [0, led_mx_y]
+
+  corne_mx_hs_zero:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_mx
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: true
+          reversible: true
+          include_keycap: true
+      diode: *diode_mx
+      mcu: &mcu_zero
+        # Waveshare RP2040-Zero. Matrix on the right edge, thumb and LED data on the bottom row. 3.3V LED data.
+        what: custom/mcu_rp2040_zero
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [mcu_x, mcu_zero_y]
+        params:
+          mount: both          # both | th | smd
+          GP0: outer
+          GP1: pinky
+          GP2: ring
+          GP3: middle
+          GP4: index
+          GP5: inner
+          GP6: top
+          GP7: home
+          GP8: bottom
+          GP9: thumb
+          GP10: led_data
+      led: &led_zero_mx
+        what: custom/led_ws2812b_5050
+        where: true
+        params:
+          side: F
+          din: "{{led_in}}"
+          dout: "{{led_out}}"
+          vdd: "5V"
+        adjust:
+          shift: [0, led_mx_y]
+      led_back: &led_back_zero_mx
+        what: custom/led_ws2812b_5050
+        where: true
+        params:
+          side: B
+          din: "{{led_in}}"
+          dout: "{{led_out}}"
+          vdd: "5V"
+        adjust:
+          shift: [0, led_mx_y]
+
+  corne_mx_hs_helios:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_mx
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: true
+          reversible: true
+          include_keycap: true
+      diode: *diode_mx
+      mcu: &mcu_helios
+        # 0xCB Helios (castellated). RGB_5V is GP25 through the module's 5V level shifter.
+        what: custom/mcu_helios
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [mcu_x, mcu_helios_y]
+        params:
+          mount: both          # both | th | smd
+          GP2: outer
+          GP3: pinky
+          GP4: ring
+          GP5: middle
+          GP6: index
+          GP7: inner
+          GP8: top
+          GP9: home
+          GP10: bottom
+          GP11: thumb
+          RGB_5V: led_data
+      led: &led_helios_mx
+        what: custom/led_ws2812b_5050
+        where: true
+        params:
+          side: F
+          din: "{{led_in}}"
+          dout: "{{led_out}}"
+          vdd: "RAW"
+        adjust:
+          shift: [0, led_mx_y]
+      led_back: &led_back_helios_mx
+        what: custom/led_ws2812b_5050
+        where: true
+        params:
+          side: B
+          din: "{{led_in}}"
+          dout: "{{led_out}}"
+          vdd: "RAW"
+        adjust:
+          shift: [0, led_mx_y]
+
+  corne_mx_solder_pico:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_mx
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: false
+          reversible: true
+          include_keycap: true
+      diode: *diode_mx
+      mcu: *mcu_pico
+      led: *led_pico_mx
+      led_back: *led_back_pico_mx
+
+  corne_mx_solder_zero:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_mx
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: false
+          reversible: true
+          include_keycap: true
+      diode: *diode_mx
+      mcu: *mcu_zero
+      led: *led_zero_mx
+      led_back: *led_back_zero_mx
+
+  corne_mx_solder_helios:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_mx
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: false
+          reversible: true
+          include_keycap: true
+      diode: *diode_mx
+      mcu: *mcu_helios
+      led: *led_helios_mx
+      led_back: *led_back_helios_mx
+
+  corne_lpmx_hs_pico:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_gateron_ks27_ks33
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: true
+          reversible: true
+      diode: *diode_mx
+      mcu: *mcu_pico
+      led: *led_pico_mx
+      led_back: *led_back_pico_mx
+
+  corne_lpmx_hs_zero:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_gateron_ks27_ks33
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: true
+          reversible: true
+      diode: *diode_mx
+      mcu: *mcu_zero
+      led: *led_zero_mx
+      led_back: *led_back_zero_mx
+
+  corne_lpmx_hs_helios:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_gateron_ks27_ks33
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: true
+          reversible: true
+      diode: *diode_mx
+      mcu: *mcu_helios
+      led: *led_helios_mx
+      led_back: *led_back_helios_mx
+
+  corne_lpmx_solder_pico:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_gateron_ks27_ks33
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: false
+          reversible: true
+      diode: *diode_mx
+      mcu: *mcu_pico
+      led: *led_pico_mx
+      led_back: *led_back_pico_mx
+
+  corne_lpmx_solder_zero:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_gateron_ks27_ks33
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: false
+          reversible: true
+      diode: *diode_mx
+      mcu: *mcu_zero
+      led: *led_zero_mx
+      led_back: *led_back_zero_mx
+
+  corne_lpmx_solder_helios:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_gateron_ks27_ks33
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: false
+          reversible: true
+      diode: *diode_mx
+      mcu: *mcu_helios
+      led: *led_helios_mx
+      led_back: *led_back_helios_mx
+
+  corne_choc_hs_pico:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_choc_v1_v2
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: true
+          reversible: true
+          include_keycap: true
+          choc_v2_support: false
+      diode: &diode_choc
+        what: ceoloide/diode_tht_sod123
+        where: true
+        params:
+          from: "{{colrow}}"
+          to: "{{row_net}}"
+          include_tht: true     # through-hole (DO-35 / 1N4148) pads
+          reversible: true
+        adjust:
+          shift: [0, diode_choc_y]
+      mcu: *mcu_pico
+      led: &led_pico_choc
+        what: custom/led_ws2812b_5050
+        where: true
+        params:
+          side: F
+          din: "{{led_in}}"
+          dout: "{{led_out}}"
+          vdd: "VBUS"
+        adjust:
+          shift: [0, led_choc_y]
+      led_back: &led_back_pico_choc
+        what: custom/led_ws2812b_5050
+        where: true
+        params:
+          side: B
+          din: "{{led_in}}"
+          dout: "{{led_out}}"
+          vdd: "VBUS"
+        adjust:
+          shift: [0, led_choc_y]
+
+  corne_choc_hs_zero:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_choc_v1_v2
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: true
+          reversible: true
+          include_keycap: true
+          choc_v2_support: false
+      diode: *diode_choc
+      mcu: *mcu_zero
+      led: &led_zero_choc
+        what: custom/led_ws2812b_5050
+        where: true
+        params:
+          side: F
+          din: "{{led_in}}"
+          dout: "{{led_out}}"
+          vdd: "5V"
+        adjust:
+          shift: [0, led_choc_y]
+      led_back: &led_back_zero_choc
+        what: custom/led_ws2812b_5050
+        where: true
+        params:
+          side: B
+          din: "{{led_in}}"
+          dout: "{{led_out}}"
+          vdd: "5V"
+        adjust:
+          shift: [0, led_choc_y]
+
+  corne_choc_hs_helios:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_choc_v1_v2
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: true
+          reversible: true
+          include_keycap: true
+          choc_v2_support: false
+      diode: *diode_choc
+      mcu: *mcu_helios
+      led: &led_helios_choc
+        what: custom/led_ws2812b_5050
+        where: true
+        params:
+          side: F
+          din: "{{led_in}}"
+          dout: "{{led_out}}"
+          vdd: "RAW"
+        adjust:
+          shift: [0, led_choc_y]
+      led_back: &led_back_helios_choc
+        what: custom/led_ws2812b_5050
+        where: true
+        params:
+          side: B
+          din: "{{led_in}}"
+          dout: "{{led_out}}"
+          vdd: "RAW"
+        adjust:
+          shift: [0, led_choc_y]
+
+  corne_choc_solder_pico:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_choc_v1_v2
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: false
+          reversible: true
+          include_keycap: true
+          choc_v2_support: false
+      diode: *diode_choc
+      mcu: *mcu_pico
+      led: *led_pico_choc
+      led_back: *led_back_pico_choc
+
+  corne_choc_solder_zero:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_choc_v1_v2
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: false
+          reversible: true
+          include_keycap: true
+          choc_v2_support: false
+      diode: *diode_choc
+      mcu: *mcu_zero
+      led: *led_zero_choc
+      led_back: *led_back_zero_choc
+
+  corne_choc_solder_helios:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_choc_v1_v2
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: false
+          reversible: true
+          include_keycap: true
+          choc_v2_support: false
+      diode: *diode_choc
+      mcu: *mcu_helios
+      led: *led_helios_choc
+      led_back: *led_back_helios_choc
+
+  corne_choc2_hs_pico:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_choc_v1_v2
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: true
+          reversible: true
+          include_keycap: true
+          choc_v2_support: true
+      diode: *diode_choc
+      mcu: *mcu_pico
+      led: *led_pico_choc
+      led_back: *led_back_pico_choc
+
+  corne_choc2_hs_zero:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_choc_v1_v2
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: true
+          reversible: true
+          include_keycap: true
+          choc_v2_support: true
+      diode: *diode_choc
+      mcu: *mcu_zero
+      led: *led_zero_choc
+      led_back: *led_back_zero_choc
+
+  corne_choc2_hs_helios:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_choc_v1_v2
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: true
+          reversible: true
+          include_keycap: true
+          choc_v2_support: true
+      diode: *diode_choc
+      mcu: *mcu_helios
+      led: *led_helios_choc
+      led_back: *led_back_helios_choc
+
+  corne_choc2_solder_pico:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_choc_v1_v2
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: false
+          reversible: true
+          include_keycap: true
+          choc_v2_support: true
+      diode: *diode_choc
+      mcu: *mcu_pico
+      led: *led_pico_choc
+      led_back: *led_back_pico_choc
+
+  corne_choc2_solder_zero:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_choc_v1_v2
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: false
+          reversible: true
+          include_keycap: true
+          choc_v2_support: true
+      diode: *diode_choc
+      mcu: *mcu_zero
+      led: *led_zero_choc
+      led_back: *led_back_zero_choc
+
+  corne_choc2_solder_helios:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch:
+        what: ceoloide/switch_choc_v1_v2
+        where: true
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: false
+          reversible: true
+          include_keycap: true
+          choc_v2_support: true
+      diode: *diode_choc
+      mcu: *mcu_helios
+      led: *led_helios_choc
+      led_back: *led_back_helios_choc
