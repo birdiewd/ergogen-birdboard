@@ -74,6 +74,7 @@ units:
   # ---- MCU / USB-C cover (separate plate over the MCU area; the switch plate stops at the keys) ----
   cover_gap: 0.5       # gap between the switch plate and the cover
   cover_x0: kx/2 + pad/2 + cover_gap     # cover left edge, from matrix_inner_top
+  plate_fillet: 1     # corner radius of the switch plate outline
   board_fillet: 1     # corner radius of the PCB / tray outline (small enough for the 2-3 mm column steps)
   ear_h: 2.4             # the top corners of the MCU zone are this much taller than the main top edge ("ears")
   ear_gap: usb_notch_w/2 + 1   # ears start this far either side of the MCU centre (clear of the USB plug)
@@ -305,8 +306,8 @@ outlines:
     - what: outline
       name: _board_sharp
       fillet: board_fillet
-  # Plate outline, same shape with sharp corners (no fillet).
-  board_plate:
+  # Plate outline: the same key / thumb pieces as the board (no MCU area), merged, then rounded once.
+  _plate_sharp:
     - what: outline
       name: _keys
     - what: outline
@@ -315,6 +316,10 @@ outlines:
       name: _tall_fill
     - what: outline
       name: _thumb_gap
+  board_plate:
+    - what: outline
+      name: _plate_sharp
+      fillet: plate_fillet
 
   # ---- M2 mounting holes: same positions in plate, tray floor and PCB (see pcbs) ----
   _mount_holes:

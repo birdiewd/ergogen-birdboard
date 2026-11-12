@@ -27,7 +27,7 @@ Tunable values (spacing, cutouts, plate thickness, wall height) are in the
 `units:` block at the top of `config.yaml`.
 
 Outlines: the PCB and tray use `board` (merged shape rounded once with `board_fillet`, 1 mm). The plates use
-`board_plate`, the same shape with sharp corners and without the MCU area: the switch plate stops
+`board_plate`, the same shape (rounded with `plate_fillet`, 1 mm) and without the MCU area: the switch plate stops
 at the keys, and a separate `cover` (`_cover_area`) spans the MCU and the USB-C module. `board_plate` includes `_thumb_fill`, slightly larger
 rectangles under the thumb keys (`thumb_fill` in `units:`) that close small enclosed gaps
 between the thumb cluster and the bottom row. `_thumb_gap` fills the gap between the lower row of keys
