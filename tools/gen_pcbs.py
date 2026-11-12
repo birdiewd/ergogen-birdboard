@@ -84,7 +84,7 @@ for sname, sw in SWITCHES.items():
             w("    template: kicad8")
             w("    outlines:")
             w("      main:")
-            w("        outline: board")
+            w("        outline: _board")
             w("    footprints:")
             w("      switch:")
             w(f"        what: {sw['what']}")

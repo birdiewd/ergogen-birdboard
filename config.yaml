@@ -303,7 +303,7 @@ outlines:
       name: _mcu_ears
   # PCB and tray outline: the merged shape rounded once, so the step corners between staggered columns,
   # the ears and the thumb cluster join are rounded too (not only each key rectangle's own corners).
-  board:
+  _board:
     - what: outline
       name: _board_sharp
       fillet: board_fillet
@@ -317,7 +317,7 @@ outlines:
       name: _tall_fill
     - what: outline
       name: _thumb_gap
-  board_plate:
+  _board_plate:
     - what: outline
       name: _plate_sharp
       fillet: plate_fillet
@@ -393,36 +393,36 @@ outlines:
       size: choc2_cut
 
   # ---- top plates, one per switch type ----
-  plate_mx:
+  _plate_mx:
     - what: outline
-      name: board_plate
+      name: _board_plate
     - what: outline
       name: _cut_mx
       operation: subtract
     - what: outline
       name: _mount_holes
       operation: subtract
-  plate_lpmx:
+  _plate_lpmx:
     - what: outline
-      name: board_plate
+      name: _board_plate
     - what: outline
       name: _cut_lpmx
       operation: subtract
     - what: outline
       name: _mount_holes
       operation: subtract
-  plate_choc:
+  _plate_choc:
     - what: outline
-      name: board_plate
+      name: _board_plate
     - what: outline
       name: _cut_choc
       operation: subtract
     - what: outline
       name: _mount_holes
       operation: subtract
-  plate_choc2:
+  _plate_choc2:
     - what: outline
-      name: board_plate
+      name: _board_plate
     - what: outline
       name: _cut_choc2
       operation: subtract
@@ -436,7 +436,7 @@ outlines:
       name: _cover_area
     - what: outline
       name: _cover_ears
-  cover:
+  _cover:
     - what: outline
       name: _cover_sharp
       fillet: cover_fillet
@@ -447,49 +447,49 @@ outlines:
   # ---- tray (shared by all switch types) ----
   _tray_outer:
     - what: outline
-      name: board
+      name: _board
       expand: tol + wall_t
-  tray_floor:
+  _tray_floor:
     - what: outline
       name: _tray_outer
     - what: outline
       name: _mount_holes
       operation: subtract
-  tray_wall:
+  _tray_wall:
     - what: outline
       name: _tray_outer
     - what: outline
-      name: board
+      name: _board
       expand: tol
       operation: subtract
 
 cases:
   plate_mx:
     - what: outline
-      name: plate_mx
+      name: _plate_mx
       extrude: plate_t
   plate_lpmx:
     - what: outline
-      name: plate_lpmx
+      name: _plate_lpmx
       extrude: plate_t
   plate_choc:
     - what: outline
-      name: plate_choc
+      name: _plate_choc
       extrude: plate_t
   plate_choc2:
     - what: outline
-      name: plate_choc2
+      name: _plate_choc2
       extrude: plate_t
   cover:
     - what: outline
-      name: cover
+      name: _cover
       extrude: plate_t
   tray:
     - what: outline
-      name: tray_floor
+      name: _tray_floor
       extrude: floor_t
     - what: outline
-      name: tray_wall
+      name: _tray_wall
       extrude: tray_h
       shift: [0, 0, floor_t]   # wall sits on top of the floor
     - what: outline
@@ -515,7 +515,7 @@ pcbs:
     template: kicad8
     outlines:
       main:
-        outline: board
+        outline: _board
     footprints:
       switch:
         what: ceoloide/switch_mx
@@ -706,7 +706,7 @@ pcbs:
     template: kicad8
     outlines:
       main:
-        outline: board
+        outline: _board
     footprints:
       switch:
         what: ceoloide/switch_gateron_ks27_ks33
@@ -737,7 +737,7 @@ pcbs:
     template: kicad8
     outlines:
       main:
-        outline: board
+        outline: _board
     footprints:
       switch:
         what: ceoloide/switch_choc_v1_v2
@@ -797,7 +797,7 @@ pcbs:
     template: kicad8
     outlines:
       main:
-        outline: board
+        outline: _board
     footprints:
       switch:
         what: ceoloide/switch_choc_v1_v2
