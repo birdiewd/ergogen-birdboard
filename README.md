@@ -59,7 +59,7 @@ Switch types: MX, low-profile MX (Gateron KS-27/KS-33), Choc v1, Choc v2.
   is reserved for the RP2040-Zero (20.5 mm wide, with 5 mm of padding either side, `mcu_pad_x`) and a strip
   under it for the USB-C link module. The Zero sits at the top edge with its USB-C connector hanging
   `usb_overhang` (1 mm) over the board edge; the tray's top wall has a notch for it.
-  The top corners of the zone are `ear_h` (2 mm) taller than the main top edge, either side of the USB notch,
+  The top corners of the zone are `ear_h` (2.4 mm) taller than the main top edge, either side of the USB notch,
   to hold the cover's standoff holes clear of the pads.
 
 - **Half-to-half link:** a 4-pin USB-C female breakout module (12 x 13.8 mm, pads V / D- / D+ / G

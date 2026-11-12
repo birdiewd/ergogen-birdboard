@@ -74,10 +74,10 @@ units:
   # ---- MCU / USB-C cover (separate plate over the MCU area; the switch plate stops at the keys) ----
   cover_gap: 0.5       # gap between the switch plate and the cover
   cover_x0: kx/2 + pad/2 + cover_gap     # cover left edge, from matrix_inner_top
-  ear_h: 2             # the top corners of the MCU zone are this much taller than the main top edge ("ears")
+  ear_h: 2.4             # the top corners of the MCU zone are this much taller than the main top edge ("ears")
   ear_gap: usb_notch_w/2 + 1   # ears start this far either side of the MCU centre (clear of the USB plug)
   cover_hole_edge: 2.2 # cover holes sit this far inside the cover's left / right edge
-  cover_hole_dy0: 12.4 # ... and this far above the MCU footprint origin (just above the pad rows, in the ears)
+  cover_hole_dy0: 12.8 # ... and this far above the MCU footprint origin (just above the pad rows, in the ears)
   cover_hole_left: 2.6 # the two strip holes: distance right of the inner key column's board edge
   cover_hole_dy: 3.5   # ... and this far above/below the USB-C module centre
 
@@ -330,7 +330,7 @@ outlines:
       radius: hole_print / 2
       adjust:
         ref: matrix_index_top
-        shift: [kx/2, -ky/2]
+        shift: [kx/2, -ky/2 - 1]   # nudged down: clears the inner key's hotswap pad
     - what: circle
       radius: hole_print / 2
       adjust:
@@ -631,7 +631,7 @@ pcbs:
         where:
           ref: matrix_index_top
         adjust:
-          shift: [kx/2, -ky/2]
+          shift: [kx/2, -ky/2 - 1]
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb

@@ -41,7 +41,7 @@ HOTSWAP = True   # solder-pad variants were dropped; every switch is hotswap
 HOLES = [
     ("matrix_outer_top", "[kx/2, -ky/2]"),
     ("matrix_ring_top", "[kx/2, -ky/2]"),
-    ("matrix_index_top", "[kx/2, -ky/2]"),
+    ("matrix_index_top", "[kx/2, -ky/2 - 1]"),
     ("thumbs_t_mid_cluster", "[kx/2 + 1, ky/2 * 0.4]"),
     ("lower_l_outer_low", "[kx/2, ky/2]"),
     ("lower_l_ring_low", "[kx/2, ky/2]"),
