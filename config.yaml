@@ -77,7 +77,8 @@ units:
   board_fillet: 1     # corner radius of the PCB / tray outline (small enough for the 2-3 mm column steps)
   ear_h: 2.4             # the top corners of the MCU zone are this much taller than the main top edge ("ears")
   ear_gap: usb_notch_w/2 + 1   # ears start this far either side of the MCU centre (clear of the USB plug)
-  cover_hole_edge: 2.2 # cover holes sit this far inside the cover's left / right edge
+  cover_hole_edge: 2.2 # left ear hole: this far inside the cover's left edge (this sets cover_hole_dx; the right hole mirrors it)
+  cover_hole_dx: mcu_x - cover_x0 - cover_hole_edge   # both ear holes sit this far left / right of the MCU's top-edge centre
   cover_hole_dy0: 12.8 # ... and this far above the MCU footprint origin (just above the pad rows, in the ears)
   cover_hole_left: 2.6 # the two strip holes: distance right of the inner key column's board edge
   cover_hole_dy: 3.5   # ... and this far above/below the USB-C module centre
@@ -351,12 +352,12 @@ outlines:
       radius: hole_print / 2
       adjust:
         ref: matrix_inner_top
-        shift: [cover_x0 + cover_hole_edge, mcu_zero_y + cover_hole_dy0]
+        shift: [mcu_x - cover_hole_dx, mcu_zero_y + cover_hole_dy0]
     - what: circle
       radius: hole_print / 2
       adjust:
         ref: matrix_inner_top
-        shift: [link_edge_x - cover_hole_edge, mcu_zero_y + cover_hole_dy0]
+        shift: [mcu_x + cover_hole_dx, mcu_zero_y + cover_hole_dy0]
     - what: circle
       radius: hole_print / 2
       adjust:
@@ -668,7 +669,7 @@ pcbs:
         where:
           ref: matrix_inner_top
         adjust:
-          shift: [cover_x0 + cover_hole_edge, mcu_zero_y + cover_hole_dy0]
+          shift: [mcu_x - cover_hole_dx, mcu_zero_y + cover_hole_dy0]
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
@@ -677,7 +678,7 @@ pcbs:
         where:
           ref: matrix_inner_top
         adjust:
-          shift: [link_edge_x - cover_hole_edge, mcu_zero_y + cover_hole_dy0]
+          shift: [mcu_x + cover_hole_dx, mcu_zero_y + cover_hole_dy0]
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
