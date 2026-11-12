@@ -112,13 +112,16 @@ for sname, sw in SWITCHES.items():
                 w("          reversible: true")
                 w("        adjust:")
                 w(f"          shift: [0, diode_{fam}_y]")
-            # mcu
-            ma = f"mcu_{cname}"
-            if ma in defined:
-                w(f"      mcu: *{ma}")
-            else:
+            # mcu: `mcu` on the front layer (left half), `mcu_back` mirrored on the back layer
+            # (right half = same PCB flipped). SMD castellation pads only, so the two sets
+            # never share plated holes. Populate one set per half.
+            for mname, mside in (("mcu", "F"), ("mcu_back", "B")):
+                ma = f"{mname}_{cname}"
+                if ma in defined:
+                    w(f"      {mname}: *{ma}")
+                    continue
                 defined.add(ma)
-                w(f"      mcu: &{ma}")
+                w(f"      {mname}: &{ma}")
                 w(f"        # {mcu['note']}")
                 w(f"        what: {mcu['what']}")
                 w("        where:")
@@ -126,6 +129,7 @@ for sname, sw in SWITCHES.items():
                 w("        adjust:")
                 w(f"          shift: {mcu['shift']}")
                 w("        params:")
+                w(f"          side: {mside}")
                 w("          mount: smd           # smd | th | both")
                 for pin, net in mcu["pins"].items():
                     w(f"          {pin}: {net}")

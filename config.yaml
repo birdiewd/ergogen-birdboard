@@ -532,6 +532,29 @@ pcbs:
         adjust:
           shift: [mcu_x, mcu_zero_y]
         params:
+          side: F
+          mount: smd           # smd | th | both
+          GP0: outer
+          GP1: pinky
+          GP2: ring
+          GP3: middle
+          GP4: index
+          GP5: inner
+          GP6: top
+          GP7: home
+          GP8: bottom
+          GP9: thumb
+          GP10: led_data
+          GP12: link
+      mcu_back: &mcu_back_zero
+        # Waveshare RP2040-Zero. Matrix on the right edge, thumb and LED data on the bottom row. 3.3V LED data.
+        what: custom/mcu_rp2040_zero
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [mcu_x, mcu_zero_y]
+        params:
+          side: B
           mount: smd           # smd | th | both
           GP0: outer
           GP1: pinky
@@ -683,6 +706,7 @@ pcbs:
           reversible: true
       diode: *diode_mx
       mcu: *mcu_zero
+      mcu_back: *mcu_back_zero
       led: *led_zero_mx
       led_back: *led_back_zero_mx
       link: *link_zero
@@ -724,6 +748,7 @@ pcbs:
         adjust:
           shift: [0, diode_choc_y]
       mcu: *mcu_zero
+      mcu_back: *mcu_back_zero
       led: &led_zero_choc
         what: custom/led_ws2812b_5050
         where: true
@@ -774,6 +799,7 @@ pcbs:
           choc_v2_support: true
       diode: *diode_choc
       mcu: *mcu_zero
+      mcu_back: *mcu_back_zero
       led: *led_zero_choc
       led_back: *led_back_zero_choc
       link: *link_zero

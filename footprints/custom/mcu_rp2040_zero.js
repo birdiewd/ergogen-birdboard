@@ -20,7 +20,7 @@
 //   side   'F' (default) | 'B'   mirrors x for back-side mounting
 //   show_labels  pin-name silkscreen, default true
 //
-// Not reversible.
+// Reversible: use side F (left half) and side B (right half, same PCB flipped); SMD pads only.
 
 const PIN_KEY = {"1":"V5","2":"GND","3":"V3V3","4":"GP29","5":"GP28","6":"GP27","7":"GP26","8":"GP15","9":"GP14","10":"GP0","11":"GP1","12":"GP2","13":"GP3","14":"GP4","15":"GP5","16":"GP6","17":"GP7","18":"GP8","19":"GP13","20":"GP12","21":"GP11","22":"GP10","23":"GP9"};
 // [pad, shape, x, y, size, drill]
