@@ -532,7 +532,7 @@ pcbs:
         adjust:
           shift: [mcu_x, mcu_zero_y]
         params:
-          mount: both          # both | th | smd
+          mount: smd           # smd | th | both
           GP0: outer
           GP1: pinky
           GP2: ring

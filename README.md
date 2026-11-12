@@ -109,7 +109,7 @@ Not done: counterbore for the screw heads in the tray floor (2 mm floor is thin)
 | Switch and diode footprints | use ceoloide footprints |
 | WS2812B 5050 | converted (`footprints/custom/led_ws2812b_5050.js`); wired, one front and one back LED per key |
 | USB-C link | `footprints/custom/usbc_breakout_4pin.js`, hand-written from the listing image; not yet loaded in the UI |
-| RP2040-Zero | converted (`custom/mcu_rp2040_zero`); pinout checked against a published diagram; wired |
+| RP2040-Zero | converted (`custom/mcu_rp2040_zero`); pinout checked against a published diagram; wired; SMD castellation pads only (no through holes, `mount: smd`; `th`/`both` still available) |
 | Fabrication guide | `docs/fabrication.md` |
 
 Things to check in the UI after the first load:

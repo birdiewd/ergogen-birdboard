@@ -126,7 +126,7 @@ for sname, sw in SWITCHES.items():
                 w("        adjust:")
                 w(f"          shift: {mcu['shift']}")
                 w("        params:")
-                w("          mount: both          # both | th | smd")
+                w("          mount: smd           # smd | th | both")
                 for pin, net in mcu["pins"].items():
                     w(f"          {pin}: {net}")
             # leds, one anchor per (mcu, family)

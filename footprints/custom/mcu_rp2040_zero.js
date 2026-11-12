@@ -16,7 +16,7 @@
 // Params
 //   <pin>  net for each pin; default net = the pin name. `5V` is `V5`, `3V3` is `V3V3`.
 //          Remap in config.yaml, e.g.  GP0: pinky   GP8: top
-//   mount  'both' (default) | 'th' | 'smd'
+//   mount  'smd' (default, castellation pads only) | 'th' | 'both'
 //   side   'F' (default) | 'B'   mirrors x for back-side mounting
 //   show_labels  pin-name silkscreen, default true
 //
@@ -36,7 +36,7 @@ module.exports = {
   params: {
     designator: 'MCU',
     side: 'F',
-    mount: 'both',
+    mount: 'smd',
     show_labels: true,
     V5: { type: 'net', value: '5V' },
     GND: { type: 'net', value: 'GND' },
