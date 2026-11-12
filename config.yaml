@@ -74,8 +74,10 @@ units:
   # ---- MCU / USB-C cover (separate plate over the MCU area; the switch plate stops at the keys) ----
   cover_gap: 0.5       # gap between the switch plate and the cover
   cover_x0: kx/2 + pad/2 + cover_gap     # cover left edge, from matrix_inner_top
-  cover_hole_side: mcu_w/2 + mcu_pad_x/2   # the two side holes sit in the padding either side of the MCU
-  cover_hole_dy0: 3    # ... this far above the MCU footprint origin
+  ear_h: 2             # the top corners of the MCU zone are this much taller than the main top edge ("ears")
+  ear_gap: usb_notch_w/2 + 1   # ears start this far either side of the MCU centre (clear of the USB plug)
+  cover_hole_edge: 2.2 # cover holes sit this far inside the cover's left / right edge
+  cover_hole_dy0: 12.4 # ... and this far above the MCU footprint origin (just above the pad rows, in the ears)
   cover_hole_left: 2.6 # the two strip holes: distance right of the inner key column's board edge
   cover_hole_dy: 3.5   # ... and this far above/below the USB-C module centre
 
@@ -208,6 +210,34 @@ outlines:
       adjust:
         ref: matrix_inner_top
         shift: [mcu_x, zone_top - mcu_zone_h/2]
+  # Taller top corners of the MCU zone (board / tray / PCB): room for the cover's standoff holes above the Zero's pad rows.
+  _mcu_ears:
+    - what: rectangle
+      bound: false
+      size: [mcu_zone_w/2 - ear_gap, ear_h + 1]
+      adjust:
+        ref: matrix_inner_top
+        shift: [mcu_x - (mcu_zone_w/2 + ear_gap)/2, zone_top + (ear_h - 1)/2]
+    - what: rectangle
+      bound: false
+      size: [mcu_zone_w/2 - ear_gap, ear_h + 1]
+      adjust:
+        ref: matrix_inner_top
+        shift: [mcu_x + (mcu_zone_w/2 + ear_gap)/2, zone_top + (ear_h - 1)/2]
+  # Same corners on the cover (it is slightly narrower than the zone).
+  _cover_ears:
+    - what: rectangle
+      bound: false
+      size: [mcu_x - ear_gap - cover_x0, ear_h + 1]
+      adjust:
+        ref: matrix_inner_top
+        shift: [(cover_x0 + mcu_x - ear_gap)/2, zone_top + (ear_h - 1)/2]
+    - what: rectangle
+      bound: false
+      size: [link_edge_x - mcu_x - ear_gap, ear_h + 1]
+      adjust:
+        ref: matrix_inner_top
+        shift: [(mcu_x + ear_gap + link_edge_x)/2, zone_top + (ear_h - 1)/2]
   # Cover over the MCU and the USB-C module: the whole MCU zone, minus a small gap to the switch plate.
   _cover_area:
     - what: rectangle
@@ -270,6 +300,9 @@ outlines:
     - what: outline
       name: _mcu_area
       fillet: 2
+    - what: outline
+      name: _mcu_ears
+      fillet: 2
   # Plate outline, same shape with sharp corners (no fillet).
   board_plate:
     - what: outline
@@ -317,12 +350,12 @@ outlines:
       radius: hole_print / 2
       adjust:
         ref: matrix_inner_top
-        shift: [mcu_x - cover_hole_side, mcu_zero_y + cover_hole_dy0]
+        shift: [cover_x0 + cover_hole_edge, mcu_zero_y + cover_hole_dy0]
     - what: circle
       radius: hole_print / 2
       adjust:
         ref: matrix_inner_top
-        shift: [mcu_x + cover_hole_side, mcu_zero_y + cover_hole_dy0]
+        shift: [link_edge_x - cover_hole_edge, mcu_zero_y + cover_hole_dy0]
     - what: circle
       radius: hole_print / 2
       adjust:
@@ -393,6 +426,8 @@ outlines:
   cover:
     - what: outline
       name: _cover_area
+    - what: outline
+      name: _cover_ears
     - what: outline
       name: _mount_holes
       operation: subtract
@@ -609,7 +644,7 @@ pcbs:
         where:
           ref: matrix_inner_top
         adjust:
-          shift: [mcu_x - cover_hole_side, mcu_zero_y + cover_hole_dy0]
+          shift: [cover_x0 + cover_hole_edge, mcu_zero_y + cover_hole_dy0]
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
@@ -618,7 +653,7 @@ pcbs:
         where:
           ref: matrix_inner_top
         adjust:
-          shift: [mcu_x + cover_hole_side, mcu_zero_y + cover_hole_dy0]
+          shift: [link_edge_x - cover_hole_edge, mcu_zero_y + cover_hole_dy0]
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
