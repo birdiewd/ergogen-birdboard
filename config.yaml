@@ -150,6 +150,15 @@ outlines:
           shift: [rf_x1, rf_y1]
         - ref: matrix_inner_bottom
           shift: [rf_x0, rf_y_low]
+  # Covers a pocket of ~0.001-0.007 mm2 left between the inner column's bottom edge, thumb e, thumb f and the bridge.
+  # Everything in this rectangle is already inside the outline except that pocket, so it adds no area elsewhere.
+  _pocket_fill:
+    - what: rectangle
+      bound: false
+      size: [4, 2.5]
+      adjust:
+        ref: matrix_inner_bottom
+        shift: [7.75, -11.75]
   _plate_sharp:
     - what: outline
       name: _keys
@@ -165,6 +174,8 @@ outlines:
       name: _top_fill
     - what: outline
       name: _right_fill
+    - what: outline
+      name: _pocket_fill
   _plate_rounded:
     - what: outline
       name: _plate_sharp
