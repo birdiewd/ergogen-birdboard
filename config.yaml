@@ -67,9 +67,7 @@ units:
   case_wall: 2           # wall thickness, outside the board outline
   case_floor: 2          # floor thickness
   case_height: 10        # total height of the case, floor included (placeholder: depends on switches / sockets)
-  standoff_h: 6          # standoff height above z = 0 (floor included)
-  standoff_r: 3          # standoff outer radius
-  pilot_r: 1.1           # through hole in the floor and standoffs for an M2 screw (2.2 mm, as the PCB holes)
+  pilot_r: 1.1           # through hole in the floor for an M2 screw (2.2 mm, as the PCB holes)
   plate_t: 1.5           # switch plate and MCU cover thickness
   # ---- diode ----
   diode_y: -9            # THT diode south of the switch: -5 shorts the row pad to the column pad, -9 clears every pad by ~0.6 mm
@@ -1095,7 +1093,7 @@ outlines:
       name: _cover_holes_r
       operation: subtract
 
-  # ---- bottom case (one per half): floor + perimeter wall around the board half, with standoffs at the plate and cover holes ----
+  # ---- bottom case (one per half): floor + perimeter wall around the board half, with through screw holes at the plate and cover holes (brass standoffs are separate parts) ----
   _case_round_l:
     - what: outline
       name: _board_sharp_l
@@ -1104,15 +1102,6 @@ outlines:
     - what: outline
       name: _case_round_l
       expand: case_wall
-      joints: 1
-  _standoffs_l:
-    - what: outline
-      name: _holes
-      expand: standoff_r - hole_print / 2
-      joints: 1
-    - what: outline
-      name: _cover_holes
-      expand: standoff_r - hole_print / 2
       joints: 1
   _pilots_l:
     - what: circle
@@ -1183,15 +1172,6 @@ outlines:
     - what: outline
       name: _case_round_r
       expand: case_wall
-      joints: 1
-  _standoffs_r:
-    - what: outline
-      name: _holes_r
-      expand: standoff_r - hole_print / 2
-      joints: 1
-    - what: outline
-      name: _cover_holes_r
-      expand: standoff_r - hole_print / 2
       joints: 1
   _pilots_r:
     - what: circle
@@ -1685,8 +1665,6 @@ cases:
       extrude: case_height
       shift: [0, 0, case_floor]
       operation: subtract
-    - name: _standoffs_l
-      extrude: standoff_h
     - name: _pilots_l
       extrude: case_height
       operation: subtract
@@ -1697,8 +1675,6 @@ cases:
       extrude: case_height
       shift: [0, 0, case_floor]
       operation: subtract
-    - name: _standoffs_r
-      extrude: standoff_h
     - name: _pilots_r
       extrude: case_height
       operation: subtract
