@@ -462,7 +462,8 @@ outlines:
       radius: hole_print / 2
       adjust:
         ref: mirror_matrix_inner_bottom
-        shift: [8.75, -12.5]    - what: circle
+        shift: [8.75, -12.5]
+    - what: circle
       radius: hole_print / 2
       adjust:
         ref: mirror_matrix_inner_bottom
