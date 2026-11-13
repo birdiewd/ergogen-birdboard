@@ -497,7 +497,7 @@ pcbs:
           from: "{{column_net}}"
           to: "{{colrow}}"
           hotswap: true
-          reversible: true
+          reversible: false
       switch_r:
         what: ceoloide/switch_gateron_ks27_ks33
         where: true
@@ -506,7 +506,7 @@ pcbs:
           from: "{{column_net}}_r"
           to: "{{colrow}}_r"
           hotswap: true
-          reversible: true
+          reversible: false
       diode_l:
         what: ceoloide/diode_tht_sod123
         where: true
