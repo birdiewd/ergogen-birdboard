@@ -66,7 +66,13 @@ units:
   # ---- bottom case (STL, see cases:) ----
   case_wall: 2           # wall thickness, outside the board outline
   case_floor: 2          # floor thickness
-  case_height: 10        # total height of the case, floor included (placeholder: depends on switches / sockets)
+  case_clr: 0.4          # clearance between the board / plate and the inside of the wall
+  case_height: 12        # total height of the case, floor included (placeholder: PCB underside + PCB + brass spacer + plate)
+  pcb_z: 5               # height of the PCB underside above the case's bottom face (floor + brass standoff; placeholder)
+  pcb_t: 1.6             # PCB thickness
+  usb_w: 10              # USB-C opening width (receptacle shell is about 9 mm)
+  usb_h: 3.5             # USB-C receptacle height above the PCB
+  usb_cut_h: pcb_t + usb_h + 0.6   # opening height, starting at the PCB underside (pcb_z)
   pilot_r: 1.1           # through hole in the floor for an M2 screw (2.2 mm, as the PCB holes)
   plate_t: 1.5           # switch plate and MCU cover thickness
   # ---- diode ----
@@ -1101,8 +1107,27 @@ outlines:
   _case_outer_l:
     - what: outline
       name: _case_round_l
-      expand: case_wall
+      expand: case_wall + case_clr
       joints: 1
+  _case_cavity_l:
+    - what: outline
+      name: _case_round_l
+      expand: case_clr
+      joints: 1
+  # USB-C openings: top wall above the RP2040-Zero's connector, and the seam wall at the USB-C link module.
+  _usb_cuts_l:
+    - what: rectangle
+      bound: false
+      size: [usb_w, case_wall + case_clr + 2]
+      adjust:
+        ref: matrix_inner_top
+        shift: [mcu_x, zone_top + (case_wall + case_clr) / 2]
+    - what: rectangle
+      bound: false
+      size: [case_wall + case_clr + 2, usb_w]
+      adjust:
+        ref: matrix_inner_top
+        shift: [link_edge_x + (case_wall + case_clr) / 2, link_y]
   _pilots_l:
     - what: circle
       asym: source
@@ -1171,8 +1196,27 @@ outlines:
   _case_outer_r:
     - what: outline
       name: _case_round_r
-      expand: case_wall
+      expand: case_wall + case_clr
       joints: 1
+  _case_cavity_r:
+    - what: outline
+      name: _case_round_r
+      expand: case_clr
+      joints: 1
+  # USB-C openings: top wall above the RP2040-Zero's connector, and the seam wall at the USB-C link module.
+  _usb_cuts_r:
+    - what: rectangle
+      bound: false
+      size: [usb_w, case_wall + case_clr + 2]
+      adjust:
+        ref: mirror_matrix_inner_top
+        shift: [mcu_x, zone_top + (case_wall + case_clr) / 2]
+    - what: rectangle
+      bound: false
+      size: [case_wall + case_clr + 2, usb_w]
+      adjust:
+        ref: mirror_matrix_inner_top
+        shift: [link_edge_x + (case_wall + case_clr) / 2, link_y]
   _pilots_r:
     - what: circle
       asym: source
@@ -1661,9 +1705,13 @@ cases:
   bottom_case:
     - name: _case_outer_l
       extrude: case_height
-    - name: _case_round_l
+    - name: _case_cavity_l
       extrude: case_height
       shift: [0, 0, case_floor]
+      operation: subtract
+    - name: _usb_cuts_l
+      extrude: usb_cut_h
+      shift: [0, 0, pcb_z]
       operation: subtract
     - name: _pilots_l
       extrude: case_height
@@ -1671,9 +1719,13 @@ cases:
   bottom_case_right:
     - name: _case_outer_r
       extrude: case_height
-    - name: _case_round_r
+    - name: _case_cavity_r
       extrude: case_height
       shift: [0, 0, case_floor]
+      operation: subtract
+    - name: _usb_cuts_r
+      extrude: usb_cut_h
+      shift: [0, 0, pcb_z]
       operation: subtract
     - name: _pilots_r
       extrude: case_height
