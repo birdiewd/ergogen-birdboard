@@ -165,23 +165,27 @@ points:
 outlines:
   _keys:
     - what: rectangle
+      asym: source
       where: true
       bound: false
       size: [kx + pad, ky + pad]
   _thumb_fill:
     - what: rectangle
+      asym: source
       where: thumb_key
       bound: false
       size: [kx + pad + thumb_fill, ky + pad + thumb_fill]
   # The 1.5u key is 1.5u tall in its own (rotated) frame.
   _tall_fill:
     - what: rectangle
+      asym: source
       where: tall
       bound: false
       size: [kx + pad + thumb_fill, 1.5ky + pad + thumb_fill]
   # Flat bottom edge from a4 to thumb d (replaces the stepped edge of the individual key rectangles).
   _bottom_fill:
     - what: rectangle
+      asym: source
       bound: false
       size: [bf_x1 - bf_x0, bf_y1 - bf_y0]
       adjust:
@@ -190,6 +194,7 @@ outlines:
   # Closes the gap between the inner column's bottom key and thumb e (opened up by the thumb tilt).
   _thumb_bridge:
     - what: rectangle
+      asym: source
       bound: false
       size: [24, 24]   # 26 poked 0.27 mm past the inner column once Ergogen averaged the parts' rotation
       adjust:
@@ -198,6 +203,7 @@ outlines:
   # Flat top across the ring, middle and index columns: removes the two 2 mm steps (their fillets left a hook).
   _top_fill:
     - what: rectangle
+      asym: source
       bound: false
       size: [3kx + pad, (ky + pad) / 2]
       adjust:
@@ -208,6 +214,7 @@ outlines:
   # (rf_x0, rf_y_top) is where thumb f's top edge, extended, meets the column edge; (rf_x1, rf_y1) is the corner.
   _right_fill:
     - what: polygon
+      asym: source
       points:
         - ref: matrix_inner_bottom
           shift: [rf_x0, rf_y_top]
@@ -219,6 +226,7 @@ outlines:
   # Everything in this rectangle is already inside the outline except that pocket, so it adds no area elsewhere.
   _pocket_fill:
     - what: rectangle
+      asym: source
       bound: false
       size: [4, 2.5]
       adjust:
@@ -247,6 +255,7 @@ outlines:
       fillet: plate_fillet
   _cutouts:
     - what: rectangle
+      asym: source
       where: true
       bound: false
       size: cut
@@ -273,6 +282,7 @@ outlines:
       size: [kx + pad + thumb_fill, 1.5ky + pad + thumb_fill]
   _bottom_fill_r:
     - what: rectangle
+      asym: source
       bound: false
       size: [bf_x1 - bf_x0, bf_y1 - bf_y0]
       adjust:
@@ -280,6 +290,7 @@ outlines:
         shift: [(bf_x0 + bf_x1) / 2, (bf_y0 + bf_y1) / 2]
   _thumb_bridge_r:
     - what: rectangle
+      asym: source
       bound: false
       size: [24, 24]
       adjust:
@@ -287,6 +298,7 @@ outlines:
           parts: [mirror_matrix_inner_bottom, mirror_thumb_e_k_r]
   _top_fill_r:
     - what: rectangle
+      asym: source
       bound: false
       size: [3kx + pad, (ky + pad) / 2]
       adjust:
@@ -294,6 +306,7 @@ outlines:
         shift: [0, (ky + pad) / 4]
   _right_fill_r:
     - what: polygon
+      asym: source
       points:
         - ref: mirror_matrix_inner_bottom
           shift: [rf_x0, rf_y_top]
@@ -303,6 +316,7 @@ outlines:
           shift: [rf_x0, rf_y_low]
   _pocket_fill_r:
     - what: rectangle
+      asym: source
       bound: false
       size: [4, 2.5]
       adjust:
@@ -340,6 +354,7 @@ outlines:
   # Filleted once, after the union, so the seam stays a straight line (no notches between the halves).
   _mcu_zone:
     - what: rectangle
+      asym: source
       bound: false
       size: [link_edge_x + seam_overshoot - mcu_zone_x0, zone_top - zone_bottom]
       adjust:
@@ -349,6 +364,7 @@ outlines:
     # From thumb f's top-right (rightmost) corner straight up to the MCU zone, for the three LEDs.
     # Offsets are from the centre of matrix_inner_bottom; (35.07, -17.61) is that corner of thumb f.
     - what: rectangle
+      asym: source
       bound: false
       size: [30.32, 27.61]
       adjust:
@@ -363,6 +379,7 @@ outlines:
       name: _led_fill
   _mcu_zone_r:
     - what: rectangle
+      asym: source
       bound: false
       size: [link_edge_x + seam_overshoot - mcu_zone_x0, zone_top - zone_bottom]
       adjust:
@@ -372,6 +389,7 @@ outlines:
     # From thumb f's top-right (rightmost) corner straight up to the MCU zone, for the three LEDs.
     # Offsets are from the centre of matrix_inner_bottom; (35.07, -17.61) is that corner of thumb f.
     - what: rectangle
+      asym: source
       bound: false
       size: [30.32, 27.61]
       adjust:
@@ -397,72 +415,86 @@ outlines:
   # the right-hand ones use the mirrored points, whose shifts Ergogen mirrors.
   _holes:
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: matrix_outer_top
         shift: [kx/2, -ky/2]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: matrix_ring_top
         shift: [kx/2, -ky/2]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: matrix_index_top
         shift: [kx/2, -ky/2 - 1]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: lower_l_outer_low
         shift: [kx/2, ky/2]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: matrix_middle_bottom
         shift: [-3.65, -17]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: matrix_inner_bottom
         shift: [8.75, -12.5]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: matrix_inner_bottom
         shift: [16.0, -42.7]
   _holes_r:
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: mirror_matrix_outer_top
         shift: [kx/2, -ky/2]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: mirror_matrix_ring_top
         shift: [kx/2, -ky/2]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: mirror_matrix_index_top
         shift: [kx/2, -ky/2 - 1]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: mirror_lower_l_outer_low
         shift: [kx/2, ky/2]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: mirror_matrix_middle_bottom
         shift: [-3.65, -17]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: mirror_matrix_inner_bottom
         shift: [8.75, -12.5]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: mirror_matrix_inner_bottom
@@ -492,6 +524,7 @@ outlines:
   # is the corner 0.5 mm inside the LED area's right edge and that parallel line). The right-hand cover uses the mirrored points.
   _cover_sharp:
     - what: polygon
+      asym: source
       points:
         - ref: matrix_inner_bottom
           shift: [kx/2 + pad/2 + cover_gap, 2*ky + zone_top]
@@ -507,16 +540,19 @@ outlines:
           shift: [kx/2 + pad/2 + cover_gap, -3.43]
   _cover_holes:
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: matrix_inner_top
         shift: [mz_hole_x0, mz_hole_y0]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: matrix_inner_top
         shift: [mz_hole_x1, mz_hole_y]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: matrix_inner_bottom
@@ -530,6 +566,7 @@ outlines:
       operation: subtract
   _cover_sharp_r:
     - what: polygon
+      asym: source
       points:
         - ref: mirror_matrix_inner_bottom
           shift: [kx/2 + pad/2 + cover_gap, 2*ky + zone_top]
@@ -545,16 +582,19 @@ outlines:
           shift: [kx/2 + pad/2 + cover_gap, -3.43]
   _cover_holes_r:
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: mirror_matrix_inner_top
         shift: [mz_hole_x0, mz_hole_y0]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: mirror_matrix_inner_top
         shift: [mz_hole_x1, mz_hole_y]
     - what: circle
+      asym: source
       radius: hole_print / 2
       adjust:
         ref: mirror_matrix_inner_bottom
