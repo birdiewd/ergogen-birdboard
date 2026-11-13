@@ -18,6 +18,12 @@ units:
   pad: 3             # board margin around each key rectangle
   thumb_fill: 4      # thumb rectangles are this much larger, to close gaps to the matrix (3 left a 1 mm2 hole)
   plate_fillet: 1    # corner radius of the plate outline
+  thumb_d_x: 9.5     # thumb d: right of the middle column's bottom key
+  # One straight-bottomed rectangle from the left edge of a4 to the right edge of thumb d (measured from a4's centre).
+  bf_x0: -(kx + pad) / 2
+  bf_x1: 3kx + thumb_d_x + (kx + pad + thumb_fill) / 2
+  bf_y0: -(ky + pad) / 2    # bottom of a4: the lowest edge, so the bottom is flat
+  bf_y1: 16                 # reaches up into the matrix so no pocket is left under the middle column
 
 points:
   key:
@@ -59,7 +65,7 @@ points:
       key.tags: thumb_key
       anchor:
         ref: matrix_middle_bottom
-        shift: [9.5, -22.5]
+        shift: [thumb_d_x, -22.5]
       columns:
         k:
           rows:
@@ -103,14 +109,14 @@ outlines:
       where: tall
       bound: false
       size: [kx + pad + thumb_fill, 1.5ky + pad + thumb_fill]
-  # Fills the gap between the low ring-column key and the first thumb key.
-  _thumb_gap:
+  # Flat bottom edge from a4 to thumb d (replaces the stepped edge of the individual key rectangles).
+  _bottom_fill:
     - what: rectangle
       bound: false
-      size: [kx + 9.5, ky + pad + thumb_fill / 2]
+      size: [bf_x1 - bf_x0, bf_y1 - bf_y0]
       adjust:
-        aggregate:
-          parts: [lower_l_ring_low, thumb_d_k_r]
+        ref: lower_l_outer_low
+        shift: [(bf_x0 + bf_x1) / 2, (bf_y0 + bf_y1) / 2]
   # Closes the gap between the inner column's bottom key and thumb e (opened up by the thumb tilt).
   _thumb_bridge:
     - what: rectangle
@@ -127,7 +133,7 @@ outlines:
     - what: outline
       name: _tall_fill
     - what: outline
-      name: _thumb_gap
+      name: _bottom_fill
     - what: outline
       name: _thumb_bridge
   _plate_rounded:
