@@ -23,6 +23,11 @@ units:
   bf_x0: -(kx + pad) / 2
   bf_x1: 3kx + thumb_d_x + (kx + pad + thumb_fill) / 2
   bf_y0: -(ky + pad) / 2    # bottom of a4: the lowest edge, so the bottom is flat
+  rf_x0: (kx + pad) / 2    # inner column right edge
+  rf_y_top: -3.72           # see _right_fill
+  rf_x1: 12.51
+  rf_y1: -4.58
+  rf_y_low: -8.5
   bf_y1: 16                 # reaches up into the matrix so no pocket is left under the middle column
 
 points:
@@ -121,10 +126,30 @@ outlines:
   _thumb_bridge:
     - what: rectangle
       bound: false
-      size: [26, 26]
+      size: [24, 24]   # 26 poked 0.27 mm past the inner column once Ergogen averaged the parts' rotation
       adjust:
         aggregate:
           parts: [matrix_inner_bottom, thumb_e_k_r]
+  # Flat top across the ring, middle and index columns: removes the two 2 mm steps (their fillets left a hook).
+  _top_fill:
+    - what: rectangle
+      bound: false
+      size: [3kx + pad, (ky + pad) / 2]
+      adjust:
+        ref: matrix_middle_top
+        shift: [0, (ky + pad) / 4]
+  # Fills the thin V between the inner column's right edge and the corner of thumb f's rectangle, so the right
+  # edge runs straight down into the thumb's top edge. Offsets are from the centre of matrix_inner_bottom:
+  # (rf_x0, rf_y_top) is where thumb f's top edge, extended, meets the column edge; (rf_x1, rf_y1) is the corner.
+  _right_fill:
+    - what: polygon
+      points:
+        - ref: matrix_inner_bottom
+          shift: [rf_x0, rf_y_top]
+        - ref: matrix_inner_bottom
+          shift: [rf_x1, rf_y1]
+        - ref: matrix_inner_bottom
+          shift: [rf_x0, rf_y_low]
   _plate_sharp:
     - what: outline
       name: _keys
@@ -136,6 +161,10 @@ outlines:
       name: _bottom_fill
     - what: outline
       name: _thumb_bridge
+    - what: outline
+      name: _top_fill
+    - what: outline
+      name: _right_fill
   _plate_rounded:
     - what: outline
       name: _plate_sharp
