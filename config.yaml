@@ -165,23 +165,148 @@ points:
 outlines:
   _keys:
     - what: rectangle
-      where: /^(?!mirror_)/
-      asym: both
       bound: false
       size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_outer_bottom
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_outer_home
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_outer_top
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_pinky_bottom
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_pinky_home
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_pinky_top
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_ring_bottom
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_ring_home
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_ring_top
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_middle_bottom
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_middle_home
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_middle_top
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_index_bottom
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_index_home
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_index_top
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_inner_bottom
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_inner_home
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: matrix_inner_top
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: lower_l_outer_low
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: lower_l_pinky_low
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: lower_l_ring_low
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: thumb_d_k_r
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: thumb_e_k_r
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: thumb_f_k_r
   _thumb_fill:
     - what: rectangle
-      where: /^thumb_/
-      asym: both
       bound: false
       size: [kx + pad + thumb_fill, ky + pad + thumb_fill]
+      adjust:
+        ref: thumb_d_k_r
+    - what: rectangle
+      bound: false
+      size: [kx + pad + thumb_fill, ky + pad + thumb_fill]
+      adjust:
+        ref: thumb_e_k_r
+    - what: rectangle
+      bound: false
+      size: [kx + pad + thumb_fill, ky + pad + thumb_fill]
+      adjust:
+        ref: thumb_f_k_r
   # The 1.5u key is 1.5u tall in its own (rotated) frame.
   _tall_fill:
     - what: rectangle
-      where: /^thumb_f/
-      asym: both
       bound: false
       size: [kx + pad + thumb_fill, 1.5ky + pad + thumb_fill]
+      adjust:
+        ref: thumb_f_k_r
   # Flat bottom edge from a4 to thumb d (replaces the stepped edge of the individual key rectangles).
   _bottom_fill:
     - what: rectangle
@@ -255,31 +380,271 @@ outlines:
       fillet: plate_fillet
   _cutouts:
     - what: rectangle
-      where: /^(?!mirror_)/
-      asym: both
       bound: false
       size: cut
+      adjust:
+        ref: matrix_outer_bottom
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_outer_home
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_outer_top
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_pinky_bottom
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_pinky_home
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_pinky_top
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_ring_bottom
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_ring_home
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_ring_top
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_middle_bottom
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_middle_home
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_middle_top
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_index_bottom
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_index_home
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_index_top
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_inner_bottom
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_inner_home
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: matrix_inner_top
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: lower_l_outer_low
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: lower_l_pinky_low
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: lower_l_ring_low
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: thumb_d_k_r
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: thumb_e_k_r
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: thumb_f_k_r
   # ---- Right-hand plate: the same shapes on the mirrored points (points.mirror). Nothing is flipped by hand:
   # `asym: clone` selects the mirrored copies of the matched points, and an anchor whose ref is a mirrored point
   # has its shift and rotation mirrored by Ergogen. Offsets here are identical to the left-hand ones above.
   _keys_r:
     - what: rectangle
-      where: /^mirror_/
-      asym: both
       bound: false
       size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_outer_bottom
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_outer_home
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_outer_top
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_pinky_bottom
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_pinky_home
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_pinky_top
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_ring_bottom
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_ring_home
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_ring_top
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_middle_bottom
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_middle_home
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_middle_top
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_index_bottom
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_index_home
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_index_top
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_inner_bottom
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_inner_home
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_matrix_inner_top
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_lower_l_outer_low
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_lower_l_pinky_low
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_lower_l_ring_low
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_thumb_d_k_r
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_thumb_e_k_r
+    - what: rectangle
+      bound: false
+      size: [kx + pad, ky + pad]
+      adjust:
+        ref: mirror_thumb_f_k_r
   _thumb_fill_r:
     - what: rectangle
-      where: /^mirror_thumb_/
-      asym: both
       bound: false
       size: [kx + pad + thumb_fill, ky + pad + thumb_fill]
+      adjust:
+        ref: mirror_thumb_d_k_r
+    - what: rectangle
+      bound: false
+      size: [kx + pad + thumb_fill, ky + pad + thumb_fill]
+      adjust:
+        ref: mirror_thumb_e_k_r
+    - what: rectangle
+      bound: false
+      size: [kx + pad + thumb_fill, ky + pad + thumb_fill]
+      adjust:
+        ref: mirror_thumb_f_k_r
   _tall_fill_r:
     - what: rectangle
-      where: /^mirror_thumb_f/
-      asym: both
       bound: false
       size: [kx + pad + thumb_fill, 1.5ky + pad + thumb_fill]
+      adjust:
+        ref: mirror_thumb_f_k_r
   _bottom_fill_r:
     - what: rectangle
       asym: source
@@ -345,10 +710,125 @@ outlines:
       fillet: plate_fillet
   _cutouts_r:
     - what: rectangle
-      where: /^mirror_/
-      asym: both
       bound: false
       size: cut
+      adjust:
+        ref: mirror_matrix_outer_bottom
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_outer_home
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_outer_top
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_pinky_bottom
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_pinky_home
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_pinky_top
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_ring_bottom
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_ring_home
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_ring_top
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_middle_bottom
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_middle_home
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_middle_top
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_index_bottom
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_index_home
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_index_top
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_inner_bottom
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_inner_home
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_matrix_inner_top
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_lower_l_outer_low
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_lower_l_pinky_low
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_lower_l_ring_low
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_thumb_d_k_r
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_thumb_e_k_r
+    - what: rectangle
+      bound: false
+      size: cut
+      adjust:
+        ref: mirror_thumb_f_k_r
   # ---- PCB outline: plate pieces + MCU / USB-C zone, per half. The halves touch only along the MCU zone; below it the
   # board keeps the plate's angled edge next to the inner thumb keys, leaving a notch between the halves.
   # Filleted once, after the union, so the seam stays a straight line (no notches between the halves).
