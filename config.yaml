@@ -56,7 +56,7 @@ units:
   hole_print: 2.4        # clearance hole in the plates for an M2 screw
   hole_pcb: 2.2          # NPTH drill in the PCB
   mz_hole_x0: 14.0                  # MCU zone holes, from matrix_inner_top: left strip (2.5 mm from the cover's edge), clear of the Zero's pads
-  mz_hole_y0: -14.0                 # ... first one just below the Zero's left pad row
+  mz_hole_y0: -22.0                 # ... top-left one: 8 mm below the Zero's left pad row start (was -14)
   mz_hole_x1: link_edge_x - 2.5     # ... and right strip, 2.5 from the seam
   mz_hole_y: zone_top - 2.5         # ... the right-strip one this far below the top edge
   # ---- MCU cover (separate plate over the MCU zone and the LED area) ----
@@ -1414,7 +1414,7 @@ pcbs:
         where:
           ref: matrix_inner_bottom
         adjust:
-          shift: [17.42, 9.7]
+          shift: [17.42, 5.7]
           rotate: 60
         params:
           side: F
@@ -1427,7 +1427,7 @@ pcbs:
         where:
           ref: matrix_inner_bottom
         adjust:
-          shift: [23.05, 6.45]
+          shift: [23.05, 2.45]
           rotate: 60
         params:
           side: F
@@ -1440,7 +1440,7 @@ pcbs:
         where:
           ref: matrix_inner_bottom
         adjust:
-          shift: [28.68, 3.2]
+          shift: [28.68, -0.8]
           rotate: 60
         params:
           side: F
@@ -1453,7 +1453,7 @@ pcbs:
         where:
           ref: mirror_matrix_inner_bottom
         adjust:
-          shift: [-17.42, 9.7]
+          shift: [-17.42, 5.7]
           rotate: -60
           resist: true
         params:
@@ -1467,7 +1467,7 @@ pcbs:
         where:
           ref: mirror_matrix_inner_bottom
         adjust:
-          shift: [-23.05, 6.45]
+          shift: [-23.05, 2.45]
           rotate: -60
           resist: true
         params:
@@ -1481,7 +1481,7 @@ pcbs:
         where:
           ref: mirror_matrix_inner_bottom
         adjust:
-          shift: [-28.68, 3.2]
+          shift: [-28.68, -0.8]
           rotate: -60
           resist: true
         params:
