@@ -778,12 +778,15 @@ pcbs:
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
+      # Three LEDs on a line parallel to thumb f's top edge (-30 deg), 7 mm apart, centred on the blank area under the
+      # MCU zone (its centroid is 24.43, -1.0 from matrix_inner_bottom). The right half is the mirror image.
       led_l1:
         what: custom/led_ws2812b_5050
         where:
           ref: matrix_inner_bottom
         adjust:
-          shift: [17, 1.5]
+          shift: [18.37, 2.5]
+          rotate: -30
         params:
           side: F
           din: "led_data"
@@ -795,7 +798,8 @@ pcbs:
         where:
           ref: matrix_inner_bottom
         adjust:
-          shift: [24, 1.5]
+          shift: [24.43, -1.0]
+          rotate: -30
         params:
           side: F
           din: "led_1"
@@ -807,7 +811,8 @@ pcbs:
         where:
           ref: matrix_inner_bottom
         adjust:
-          shift: [31, 1.5]
+          shift: [30.49, -4.5]
+          rotate: -30
         params:
           side: F
           din: "led_2"
@@ -819,7 +824,8 @@ pcbs:
         where:
           ref: mirror_matrix_inner_bottom
         adjust:
-          shift: [-17, 1.5]
+          shift: [-18.37, 2.5]
+          rotate: 30
           resist: true
         params:
           side: F
@@ -832,7 +838,8 @@ pcbs:
         where:
           ref: mirror_matrix_inner_bottom
         adjust:
-          shift: [-24, 1.5]
+          shift: [-24.43, -1.0]
+          rotate: 30
           resist: true
         params:
           side: F
@@ -845,7 +852,8 @@ pcbs:
         where:
           ref: mirror_matrix_inner_bottom
         adjust:
-          shift: [-31, 1.5]
+          shift: [-30.49, -4.5]
+          rotate: 30
           resist: true
         params:
           side: F
