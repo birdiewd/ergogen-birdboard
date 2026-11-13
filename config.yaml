@@ -1094,10 +1094,6 @@ outlines:
     - what: outline
       name: _cover_holes_r
       operation: subtract
-  # The PCB outline of both halves joined at the seam (the V-score line is a drawing-layer marker, see pcbs).
-  _board:
-    - what: outline
-      name: _board
 
   # ---- bottom case (one per half): floor + perimeter wall around the board half, with standoffs at the plate and cover holes ----
   _case_round_l:
