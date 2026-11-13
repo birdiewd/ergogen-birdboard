@@ -7,8 +7,8 @@
 # NOT VERIFIED in the UI yet: stagger / thumb offsets are rounded to 0.5 mm from the sketch.
 #
 # PCB (pcbs: birdboard): ONE board, both halves side by side. The halves touch exactly at the seam
-# (x = link_edge_x from the inner column of each half) and are separated by a V-score along the full
-# height of the board (marked on the Dwgs.User layer; no mouse-bites). Right-half nets carry an `_r`
+# (x = link_edge_x from the inner column of each half) and are separated by a V-score along the seam (the
+# height of the MCU zone; below it the board keeps the plate's angled edge, leaving a notch) (marked on the Dwgs.User layer; no mouse-bites). Right-half nets carry an `_r`
 # suffix so the halves stay electrically separate. No tracks yet.
 
 meta:
@@ -51,8 +51,7 @@ units:
   mcu_zone_x0: mcu_x - mcu_zone_w/2          # left edge of the zone
   seam_overshoot: 0.05   # each half's seam shapes reach this far past the seam so the union has no sliver; the V-score removes it
   board_fillet: 1        # corner radius of the board outline (applied once to the union, so the seam stays square)
-  board_bottom_y: -86.52 # lowest point of the board from matrix_inner_top (thumb f's bottom corner), for the V-score length
-  vscore_ext: 3          # V-score line extends this far past the top and bottom of the board
+  vscore_ext: 3          # V-score line extends this far past the top and bottom of the zone
   # ---- M2 mounting holes ----
   hole_print: 2.4        # clearance hole in the plates for an M2 screw
   hole_pcb: 2.2          # NPTH drill in the PCB
@@ -332,7 +331,8 @@ outlines:
       asym: clone
       bound: false
       size: cut
-  # ---- PCB outline: plate pieces + MCU / USB-C zone + a fill running the full height of the seam, per half.
+  # ---- PCB outline: plate pieces + MCU / USB-C zone, per half. The halves touch only along the MCU zone; below it the
+  # board keeps the plate's angled edge next to the inner thumb keys, leaving a notch between the halves.
   # Filleted once, after the union, so the seam stays a straight line (no notches between the halves).
   _mcu_zone:
     - what: rectangle
@@ -341,33 +341,11 @@ outlines:
       adjust:
         ref: matrix_inner_top
         shift: [(mcu_zone_x0 + link_edge_x + seam_overshoot) / 2, (zone_top + zone_bottom) / 2]
-  # Fills everything between the inner column / thumb f and the seam, from the MCU zone down to the lowest point of
-  # thumb f (offsets from the centre of matrix_inner_bottom; (17.29, -48.42) is thumb f's bottom corner, (35.07, -17.61)
-  # its right corner, (12.51, -4.58) its top corner).
-  _seam_fill:
-    - what: polygon
-      points:
-        - ref: matrix_inner_bottom
-          shift: [link_edge_x + seam_overshoot, 10]
-        - ref: matrix_inner_bottom
-          shift: [link_edge_x + seam_overshoot, -48.42]
-        - ref: matrix_inner_bottom
-          shift: [17.29, -48.42]
-        - ref: matrix_inner_bottom
-          shift: [35.07, -17.61]
-        - ref: matrix_inner_bottom
-          shift: [12.51, -4.58]
-        - ref: matrix_inner_bottom
-          shift: [rf_x0, rf_y_top]
-        - ref: matrix_inner_bottom
-          shift: [rf_x0, 10]
   _board_sharp_l:
     - what: outline
       name: _plate_sharp
     - what: outline
       name: _mcu_zone
-    - what: outline
-      name: _seam_fill
   _mcu_zone_r:
     - what: rectangle
       bound: false
@@ -375,30 +353,11 @@ outlines:
       adjust:
         ref: mirror_matrix_inner_top
         shift: [(mcu_zone_x0 + link_edge_x + seam_overshoot) / 2, (zone_top + zone_bottom) / 2]
-  _seam_fill_r:
-    - what: polygon
-      points:
-        - ref: mirror_matrix_inner_bottom
-          shift: [link_edge_x + seam_overshoot, 10]
-        - ref: mirror_matrix_inner_bottom
-          shift: [link_edge_x + seam_overshoot, -48.42]
-        - ref: mirror_matrix_inner_bottom
-          shift: [17.29, -48.42]
-        - ref: mirror_matrix_inner_bottom
-          shift: [35.07, -17.61]
-        - ref: mirror_matrix_inner_bottom
-          shift: [12.51, -4.58]
-        - ref: mirror_matrix_inner_bottom
-          shift: [rf_x0, rf_y_top]
-        - ref: mirror_matrix_inner_bottom
-          shift: [rf_x0, 10]
   _board_sharp_r:
     - what: outline
       name: _plate_sharp_r
     - what: outline
       name: _mcu_zone_r
-    - what: outline
-      name: _seam_fill_r
   _board_sharp:
     - what: outline
       name: _board_sharp_l
@@ -796,7 +755,7 @@ pcbs:
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
-      # V-score marker along the seam (drawing layer only), from 3 mm above the board to 3 mm below it.
+      # V-score marker along the seam (drawing layer only), from 3 mm above the zone to 3 mm below it.
       vscore:
         what: custom/vscore_line
         where:
@@ -804,4 +763,4 @@ pcbs:
         adjust:
           shift: [link_edge_x, zone_top + vscore_ext]
         params:
-          length: 103.55   # = zone_top + vscore_ext - board_bottom_y + vscore_ext (plain number: footprint params are not expressions)
+          length: 45.66   # = zone_top - zone_bottom + 2*vscore_ext (plain number: footprint params are not expressions)
