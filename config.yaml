@@ -3,7 +3,7 @@
 # Loaded by https://ergogen.ceoloide.com ("From Local File" or "From Repo").
 # Layout measured from the sketch the plate is based on (19.05 mm = one column pitch):
 #   - six columns outer..inner, three rows, plus a fourth row under the first three columns
-#   - thumb keys d (straight), e (12 deg clockwise) and f (1.5u portrait, 24 deg clockwise)
+#   - thumb keys d (straight), e (15 deg clockwise) and f (1.5u portrait, 30 deg clockwise)
 # NOT VERIFIED in the UI yet: stagger / thumb offsets are rounded to 0.5 mm from the sketch.
 
 meta:
@@ -69,7 +69,7 @@ points:
       anchor:
         ref: matrix_middle_bottom
         shift: [31.5, -26]
-        rotate: -12           # clockwise
+        rotate: -15           # clockwise (fitted from the sketch)
       columns:
         k:
           rows:
@@ -80,7 +80,7 @@ points:
       anchor:
         ref: matrix_middle_bottom
         shift: [53, -31]
-        rotate: -24           # clockwise
+        rotate: -30           # clockwise (fitted from the sketch)
       columns:
         k:
           rows:
@@ -111,6 +111,14 @@ outlines:
       adjust:
         aggregate:
           parts: [lower_l_ring_low, thumb_d_k_r]
+  # Closes the gap between the inner column's bottom key and thumb e (opened up by the thumb tilt).
+  _thumb_bridge:
+    - what: rectangle
+      bound: false
+      size: [26, 26]
+      adjust:
+        aggregate:
+          parts: [matrix_inner_bottom, thumb_e_k_r]
   _plate_sharp:
     - what: outline
       name: _keys
@@ -120,6 +128,8 @@ outlines:
       name: _tall_fill
     - what: outline
       name: _thumb_gap
+    - what: outline
+      name: _thumb_bridge
   _plate_rounded:
     - what: outline
       name: _plate_sharp
