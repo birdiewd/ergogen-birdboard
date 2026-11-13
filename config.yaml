@@ -890,7 +890,7 @@ pcbs:
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
-      # Three LEDs on a line parallel to thumb f's top edge (-30 deg), 8.5 mm apart (room for traces between the pads). The line is equally far (10.8 mm,
+      # Three LEDs on a line parallel to thumb f's top edge (-30 deg), 6.5 mm apart, each LED turned 90 degrees to the line (rotate 60) so the line is short. The line is equally far (10.8 mm,
       # perpendicular) from the cover's bottom-right hole and its top-left hole, and centred between the cover's left and right
       # edges. The right half is the mirror image.
       led_l1:
@@ -898,8 +898,8 @@ pcbs:
         where:
           ref: matrix_inner_bottom
         adjust:
-          shift: [15.69, 10.7]
-          rotate: -30
+          shift: [17.42, 9.7]
+          rotate: 60
         params:
           side: F
           din: "led_data"
@@ -912,7 +912,7 @@ pcbs:
           ref: matrix_inner_bottom
         adjust:
           shift: [23.05, 6.45]
-          rotate: -30
+          rotate: 60
         params:
           side: F
           din: "led_1"
@@ -924,8 +924,8 @@ pcbs:
         where:
           ref: matrix_inner_bottom
         adjust:
-          shift: [30.41, 2.2]
-          rotate: -30
+          shift: [28.68, 3.2]
+          rotate: 60
         params:
           side: F
           din: "led_2"
@@ -937,8 +937,8 @@ pcbs:
         where:
           ref: mirror_matrix_inner_bottom
         adjust:
-          shift: [-15.69, 10.7]
-          rotate: 30
+          shift: [-17.42, 9.7]
+          rotate: -60
           resist: true
         params:
           side: F
@@ -952,7 +952,7 @@ pcbs:
           ref: mirror_matrix_inner_bottom
         adjust:
           shift: [-23.05, 6.45]
-          rotate: 30
+          rotate: -60
           resist: true
         params:
           side: F
@@ -965,8 +965,8 @@ pcbs:
         where:
           ref: mirror_matrix_inner_bottom
         adjust:
-          shift: [-30.41, 2.2]
-          rotate: 30
+          shift: [-28.68, 3.2]
+          rotate: -60
           resist: true
         params:
           side: F
