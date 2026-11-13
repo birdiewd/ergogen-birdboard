@@ -341,11 +341,22 @@ outlines:
       adjust:
         ref: matrix_inner_top
         shift: [(mcu_zone_x0 + link_edge_x + seam_overshoot) / 2, (zone_top + zone_bottom) / 2]
+  _led_fill:
+    # From thumb f's top-right (rightmost) corner straight up to the MCU zone, for the three LEDs.
+    # Offsets are from the centre of matrix_inner_bottom; (35.07, -17.61) is that corner of thumb f.
+    - what: rectangle
+      bound: false
+      size: [30.32, 27.61]
+      adjust:
+        ref: matrix_inner_bottom
+        shift: [19.91, -3.805]
   _board_sharp_l:
     - what: outline
       name: _plate_sharp
     - what: outline
       name: _mcu_zone
+    - what: outline
+      name: _led_fill
   _mcu_zone_r:
     - what: rectangle
       bound: false
@@ -353,11 +364,22 @@ outlines:
       adjust:
         ref: mirror_matrix_inner_top
         shift: [(mcu_zone_x0 + link_edge_x + seam_overshoot) / 2, (zone_top + zone_bottom) / 2]
+  _led_fill_r:
+    # From thumb f's top-right (rightmost) corner straight up to the MCU zone, for the three LEDs.
+    # Offsets are from the centre of matrix_inner_bottom; (35.07, -17.61) is that corner of thumb f.
+    - what: rectangle
+      bound: false
+      size: [30.32, 27.61]
+      adjust:
+        ref: mirror_matrix_inner_bottom
+        shift: [19.91, -3.805]
   _board_sharp_r:
     - what: outline
       name: _plate_sharp_r
     - what: outline
       name: _mcu_zone_r
+    - what: outline
+      name: _led_fill_r
   _board_sharp:
     - what: outline
       name: _board_sharp_l
@@ -526,6 +548,7 @@ pcbs:
           GP7: "home"
           GP8: "bottom"
           GP9: "thumb"
+          GP10: "led_data"
           GP12: "link"
       mcu_r:
         what: custom/mcu_rp2040_zero
@@ -550,8 +573,8 @@ pcbs:
           GP7: "home_r"
           GP8: "bottom_r"
           GP9: "thumb_r"
+          GP10: "led_data_r"
           GP12: "link_r"
-          GP10: "GP10_r"
           GP11: "GP11_r"
           GP13: "GP13_r"
           GP14: "GP14_r"
@@ -755,6 +778,81 @@ pcbs:
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
+      led_l1:
+        what: custom/led_ws2812b_5050
+        where:
+          ref: matrix_inner_bottom
+        adjust:
+          shift: [17, 1.5]
+        params:
+          side: F
+          din: "led_data"
+          dout: "led_1"
+          vdd: "5V"
+          gnd: "GND"
+      led_l2:
+        what: custom/led_ws2812b_5050
+        where:
+          ref: matrix_inner_bottom
+        adjust:
+          shift: [24, 1.5]
+        params:
+          side: F
+          din: "led_1"
+          dout: "led_2"
+          vdd: "5V"
+          gnd: "GND"
+      led_l3:
+        what: custom/led_ws2812b_5050
+        where:
+          ref: matrix_inner_bottom
+        adjust:
+          shift: [31, 1.5]
+        params:
+          side: F
+          din: "led_2"
+          dout: "led_3"
+          vdd: "5V"
+          gnd: "GND"
+      led_r1:
+        what: custom/led_ws2812b_5050
+        where:
+          ref: mirror_matrix_inner_bottom
+        adjust:
+          shift: [-17, 1.5]
+          resist: true
+        params:
+          side: F
+          din: "led_data_r"
+          dout: "led_1_r"
+          vdd: "5V_r"
+          gnd: "GND_r"
+      led_r2:
+        what: custom/led_ws2812b_5050
+        where:
+          ref: mirror_matrix_inner_bottom
+        adjust:
+          shift: [-24, 1.5]
+          resist: true
+        params:
+          side: F
+          din: "led_1_r"
+          dout: "led_2_r"
+          vdd: "5V_r"
+          gnd: "GND_r"
+      led_r3:
+        what: custom/led_ws2812b_5050
+        where:
+          ref: mirror_matrix_inner_bottom
+        adjust:
+          shift: [-31, 1.5]
+          resist: true
+        params:
+          side: F
+          din: "led_2_r"
+          dout: "led_3_r"
+          vdd: "5V_r"
+          gnd: "GND_r"
       # V-score marker along the seam (drawing layer only), from 3 mm above the zone to 3 mm below it.
       vscore:
         what: custom/vscore_line
