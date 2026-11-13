@@ -63,6 +63,14 @@ units:
   cover_gap: 0.5         # gap between the cover and the switch plate / thumb f's top edge / the LED-area edge
   cover_seam_gap: 0.1    # gap between the cover and the seam
   cover_fillet: 1        # corner radius of the cover
+  # ---- bottom case (STL, see cases:) ----
+  case_wall: 2           # wall thickness, outside the board outline
+  case_floor: 2          # floor thickness
+  case_height: 10        # total height of the case, floor included (placeholder: depends on switches / sockets)
+  standoff_h: 6          # standoff height above z = 0 (floor included)
+  standoff_r: 3          # standoff outer radius
+  pilot_r: 0.9           # blind screw pilot hole in the standoffs (M2 self-tapping)
+  plate_t: 1.5           # switch plate and MCU cover thickness
   # ---- diode ----
   diode_y: -9            # THT diode south of the switch: -5 shorts the row pad to the column pad, -9 clears every pad by ~0.6 mm
 
@@ -980,7 +988,7 @@ outlines:
         ref: mirror_matrix_inner_bottom
         shift: [16.0, -42.7]
   # Exported for review: the outline with every switch cutout and mounting hole.
-  plate:
+  _plate:
     - what: outline
       name: _plate_rounded
     - what: outline
@@ -989,8 +997,8 @@ outlines:
     - what: outline
       name: _holes
       operation: subtract
-  # Exported: the right-hand plate (mirror image of `plate`).
-  plate_right:
+  # The right-hand plate (mirror image of `plate`).
+  _plate_right:
     - what: outline
       name: _plate_rounded_r
     - what: outline
@@ -1037,7 +1045,7 @@ outlines:
       adjust:
         ref: matrix_inner_bottom
         shift: [31.01, -10.57]
-  cover:
+  _cover:
     - what: outline
       name: _cover_sharp
       fillet: cover_fillet
@@ -1079,17 +1087,177 @@ outlines:
       adjust:
         ref: mirror_matrix_inner_bottom
         shift: [31.01, -10.57]
-  cover_right:
+  _cover_right:
     - what: outline
       name: _cover_sharp_r
       fillet: cover_fillet
     - what: outline
       name: _cover_holes_r
       operation: subtract
-  # Exported: the PCB outline of both halves joined at the seam (the V-score line is a drawing-layer marker, see pcbs).
-  board:
+  # The PCB outline of both halves joined at the seam (the V-score line is a drawing-layer marker, see pcbs).
+  _board:
     - what: outline
       name: _board
+
+  # ---- bottom case (one per half): floor + perimeter wall around the board half, with standoffs at the plate and cover holes ----
+  _case_round_l:
+    - what: outline
+      name: _board_sharp_l
+      fillet: board_fillet
+  _case_outer_l:
+    - what: outline
+      name: _case_round_l
+      expand: case_wall
+      joints: 1
+  _standoffs_l:
+    - what: outline
+      name: _holes
+      expand: standoff_r - hole_print / 2
+      joints: 1
+    - what: outline
+      name: _cover_holes
+      expand: standoff_r - hole_print / 2
+      joints: 1
+  _pilots_l:
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: matrix_outer_top
+        shift: [kx/2, -ky/2]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: matrix_ring_top
+        shift: [kx/2, -ky/2]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: matrix_index_top
+        shift: [kx/2, -ky/2 - 1]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: lower_l_outer_low
+        shift: [kx/2, ky/2]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: matrix_middle_bottom
+        shift: [-3.65, -17]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: matrix_inner_bottom
+        shift: [8.75, -12.5]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: matrix_inner_bottom
+        shift: [16.0, -42.7]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: matrix_inner_top
+        shift: [mz_hole_x0, mz_hole_y0]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: matrix_inner_top
+        shift: [mz_hole_x1, mz_hole_y]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: matrix_inner_bottom
+        shift: [31.01, -10.57]
+  _case_round_r:
+    - what: outline
+      name: _board_sharp_r
+      fillet: board_fillet
+  _case_outer_r:
+    - what: outline
+      name: _case_round_r
+      expand: case_wall
+      joints: 1
+  _standoffs_r:
+    - what: outline
+      name: _holes_r
+      expand: standoff_r - hole_print / 2
+      joints: 1
+    - what: outline
+      name: _cover_holes_r
+      expand: standoff_r - hole_print / 2
+      joints: 1
+  _pilots_r:
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: mirror_matrix_outer_top
+        shift: [kx/2, -ky/2]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: mirror_matrix_ring_top
+        shift: [kx/2, -ky/2]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: mirror_matrix_index_top
+        shift: [kx/2, -ky/2 - 1]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: mirror_lower_l_outer_low
+        shift: [kx/2, ky/2]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: mirror_matrix_middle_bottom
+        shift: [-3.65, -17]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: mirror_matrix_inner_bottom
+        shift: [8.75, -12.5]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: mirror_matrix_inner_bottom
+        shift: [16.0, -42.7]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: mirror_matrix_inner_top
+        shift: [mz_hole_x0, mz_hole_y0]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: mirror_matrix_inner_top
+        shift: [mz_hole_x1, mz_hole_y]
+    - what: circle
+      asym: source
+      radius: pilot_r
+      adjust:
+        ref: mirror_matrix_inner_bottom
+        shift: [31.01, -10.57]
 
 pcbs:
   # ONE board with both halves. The left half is the points as defined; the right half is their mirror image
@@ -1100,7 +1268,7 @@ pcbs:
     template: kicad8
     outlines:
       main:
-        outline: board
+        outline: _board
     footprints:
       switch_l:
         what: ceoloide/switch_gateron_ks27_ks33
@@ -1499,3 +1667,44 @@ pcbs:
           shift: [link_edge_x, zone_top + vscore_ext]
         params:
           length: 45.66   # = zone_top - zone_bottom + 2*vscore_ext (plain number: footprint params are not expressions)
+
+# ---- STL parts (Ergogen "cases"): plates and covers extruded, plus a bottom case per half ----
+cases:
+  plate_case:
+    - name: _plate
+      extrude: plate_t
+  plate_right_case:
+    - name: _plate_right
+      extrude: plate_t
+  cover_case:
+    - name: _cover
+      extrude: plate_t
+  cover_right_case:
+    - name: _cover_right
+      extrude: plate_t
+  bottom_case:
+    - name: _case_outer_l
+      extrude: case_height
+    - name: _case_round_l
+      extrude: case_height
+      shift: [0, 0, case_floor]
+      operation: subtract
+    - name: _standoffs_l
+      extrude: standoff_h
+    - name: _pilots_l
+      extrude: standoff_h
+      shift: [0, 0, case_floor]
+      operation: subtract
+  bottom_case_right:
+    - name: _case_outer_r
+      extrude: case_height
+    - name: _case_round_r
+      extrude: case_height
+      shift: [0, 0, case_floor]
+      operation: subtract
+    - name: _standoffs_r
+      extrude: standoff_h
+    - name: _pilots_r
+      extrude: standoff_h
+      shift: [0, 0, case_floor]
+      operation: subtract
