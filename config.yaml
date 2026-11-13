@@ -1,10 +1,15 @@
-# v2: switch plate layout only (layout and outline to review).
+# v2: switch plates (left and right) and one PCB holding both halves.
 #
 # Loaded by https://ergogen.ceoloide.com ("From Local File" or "From Repo").
 # Layout measured from the sketch the plate is based on (19.05 mm = one column pitch):
 #   - six columns outer..inner, three rows, plus a fourth row under the first three columns
 #   - thumb keys d (straight), e (15 deg clockwise) and f (1.5u portrait, 30 deg clockwise)
 # NOT VERIFIED in the UI yet: stagger / thumb offsets are rounded to 0.5 mm from the sketch.
+#
+# PCB (pcbs: birdboard): ONE board, both halves side by side. The halves touch exactly at the seam
+# (x = link_edge_x from the inner column of each half) and are separated by a V-score along the full
+# height of the board (marked on the Dwgs.User layer; no mouse-bites). Right-half nets carry an `_r`
+# suffix so the halves stay electrically separate. No tracks yet.
 
 meta:
   engine: 4.1.0
@@ -30,75 +35,127 @@ units:
   rf_y_low: -8.5
   bf_y1: 16                 # reaches up into the matrix so no pocket is left under the middle column
 
+  # ---- MCU / USB-C zone (right of the inner column of the left half; the right half is its mirror image) ----
+  mcu_w: 20.5          # RP2040-Zero footprint width
+  mcu_pad_x: 5         # board padding left and right of the MCU
+  mcu_zone_w: mcu_w + 2*mcu_pad_x
+  mcu_x: kx/2 + pad/2 + mcu_zone_w/2 - 1     # MCU centre, from matrix_inner_top
+  zone_top: ky/2 + pad/2                     # top edge of the zone (from matrix_inner_top), flush with the inner column's top
+  usb_overhang: 1      # the Zero's USB-C connector hangs this far over the top edge
+  mcu_zero_y: zone_top + usb_overhang - 13.716    # footprint origin is 13.716 from the connector tip
+  mcu_bottom_y: mcu_zero_y - 11.94           # bottom of the Zero's pads
+  link_edge_x: mcu_x + mcu_zone_w/2          # THE SEAM: right edge of the left half, from matrix_inner_top
+  link_pin_x: link_edge_x - 12.6             # USB-C breakout pad row; its shell tip is flush with the seam
+  link_y: mcu_bottom_y - 2 - 6               # module centre: 2 below the MCU's pads, then half the module (6)
+  zone_bottom: link_y - 6 - 1                # 1 mm of board below the module
+  mcu_zone_x0: mcu_x - mcu_zone_w/2          # left edge of the zone
+  seam_overshoot: 0.05   # each half's seam shapes reach this far past the seam so the union has no sliver; the V-score removes it
+  board_fillet: 1        # corner radius of the board outline (applied once to the union, so the seam stays square)
+  board_bottom_y: -86.52 # lowest point of the board from matrix_inner_top (thumb f's bottom corner), for the V-score length
+  vscore_ext: 3          # V-score line extends this far past the top and bottom of the board
+  # ---- M2 mounting holes ----
+  hole_print: 2.4        # clearance hole in the plates for an M2 screw
+  hole_pcb: 2.2          # NPTH drill in the PCB
+  mz_hole_x0: 12.8                  # MCU zone holes (PCB only), from matrix_inner_top: left strip, beside the Zero's pads
+  mz_hole_x1: link_edge_x - 2.5     # ... and right strip, 2.5 from the seam
+  mz_hole_y: zone_top - 2.5         # ... both this far below the top edge
+  mz_hole_y2: link_y - 3.5          # third hole, beside the USB-C module
+  # ---- diode ----
+  diode_y: -9            # THT diode south of the switch: -5 shorts the row pad to the column pad, -9 clears every pad by ~0.6 mm
+
 points:
   key:
     spread: kx
     padding: ky
-  # Ergogen mirrors every point (named mirror_<zone>_<column>_<row>) to a copy this far to the right.
-  # The left outlines below only use the original points; the right-hand ones (_r) use the mirrored copies.
+  # Ergogen mirrors every point (named mirror_<zone>_<column>_<row>) to a copy this far to the right: the
+  # distance between matrix_inner_top and its mirror image is twice the distance to the seam, so the two
+  # halves touch exactly at the seam. The left outlines below only use the original points; the
+  # right-hand ones (_r) use the mirrored copies.
   mirror:
     ref: matrix_inner_top
-    distance: 8kx
+    distance: 2*link_edge_x
   zones:
     matrix:
       anchor:
         shift: [100, -100]
       columns:
         outer:
+          key.column_net: outer
         pinky:
+          key.column_net: pinky
         ring:
           key.stagger: 5      # up 5 mm from the pinky column
+          key.column_net: ring
         middle:
           key.stagger: 2      # up 7 mm from the outer columns
+          key.column_net: middle
         index:
           key.stagger: -2     # up 5 mm
+          key.column_net: index
         inner:
           key.stagger: -2.5   # up 2.5 mm
+          key.column_net: inner
       rows:
         bottom:
+          row_net: bottom
         home:
+          row_net: home
         top:
+          row_net: top
     # The fourth row: only under the outer, pinky and ring columns, in line with them.
+    # They share the column nets of the keys above them and the `thumb` row net of the thumb keys.
     lower:
+      key:
+        row_net: thumb
       anchor:
         ref: matrix_outer_bottom
         shift: [0, -ky]
       columns:
         l_outer:
+          key.column_net: outer
         l_pinky:
+          key.column_net: pinky
         l_ring:
           key.stagger: 5
+          key.column_net: ring
       rows:
         low:
     # Thumb keys, positioned from the middle column's bottom key (offsets measured from the sketch).
+    # The thumb keys form a fourth matrix row (`thumb`), on the middle, index and inner columns.
     thumb_d:
       key.tags: thumb_key
+      key.row_net: thumb
       anchor:
         ref: matrix_middle_bottom
         shift: [thumb_d_x, -22.5]
       columns:
         k:
+          key.column_net: middle
           rows:
             r:
     thumb_e:
       key.tags: thumb_key
+      key.row_net: thumb
       anchor:
         ref: matrix_middle_bottom
         shift: [31.5, -26]
         rotate: -15           # clockwise (fitted from the sketch)
       columns:
         k:
+          key.column_net: index
           rows:
             r:
     # 1.5u key in portrait; the point is the centre of the cap, and the cutout is centred on it.
     thumb_f:
       key.tags: [thumb_key, tall]
+      key.row_net: thumb
       anchor:
         ref: matrix_middle_bottom
         shift: [53, -31]
         rotate: -30           # clockwise (fitted from the sketch)
       columns:
         k:
+          key.column_net: inner
           rows:
             r:
 
@@ -275,12 +332,155 @@ outlines:
       asym: clone
       bound: false
       size: cut
-  # Exported for review: the outline with every switch cutout.
+  # ---- PCB outline: plate pieces + MCU / USB-C zone + a fill running the full height of the seam, per half.
+  # Filleted once, after the union, so the seam stays a straight line (no notches between the halves).
+  _mcu_zone:
+    - what: rectangle
+      bound: false
+      size: [link_edge_x + seam_overshoot - mcu_zone_x0, zone_top - zone_bottom]
+      adjust:
+        ref: matrix_inner_top
+        shift: [(mcu_zone_x0 + link_edge_x + seam_overshoot) / 2, (zone_top + zone_bottom) / 2]
+  # Fills everything between the inner column / thumb f and the seam, from the MCU zone down to the lowest point of
+  # thumb f (offsets from the centre of matrix_inner_bottom; (17.29, -48.42) is thumb f's bottom corner, (35.07, -17.61)
+  # its right corner, (12.51, -4.58) its top corner).
+  _seam_fill:
+    - what: polygon
+      points:
+        - ref: matrix_inner_bottom
+          shift: [link_edge_x + seam_overshoot, 10]
+        - ref: matrix_inner_bottom
+          shift: [link_edge_x + seam_overshoot, -48.42]
+        - ref: matrix_inner_bottom
+          shift: [17.29, -48.42]
+        - ref: matrix_inner_bottom
+          shift: [35.07, -17.61]
+        - ref: matrix_inner_bottom
+          shift: [12.51, -4.58]
+        - ref: matrix_inner_bottom
+          shift: [rf_x0, rf_y_top]
+        - ref: matrix_inner_bottom
+          shift: [rf_x0, 10]
+  _board_sharp_l:
+    - what: outline
+      name: _plate_sharp
+    - what: outline
+      name: _mcu_zone
+    - what: outline
+      name: _seam_fill
+  _mcu_zone_r:
+    - what: rectangle
+      bound: false
+      size: [link_edge_x + seam_overshoot - mcu_zone_x0, zone_top - zone_bottom]
+      adjust:
+        ref: mirror_matrix_inner_top
+        shift: [(mcu_zone_x0 + link_edge_x + seam_overshoot) / 2, (zone_top + zone_bottom) / 2]
+  _seam_fill_r:
+    - what: polygon
+      points:
+        - ref: mirror_matrix_inner_bottom
+          shift: [link_edge_x + seam_overshoot, 10]
+        - ref: mirror_matrix_inner_bottom
+          shift: [link_edge_x + seam_overshoot, -48.42]
+        - ref: mirror_matrix_inner_bottom
+          shift: [17.29, -48.42]
+        - ref: mirror_matrix_inner_bottom
+          shift: [35.07, -17.61]
+        - ref: mirror_matrix_inner_bottom
+          shift: [12.51, -4.58]
+        - ref: mirror_matrix_inner_bottom
+          shift: [rf_x0, rf_y_top]
+        - ref: mirror_matrix_inner_bottom
+          shift: [rf_x0, 10]
+  _board_sharp_r:
+    - what: outline
+      name: _plate_sharp_r
+    - what: outline
+      name: _mcu_zone_r
+    - what: outline
+      name: _seam_fill_r
+  _board_sharp:
+    - what: outline
+      name: _board_sharp_l
+    - what: outline
+      name: _board_sharp_r
+  _board:
+    - what: outline
+      name: _board_sharp
+      fillet: board_fillet
+  # ---- M2 mounting holes in the plates (the 3 MCU-zone holes are PCB-only, see pcbs:). Same anchors on both halves;
+  # the right-hand ones use the mirrored points, whose shifts Ergogen mirrors.
+  _holes:
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_outer_top
+        shift: [kx/2, -ky/2]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_ring_top
+        shift: [kx/2, -ky/2]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_index_top
+        shift: [kx/2, -ky/2 - 1]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: lower_l_outer_low
+        shift: [kx/2, ky/2]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_middle_bottom
+        shift: [-3.65, -17]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_inner_bottom
+        shift: [8.75, -12.5]
+  _holes_r:
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: mirror_matrix_outer_top
+        shift: [kx/2, -ky/2]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: mirror_matrix_ring_top
+        shift: [kx/2, -ky/2]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: mirror_matrix_index_top
+        shift: [kx/2, -ky/2 - 1]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: mirror_lower_l_outer_low
+        shift: [kx/2, ky/2]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: mirror_matrix_middle_bottom
+        shift: [-3.65, -17]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: mirror_matrix_inner_bottom
+        shift: [8.75, -12.5]
+  # Exported for review: the outline with every switch cutout and mounting hole.
   plate:
     - what: outline
       name: _plate_rounded
     - what: outline
       name: _cutouts
+      operation: subtract
+    - what: outline
+      name: _holes
       operation: subtract
   # Exported: the right-hand plate (mirror image of `plate`).
   plate_right:
@@ -289,3 +489,319 @@ outlines:
     - what: outline
       name: _cutouts_r
       operation: subtract
+    - what: outline
+      name: _holes_r
+      operation: subtract
+  # Exported: the PCB outline of both halves joined at the seam (the V-score line is a drawing-layer marker, see pcbs).
+  board:
+    - what: outline
+      name: _board
+
+pcbs:
+  # ONE board with both halves. The left half is the points as defined; the right half is their mirror image
+  # (points.mirror). Right-half nets carry an `_r` suffix so the halves stay separate (no ratsnest across the seam).
+  # Footprints default to asym: both, so each is split into a `source` (left) and a `clone` (right) entry here.
+  # Right-hand footprints that use an anchor with a mirrored ref spell out the mirrored x and set `resist: true`.
+  birdboard:
+    template: kicad8
+    outlines:
+      main:
+        outline: board
+    footprints:
+      switch_l:
+        what: ceoloide/switch_gateron_ks27_ks33
+        where: true
+        asym: source
+        params:
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+          hotswap: true
+          reversible: true
+      switch_r:
+        what: ceoloide/switch_gateron_ks27_ks33
+        where: true
+        asym: clone
+        params:
+          from: "{{column_net}}_r"
+          to: "{{colrow}}_r"
+          hotswap: true
+          reversible: true
+      diode_l:
+        what: ceoloide/diode_tht_sod123
+        where: true
+        asym: source
+        params:
+          from: "{{colrow}}"
+          to: "{{row_net}}"
+          include_tht: true
+          reversible: true
+        adjust:
+          shift: [0, diode_y]
+      diode_r:
+        what: ceoloide/diode_tht_sod123
+        where: true
+        asym: clone
+        params:
+          from: "{{colrow}}_r"
+          to: "{{row_net}}_r"
+          include_tht: true
+          reversible: true
+        adjust:
+          shift: [0, diode_y]
+      mcu_l:
+        what: custom/mcu_rp2040_zero
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [mcu_x, mcu_zero_y]
+        params:
+          side: F
+          mount: smd
+          GP0: "outer"
+          GP1: "pinky"
+          GP2: "ring"
+          GP3: "middle"
+          GP4: "index"
+          GP5: "inner"
+          GP6: "top"
+          GP7: "home"
+          GP8: "bottom"
+          GP9: "thumb"
+          GP12: "link"
+      mcu_r:
+        what: custom/mcu_rp2040_zero
+        where:
+          ref: mirror_matrix_inner_top
+        adjust:
+          shift: [-mcu_x, mcu_zero_y]
+          resist: true
+        params:
+          side: F
+          mount: smd
+          V5: "5V_r"
+          GND: "GND_r"
+          V3V3: "3V3_r"
+          GP0: "outer_r"
+          GP1: "pinky_r"
+          GP2: "ring_r"
+          GP3: "middle_r"
+          GP4: "index_r"
+          GP5: "inner_r"
+          GP6: "top_r"
+          GP7: "home_r"
+          GP8: "bottom_r"
+          GP9: "thumb_r"
+          GP12: "link_r"
+          GP10: "GP10_r"
+          GP11: "GP11_r"
+          GP13: "GP13_r"
+          GP14: "GP14_r"
+          GP15: "GP15_r"
+          GP26: "GP26_r"
+          GP27: "GP27_r"
+          GP28: "GP28_r"
+          GP29: "GP29_r"
+      link_l:
+        what: custom/usbc_breakout_4pin
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [link_pin_x, link_y]
+        params:
+          side: F
+          vbus: "5V"
+          dp: link
+      # The right module is the same part turned 180 degrees: its USB-C opening faces the seam, like the left one.
+      link_r:
+        what: custom/usbc_breakout_4pin
+        where:
+          ref: mirror_matrix_inner_top
+        adjust:
+          shift: [-link_pin_x, link_y]
+          rotate: 180
+          resist: true
+        params:
+          side: F
+          vbus: "5V_r"
+          gnd: "GND_r"
+          dp: link_r
+      hole_l1:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_outer_top
+        adjust:
+          shift: [kx/2, -ky/2]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_l2:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_ring_top
+        adjust:
+          shift: [kx/2, -ky/2]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_l3:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_index_top
+        adjust:
+          shift: [kx/2, -ky/2 - 1]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_l4:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: lower_l_outer_low
+        adjust:
+          shift: [kx/2, ky/2]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_l5:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_middle_bottom
+        adjust:
+          shift: [-3.65, -17]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_l6:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_inner_bottom
+        adjust:
+          shift: [8.75, -12.5]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_l7:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [mz_hole_x0, mz_hole_y]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_l8:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [mz_hole_x1, mz_hole_y]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_l9:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [mz_hole_x0, mz_hole_y2]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_r1:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: mirror_matrix_outer_top
+        adjust:
+          shift: [-kx/2, -ky/2]
+          resist: true
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_r2:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: mirror_matrix_ring_top
+        adjust:
+          shift: [-kx/2, -ky/2]
+          resist: true
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_r3:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: mirror_matrix_index_top
+        adjust:
+          shift: [-kx/2, -ky/2 - 1]
+          resist: true
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_r4:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: mirror_lower_l_outer_low
+        adjust:
+          shift: [-kx/2, ky/2]
+          resist: true
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_r5:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: mirror_matrix_middle_bottom
+        adjust:
+          shift: [3.65, -17]
+          resist: true
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_r6:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: mirror_matrix_inner_bottom
+        adjust:
+          shift: [-8.75, -12.5]
+          resist: true
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_r7:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: mirror_matrix_inner_top
+        adjust:
+          shift: [-mz_hole_x0, mz_hole_y]
+          resist: true
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_r8:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: mirror_matrix_inner_top
+        adjust:
+          shift: [-mz_hole_x1, mz_hole_y]
+          resist: true
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_r9:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: mirror_matrix_inner_top
+        adjust:
+          shift: [-mz_hole_x0, mz_hole_y2]
+          resist: true
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      # V-score marker along the seam (drawing layer only), from 3 mm above the board to 3 mm below it.
+      vscore:
+        what: custom/vscore_line
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [link_edge_x, zone_top + vscore_ext]
+        params:
+          length: 103.55   # = zone_top + vscore_ext - board_bottom_y + vscore_ext (plain number: footprint params are not expressions)
