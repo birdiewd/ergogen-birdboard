@@ -422,6 +422,16 @@ outlines:
       adjust:
         ref: matrix_inner_bottom
         shift: [8.75, -12.5]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_inner_bottom
+        shift: [29.7, -17.4]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: matrix_inner_bottom
+        shift: [16.0, -42.7]
   _holes_r:
     - what: circle
       radius: hole_print / 2
@@ -452,7 +462,16 @@ outlines:
       radius: hole_print / 2
       adjust:
         ref: mirror_matrix_inner_bottom
-        shift: [8.75, -12.5]
+        shift: [8.75, -12.5]    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: mirror_matrix_inner_bottom
+        shift: [29.7, -17.4]
+    - what: circle
+      radius: hole_print / 2
+      adjust:
+        ref: mirror_matrix_inner_bottom
+        shift: [16.0, -42.7]
   # Exported for review: the outline with every switch cutout and mounting hole.
   plate:
     - what: outline
@@ -778,14 +797,52 @@ pcbs:
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
+      hole_l10:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_inner_bottom
+        adjust:
+          shift: [29.7, -17.4]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_l11:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: matrix_inner_bottom
+        adjust:
+          shift: [16.0, -42.7]
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_r10:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: mirror_matrix_inner_bottom
+        adjust:
+          shift: [-29.7, -17.4]
+          resist: true
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
+      hole_r11:
+        what: ceoloide/mounting_hole_npth
+        where:
+          ref: mirror_matrix_inner_bottom
+        adjust:
+          shift: [-16.0, -42.7]
+          resist: true
+        params:
+          hole_size: hole_pcb
+          hole_drill: hole_pcb
       # Three LEDs on a line parallel to thumb f's top edge (-30 deg), 7 mm apart, centred on the blank area under the
-      # MCU zone (its centroid is 24.43, -1.0 from matrix_inner_bottom). The right half is the mirror image.
+      # MCU zone (centroid 24.43, -1.0 from matrix_inner_bottom, then moved 1 mm away from the board edge). The right half is the mirror image.
       led_l1:
         what: custom/led_ws2812b_5050
         where:
           ref: matrix_inner_bottom
         adjust:
-          shift: [18.37, 2.5]
+          shift: [17.37, 2.5]
           rotate: -30
         params:
           side: F
@@ -798,7 +855,7 @@ pcbs:
         where:
           ref: matrix_inner_bottom
         adjust:
-          shift: [24.43, -1.0]
+          shift: [23.43, -1.0]
           rotate: -30
         params:
           side: F
@@ -811,7 +868,7 @@ pcbs:
         where:
           ref: matrix_inner_bottom
         adjust:
-          shift: [30.49, -4.5]
+          shift: [29.49, -4.5]
           rotate: -30
         params:
           side: F
@@ -824,7 +881,7 @@ pcbs:
         where:
           ref: mirror_matrix_inner_bottom
         adjust:
-          shift: [-18.37, 2.5]
+          shift: [-17.37, 2.5]
           rotate: 30
           resist: true
         params:
@@ -838,7 +895,7 @@ pcbs:
         where:
           ref: mirror_matrix_inner_bottom
         adjust:
-          shift: [-24.43, -1.0]
+          shift: [-23.43, -1.0]
           rotate: 30
           resist: true
         params:
@@ -852,7 +909,7 @@ pcbs:
         where:
           ref: mirror_matrix_inner_bottom
         adjust:
-          shift: [-30.49, -4.5]
+          shift: [-29.49, -4.5]
           rotate: 30
           resist: true
         params:
