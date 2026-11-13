@@ -88,8 +88,12 @@ units:
   # ---- per-key offsets (mm, from the key centre; +y is toward the top of the key) ----
   # NOT VERIFIED in the UI: LED and diode placement; tune after previewing the PCB.
   diode_mx_y: -5       # diode south of the switch
+  # Gateron low-profile hotswap: the 3.0 mm socket holes and pads sit exactly at the MX-style diode spot (y -5), which shorted
+  # the diode's left lead (row) to the switch's column pad. -9 clears every pad by ~0.6 mm (checked on the exported PCB).
+  diode_lpmx_y: -9
   diode_choc_y: -8.5   # Choc: hotswap/pins and LED take the middle, diode moved to the lower edge
   led_mx_y: 5.9        # LED north of the switch (MX pins are on the south side)
+  led_lpmx_y: 5.9      # Gateron low-profile LED (still overlaps the top solder holes, see README / open issue)
   led_choc_y: -4.7     # LED south of the switch (Choc pins are on the north side)
 
 points:
@@ -716,11 +720,38 @@ pcbs:
           to: "{{colrow}}"
           hotswap: true
           reversible: true
-      diode: *diode_mx
+      diode: &diode_lpmx
+        what: ceoloide/diode_tht_sod123
+        where: true
+        params:
+          from: "{{colrow}}"
+          to: "{{row_net}}"
+          include_tht: true     # through-hole (DO-35 / 1N4148) pads
+          reversible: true
+        adjust:
+          shift: [0, diode_lpmx_y]
       mcu: *mcu_zero
       mcu_back: *mcu_back_zero
-      led: *led_zero_mx
-      led_back: *led_back_zero_mx
+      led: &led_zero_lpmx
+        what: custom/led_ws2812b_5050
+        where: true
+        params:
+          side: F
+          din: "{{led_in}}"
+          dout: "{{led_out}}"
+          vdd: "5V"
+        adjust:
+          shift: [0, led_lpmx_y]
+      led_back: &led_back_zero_lpmx
+        what: custom/led_ws2812b_5050
+        where: true
+        params:
+          side: B
+          din: "{{led_in}}"
+          dout: "{{led_out}}"
+          vdd: "5V"
+        adjust:
+          shift: [0, led_lpmx_y]
       link: *link_zero
       link_back: *link_back_zero
       hole_1: *hole_1

@@ -29,7 +29,7 @@ MCUS = {
 
 SWITCHES = {
     "mx": dict(what="ceoloide/switch_mx", family="mx", extra=["include_keycap: true"]),
-    "lpmx": dict(what="ceoloide/switch_gateron_ks27_ks33", family="mx", extra=[]),
+    "lpmx": dict(what="ceoloide/switch_gateron_ks27_ks33", family="lpmx", extra=[]),
     "choc": dict(what="ceoloide/switch_choc_v1_v2", family="choc",
                  extra=["include_keycap: true", "choc_v2_support: false"]),
     "choc2": dict(what="ceoloide/switch_choc_v1_v2", family="choc",
