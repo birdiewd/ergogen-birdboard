@@ -59,7 +59,6 @@ units:
   mz_hole_y0: -14.0                 # ... first one just below the Zero's left pad row
   mz_hole_x1: link_edge_x - 2.5     # ... and right strip, 2.5 from the seam
   mz_hole_y: zone_top - 2.5         # ... the right-strip one this far below the top edge
-  mz_hole_y2: link_y - 3.5          # third hole, beside the USB-C module
   # ---- MCU cover (separate plate over the MCU zone and the LED area) ----
   cover_gap: 0.5         # gap between the cover and the switch plate / thumb f's top edge / the LED-area edge
   cover_seam_gap: 0.1    # gap between the cover and the seam
@@ -520,13 +519,8 @@ outlines:
     - what: circle
       radius: hole_print / 2
       adjust:
-        ref: matrix_inner_top
-        shift: [mz_hole_x0, mz_hole_y2]
-    - what: circle
-      radius: hole_print / 2
-      adjust:
         ref: matrix_inner_bottom
-        shift: [29.84, -9.9]
+        shift: [31.01, -10.57]
   cover:
     - what: outline
       name: _cover_sharp
@@ -563,13 +557,8 @@ outlines:
     - what: circle
       radius: hole_print / 2
       adjust:
-        ref: mirror_matrix_inner_top
-        shift: [mz_hole_x0, mz_hole_y2]
-    - what: circle
-      radius: hole_print / 2
-      adjust:
         ref: mirror_matrix_inner_bottom
-        shift: [29.84, -9.9]
+        shift: [31.01, -10.57]
   cover_right:
     - what: outline
       name: _cover_sharp_r
@@ -783,15 +772,6 @@ pcbs:
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
-      hole_l9:
-        what: ceoloide/mounting_hole_npth
-        where:
-          ref: matrix_inner_top
-        adjust:
-          shift: [mz_hole_x0, mz_hole_y2]
-        params:
-          hole_size: hole_pcb
-          hole_drill: hole_pcb
       hole_r1:
         what: ceoloide/mounting_hole_npth
         where:
@@ -872,22 +852,12 @@ pcbs:
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
-      hole_r9:
-        what: ceoloide/mounting_hole_npth
-        where:
-          ref: mirror_matrix_inner_top
-        adjust:
-          shift: [-mz_hole_x0, mz_hole_y2]
-          resist: true
-        params:
-          hole_size: hole_pcb
-          hole_drill: hole_pcb
       hole_l10:
         what: ceoloide/mounting_hole_npth
         where:
           ref: matrix_inner_bottom
         adjust:
-          shift: [29.84, -9.9]
+          shift: [31.01, -10.57]
         params:
           hole_size: hole_pcb
           hole_drill: hole_pcb
@@ -905,7 +875,7 @@ pcbs:
         where:
           ref: mirror_matrix_inner_bottom
         adjust:
-          shift: [-29.84, -9.9]
+          shift: [-31.01, -10.57]
           resist: true
         params:
           hole_size: hole_pcb
