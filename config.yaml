@@ -165,21 +165,21 @@ points:
 outlines:
   _keys:
     - what: rectangle
-      asym: source
-      where: true
+      where: /^(?!mirror_)/
+      asym: both
       bound: false
       size: [kx + pad, ky + pad]
   _thumb_fill:
     - what: rectangle
-      asym: source
-      where: thumb_key
+      where: /^thumb_/
+      asym: both
       bound: false
       size: [kx + pad + thumb_fill, ky + pad + thumb_fill]
   # The 1.5u key is 1.5u tall in its own (rotated) frame.
   _tall_fill:
     - what: rectangle
-      asym: source
-      where: tall
+      where: /^thumb_f/
+      asym: both
       bound: false
       size: [kx + pad + thumb_fill, 1.5ky + pad + thumb_fill]
   # Flat bottom edge from a4 to thumb d (replaces the stepped edge of the individual key rectangles).
@@ -255,8 +255,8 @@ outlines:
       fillet: plate_fillet
   _cutouts:
     - what: rectangle
-      asym: source
-      where: true
+      where: /^(?!mirror_)/
+      asym: both
       bound: false
       size: cut
   # ---- Right-hand plate: the same shapes on the mirrored points (points.mirror). Nothing is flipped by hand:
@@ -264,20 +264,20 @@ outlines:
   # has its shift and rotation mirrored by Ergogen. Offsets here are identical to the left-hand ones above.
   _keys_r:
     - what: rectangle
-      where: true
-      asym: clone
+      where: /^mirror_/
+      asym: both
       bound: false
       size: [kx + pad, ky + pad]
   _thumb_fill_r:
     - what: rectangle
-      where: thumb_key
-      asym: clone
+      where: /^mirror_thumb_/
+      asym: both
       bound: false
       size: [kx + pad + thumb_fill, ky + pad + thumb_fill]
   _tall_fill_r:
     - what: rectangle
-      where: tall
-      asym: clone
+      where: /^mirror_thumb_f/
+      asym: both
       bound: false
       size: [kx + pad + thumb_fill, 1.5ky + pad + thumb_fill]
   _bottom_fill_r:
@@ -345,8 +345,8 @@ outlines:
       fillet: plate_fillet
   _cutouts_r:
     - what: rectangle
-      where: true
-      asym: clone
+      where: /^mirror_/
+      asym: both
       bound: false
       size: cut
   # ---- PCB outline: plate pieces + MCU / USB-C zone, per half. The halves touch only along the MCU zone; below it the
@@ -624,8 +624,7 @@ pcbs:
     footprints:
       switch_l:
         what: ceoloide/switch_gateron_ks27_ks33
-        where: true
-        asym: source
+        where: /^(?!mirror_)/
         params:
           from: "{{column_net}}"
           to: "{{colrow}}"
@@ -633,8 +632,7 @@ pcbs:
           reversible: false
       switch_r:
         what: ceoloide/switch_gateron_ks27_ks33
-        where: true
-        asym: clone
+        where: /^mirror_/
         params:
           from: "{{column_net}}_r"
           to: "{{colrow}}_r"
@@ -642,8 +640,7 @@ pcbs:
           reversible: false
       diode_l:
         what: ceoloide/diode_tht_sod123
-        where: true
-        asym: source
+        where: /^(?!mirror_)/
         params:
           from: "{{colrow}}"
           to: "{{row_net}}"
@@ -653,8 +650,7 @@ pcbs:
           shift: [0, diode_y]
       diode_r:
         what: ceoloide/diode_tht_sod123
-        where: true
-        asym: clone
+        where: /^mirror_/
         params:
           from: "{{colrow}}_r"
           to: "{{row_net}}_r"
