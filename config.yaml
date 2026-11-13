@@ -69,7 +69,7 @@ units:
   case_height: 10        # total height of the case, floor included (placeholder: depends on switches / sockets)
   standoff_h: 6          # standoff height above z = 0 (floor included)
   standoff_r: 3          # standoff outer radius
-  pilot_r: 0.9           # blind screw pilot hole in the standoffs (M2 self-tapping)
+  pilot_r: 1.1           # through hole in the floor and standoffs for an M2 screw (2.2 mm, as the PCB holes)
   plate_t: 1.5           # switch plate and MCU cover thickness
   # ---- diode ----
   diode_y: -9            # THT diode south of the switch: -5 shorts the row pad to the column pad, -9 clears every pad by ~0.6 mm
@@ -1688,8 +1688,7 @@ cases:
     - name: _standoffs_l
       extrude: standoff_h
     - name: _pilots_l
-      extrude: standoff_h
-      shift: [0, 0, case_floor]
+      extrude: case_height
       operation: subtract
   bottom_case_right:
     - name: _case_outer_r
@@ -1701,6 +1700,5 @@ cases:
     - name: _standoffs_r
       extrude: standoff_h
     - name: _pilots_r
-      extrude: standoff_h
-      shift: [0, 0, case_floor]
+      extrude: case_height
       operation: subtract
