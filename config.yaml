@@ -67,7 +67,7 @@ units:
   case_wall: 2           # wall thickness, outside the board outline
   case_floor: 2          # floor thickness
   case_clr: 0.4          # clearance between the board / plate and the inside of the wall
-  case_height: 12        # total height of the case, floor included (placeholder: PCB underside + PCB + brass spacer + plate)
+  case_height: 10        # total height of the case, floor included (placeholder: PCB underside + PCB + brass spacer + plate)
   pcb_z: 5               # height of the PCB underside above the case's bottom face (floor + brass standoff; placeholder)
   pcb_t: 1.6             # PCB thickness
   usb_w: 10              # USB-C opening width (receptacle shell is about 9 mm)
