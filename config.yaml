@@ -1295,7 +1295,7 @@ pcbs:
         where: /^(?!mirror_)/
         params:
           from: "{{column_net}}"
-          to: "{{colrow}}"
+          to: "{{name}}"
           hotswap: true
           reversible: false
       switch_r:
@@ -1303,14 +1303,14 @@ pcbs:
         where: /^mirror_/
         params:
           from: "{{column_net}}_r"
-          to: "{{colrow}}_r"
+          to: "{{name}}_r"
           hotswap: true
           reversible: false
       diode_l:
         what: ceoloide/diode_tht_sod123
         where: /^(?!mirror_)/
         params:
-          from: "{{colrow}}"
+          from: "{{name}}"
           to: "{{row_net}}"
           include_tht: true
           reversible: true
@@ -1320,7 +1320,7 @@ pcbs:
         what: ceoloide/diode_tht_sod123
         where: /^mirror_/
         params:
-          from: "{{colrow}}_r"
+          from: "{{name}}_r"
           to: "{{row_net}}_r"
           include_tht: true
           reversible: true
