@@ -1,0 +1,138 @@
+# v2: switch plate layout only (layout and outline to review).
+#
+# Loaded by https://ergogen.ceoloide.com ("From Local File" or "From Repo").
+# Layout measured from the sketch the plate is based on (19.05 mm = one column pitch):
+#   - six columns outer..inner, three rows, plus a fourth row under the first three columns
+#   - thumb keys d (straight), e (12 deg clockwise) and f (1.5u portrait, 24 deg clockwise)
+# NOT VERIFIED in the UI yet: stagger / thumb offsets are rounded to 0.5 mm from the sketch.
+
+meta:
+  engine: 4.1.0
+  name: birdboard_v2
+  version: 0.1
+
+units:
+  kx: U              # 19.05 mm
+  ky: U
+  cut: 14            # square switch cutout (every key, including the 1.5u key, centred on the cap)
+  pad: 3             # board margin around each key rectangle
+  thumb_fill: 4      # thumb rectangles are this much larger, to close gaps to the matrix (3 left a 1 mm2 hole)
+  plate_fillet: 1    # corner radius of the plate outline
+
+points:
+  key:
+    spread: kx
+    padding: ky
+  zones:
+    matrix:
+      anchor:
+        shift: [100, -100]
+      columns:
+        outer:
+        pinky:
+        ring:
+          key.stagger: 5      # up 5 mm from the pinky column
+        middle:
+          key.stagger: 2      # up 7 mm from the outer columns
+        index:
+          key.stagger: -2     # up 5 mm
+        inner:
+          key.stagger: -2.5   # up 2.5 mm
+      rows:
+        bottom:
+        home:
+        top:
+    # The fourth row: only under the outer, pinky and ring columns, in line with them.
+    lower:
+      anchor:
+        ref: matrix_outer_bottom
+        shift: [0, -ky]
+      columns:
+        l_outer:
+        l_pinky:
+        l_ring:
+          key.stagger: 5
+      rows:
+        low:
+    # Thumb keys, positioned from the middle column's bottom key (offsets measured from the sketch).
+    thumb_d:
+      key.tags: thumb_key
+      anchor:
+        ref: matrix_middle_bottom
+        shift: [9.5, -22.5]
+      columns:
+        k:
+          rows:
+            r:
+    thumb_e:
+      key.tags: thumb_key
+      anchor:
+        ref: matrix_middle_bottom
+        shift: [31.5, -26]
+        rotate: -12           # clockwise
+      columns:
+        k:
+          rows:
+            r:
+    # 1.5u key in portrait; the point is the centre of the cap, and the cutout is centred on it.
+    thumb_f:
+      key.tags: [thumb_key, tall]
+      anchor:
+        ref: matrix_middle_bottom
+        shift: [53, -31]
+        rotate: -24           # clockwise
+      columns:
+        k:
+          rows:
+            r:
+
+outlines:
+  _keys:
+    - what: rectangle
+      where: true
+      bound: false
+      size: [kx + pad, ky + pad]
+  _thumb_fill:
+    - what: rectangle
+      where: thumb_key
+      bound: false
+      size: [kx + pad + thumb_fill, ky + pad + thumb_fill]
+  # The 1.5u key is 1.5u tall in its own (rotated) frame.
+  _tall_fill:
+    - what: rectangle
+      where: tall
+      bound: false
+      size: [kx + pad + thumb_fill, 1.5ky + pad + thumb_fill]
+  # Fills the gap between the low ring-column key and the first thumb key.
+  _thumb_gap:
+    - what: rectangle
+      bound: false
+      size: [kx + 9.5, ky + pad + thumb_fill / 2]
+      adjust:
+        aggregate:
+          parts: [lower_l_ring_low, thumb_d_k_r]
+  _plate_sharp:
+    - what: outline
+      name: _keys
+    - what: outline
+      name: _thumb_fill
+    - what: outline
+      name: _tall_fill
+    - what: outline
+      name: _thumb_gap
+  _plate_rounded:
+    - what: outline
+      name: _plate_sharp
+      fillet: plate_fillet
+  _cutouts:
+    - what: rectangle
+      where: true
+      bound: false
+      size: cut
+  # Exported for review: the outline with every switch cutout.
+  plate:
+    - what: outline
+      name: _plate_rounded
+    - what: outline
+      name: _cutouts
+      operation: subtract
