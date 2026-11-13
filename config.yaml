@@ -34,6 +34,11 @@ points:
   key:
     spread: kx
     padding: ky
+  # Ergogen mirrors every point (named mirror_<zone>_<column>_<row>) to a copy this far to the right.
+  # The left outlines below only use the original points; the right-hand ones (_r) use the mirrored copies.
+  mirror:
+    ref: matrix_inner_top
+    distance: 8kx
   zones:
     matrix:
       anchor:
@@ -185,10 +190,102 @@ outlines:
       where: true
       bound: false
       size: cut
+  # ---- Right-hand plate: the same shapes on the mirrored points (points.mirror). Nothing is flipped by hand:
+  # `asym: clone` selects the mirrored copies of the matched points, and an anchor whose ref is a mirrored point
+  # has its shift and rotation mirrored by Ergogen. Offsets here are identical to the left-hand ones above.
+  _keys_r:
+    - what: rectangle
+      where: true
+      asym: clone
+      bound: false
+      size: [kx + pad, ky + pad]
+  _thumb_fill_r:
+    - what: rectangle
+      where: thumb_key
+      asym: clone
+      bound: false
+      size: [kx + pad + thumb_fill, ky + pad + thumb_fill]
+  _tall_fill_r:
+    - what: rectangle
+      where: tall
+      asym: clone
+      bound: false
+      size: [kx + pad + thumb_fill, 1.5ky + pad + thumb_fill]
+  _bottom_fill_r:
+    - what: rectangle
+      bound: false
+      size: [bf_x1 - bf_x0, bf_y1 - bf_y0]
+      adjust:
+        ref: mirror_lower_l_outer_low
+        shift: [(bf_x0 + bf_x1) / 2, (bf_y0 + bf_y1) / 2]
+  _thumb_bridge_r:
+    - what: rectangle
+      bound: false
+      size: [24, 24]
+      adjust:
+        aggregate:
+          parts: [mirror_matrix_inner_bottom, mirror_thumb_e_k_r]
+  _top_fill_r:
+    - what: rectangle
+      bound: false
+      size: [3kx + pad, (ky + pad) / 2]
+      adjust:
+        ref: mirror_matrix_middle_top
+        shift: [0, (ky + pad) / 4]
+  _right_fill_r:
+    - what: polygon
+      points:
+        - ref: mirror_matrix_inner_bottom
+          shift: [rf_x0, rf_y_top]
+        - ref: mirror_matrix_inner_bottom
+          shift: [rf_x1, rf_y1]
+        - ref: mirror_matrix_inner_bottom
+          shift: [rf_x0, rf_y_low]
+  _pocket_fill_r:
+    - what: rectangle
+      bound: false
+      size: [4, 2.5]
+      adjust:
+        ref: mirror_matrix_inner_bottom
+        shift: [7.75, -11.75]
+  _plate_sharp_r:
+    - what: outline
+      name: _keys_r
+    - what: outline
+      name: _thumb_fill_r
+    - what: outline
+      name: _tall_fill_r
+    - what: outline
+      name: _bottom_fill_r
+    - what: outline
+      name: _thumb_bridge_r
+    - what: outline
+      name: _top_fill_r
+    - what: outline
+      name: _right_fill_r
+    - what: outline
+      name: _pocket_fill_r
+  _plate_rounded_r:
+    - what: outline
+      name: _plate_sharp_r
+      fillet: plate_fillet
+  _cutouts_r:
+    - what: rectangle
+      where: true
+      asym: clone
+      bound: false
+      size: cut
   # Exported for review: the outline with every switch cutout.
   plate:
     - what: outline
       name: _plate_rounded
     - what: outline
       name: _cutouts
+      operation: subtract
+  # Exported: the right-hand plate (mirror image of `plate`).
+  plate_right:
+    - what: outline
+      name: _plate_rounded_r
+    - what: outline
+      name: _cutouts_r
       operation: subtract
