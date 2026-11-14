@@ -70,13 +70,18 @@ SEAM = 235.775
 
 
 def drop_duplicates(pads):
-    """The export has switch_l/diode_l footprints stacked on the right half (name filters matched mirrored points).
-    Keep the right-hand footprints (pad 1 net ends with _r) and drop the stacked left-hand ones."""
-    drop = set()
+    """Footprints stacked on one spot (a name/asym filter that matched mirrored and source points both): keep the one
+    whose column/row nets fit the side (right half nets end in _r), drop the others."""
+    groups = collections.defaultdict(dict)
     for q in pads:
-        if q.fp.endswith(('switch_gateron_ks27_ks33', 'diode_tht_sod123')) and q.x > SEAM and q.num == '1' and q.net \
-                and not q.net.endswith('_r') and not q.tht:
-            drop.add(q.ref)
+        if q.fp.endswith(('switch_gateron_ks27_ks33', 'diode_tht_sod123')) and q.num == '1' and not q.tht and q.net:
+            groups[(q.fp, round(q.x, 2), round(q.y, 2), tuple(sorted(q.layers)))][q.ref] = q
+    drop = set()
+    for key, refs in groups.items():
+        if len(refs) < 2: continue
+        right = key[1] > SEAM
+        for ref, q in refs.items():
+            if q.net.endswith('_r') != right: drop.add(ref)
     return drop
 
 

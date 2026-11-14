@@ -30,7 +30,7 @@ def build(src,out,res,gv):
         if not re.fullmatch(r'[SD]\d+',ref or ''): continue
         n=re.sub(r'\D','',ref)
         for old in ('k_r','mirror_k_r_r'):
-            if f'(net {byname[old]} "{old}")' in txt:
+            if old in byname and f'(net {byname[old]} "{old}")' in txt:
                 new=f'{old}_{n}'
                 txt=txt.replace(f'(net {byname[old]} "{old}")',f'(net {nid(new)} "{new}")')
         t=t[:b[0]]+txt+t[b[1]:]

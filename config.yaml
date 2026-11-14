@@ -1292,8 +1292,7 @@ pcbs:
     footprints:
       switch_l:
         what: ceoloide/switch_gateron_ks27_ks33
-        where: true
-        asym: source
+        where: /^.[aoh]/   # left points only: matrix_*, lower_*, thumb_* (mirror_* has an i second)
         params:
           from: "{{column_net}}"
           to: "{{name}}"
@@ -1301,8 +1300,7 @@ pcbs:
           reversible: false
       switch_r:
         what: ceoloide/switch_gateron_ks27_ks33
-        where: true
-        asym: clone
+        where: /^mirror_/
         params:
           from: "{{column_net}}_r"
           to: "{{name}}_r"
@@ -1310,8 +1308,7 @@ pcbs:
           reversible: false
       diode_l:
         what: ceoloide/diode_tht_sod123
-        where: true
-        asym: source
+        where: /^.[aoh]/   # left points only: matrix_*, lower_*, thumb_* (mirror_* has an i second)
         params:
           from: "{{name}}"
           to: "{{row_net}}"
@@ -1321,8 +1318,7 @@ pcbs:
           shift: [0, diode_y]
       diode_r:
         what: ceoloide/diode_tht_sod123
-        where: true
-        asym: clone
+        where: /^mirror_/
         params:
           from: "{{name}}_r"
           to: "{{row_net}}_r"
