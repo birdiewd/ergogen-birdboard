@@ -25,19 +25,19 @@ def route_half(left):
     bd = r.bd
     nets = collections.defaultdict(list)
     for q in bd.pads:
-        if q.net and not q.net.startswith('GND') and ((q.x < M.SEAM) == left):
+        if q.net and ((q.x < M.SEAM) == left):
             nets[q.net].append(q)
     multi = [n for n, v in nets.items() if len(v) > 1]
     sx = '' if left else '_r'
     cols = [c + sx for c in ['outer', 'pinky', 'ring', 'middle', 'index', 'inner']]
     rows = [c + sx for c in ['bottom', 'home', 'top', 'thumb']]
-    power = ['5V' + sx]
+    power = ['5V' + sx, 'GND' + sx]
     misc = [m + sx for m in ['link', 'led_data', 'led_1', 'led_2']]
     colrow = [n for n in multi if n not in cols + rows + power + misc]
     order = [n for n in power + misc + colrow + cols + rows if n in multi]
     fails = []
     for n in order:
-        r.route_net(n, 0.5 if n.startswith('5V') else 0.25, half=left)
+        r.route_net(n, 0.5 if n.startswith('5V') else 0.4 if n.startswith('GND') else 0.25, half=left)
         if r.res[n]['failed']: fails.append((n, r.res[n]['failed']))
     print('left' if left else 'right', 'routed', len(order), 'nets; failed:', fails, flush=True)
     return r.res
