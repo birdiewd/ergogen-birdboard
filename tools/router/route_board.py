@@ -54,6 +54,10 @@ for g in ('GND', 'GND_r'):
     print(g, 'pads', info['padn'], 'unattached', info['unattached'], 'pour groups', info['groups'])
     gv += info['added'] + info['stitch']
 write_pcb.build(M.PCB, out, res, gv)
+dr = drc.Drc(bd, res, gv)
+dr.build()
+viol = dr.clearance()
+print('DRC clearance violations (<0.15 mm raster):', len(viol), viol[:5])
 if png:
     import render
     render.render(res, png, (86, 40, 385, 132), scale=6)
