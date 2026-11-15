@@ -13,6 +13,7 @@ Planned files (converted from the providers' KiCad footprints, see
 | `mcu_rp2040_zero.js` | Waveshare RP2040-Zero | converted from the supplied `RP2040 Zero.kicad_mod`; pin names assigned by position (USB up: left 5V GND 3V3 GP29..GP26 GP15 GP14, bottom GP13..GP9, right GP0..GP8), `5V` param is `V5`. Source Edge.Cuts notch not carried over |
 | `led_ws2812b_5050.js` | WS2812B 5050 (PLCC4, 5.0x5.0mm) | converted; pad data matches the KiCad source, not yet loaded in the UI |
 | `usbc_breakout_4pin.js` | generic 4-pin USB-C female breakout module (V, D-, D+, G, 2.54 mm) | hand-written from the product image, F/B variants, not yet loaded in the UI |
+| `switch_gateron_hotswap.js` | Gateron KS-27/KS-33 hotswap switch | copy of `ceoloide/switch_gateron_ks27_ks33` (hotswap, not reversible) without the unused 1.25 mm solder holes; pin geometry unchanged |
 | `vscore_line.js` | V-score marker (drawing-layer line + note along the seam, no copper) | hand-written, not yet loaded in the UI |
 
 Git does not track empty folders, so this README keeps `footprints/custom/` in

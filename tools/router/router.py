@@ -12,7 +12,7 @@ VIA_COST = 14.0
 INF = 1e18
 
 
-def is_switch(q): return q.fp.endswith('switch_gateron_ks27_ks33')
+def is_switch(q): return q.fp.endswith(('switch_gateron_ks27_ks33', 'switch_gateron_hotswap'))
 def is_diode(q): return q.fp.endswith('diode_tht_sod123')
 
 

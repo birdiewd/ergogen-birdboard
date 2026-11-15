@@ -74,7 +74,7 @@ def drop_duplicates(pads):
     whose column/row nets fit the side (right half nets end in _r), drop the others."""
     groups = collections.defaultdict(dict)
     for q in pads:
-        if q.fp.endswith(('switch_gateron_ks27_ks33', 'diode_tht_sod123')) and q.num == '1' and not q.tht and q.net:
+        if q.fp.endswith(('switch_gateron_ks27_ks33', 'switch_gateron_hotswap', 'diode_tht_sod123')) and q.num == '1' and not q.tht and q.net:
             groups[(q.fp, round(q.x, 2), round(q.y, 2), tuple(sorted(q.layers)))][q.ref] = q
     drop = set()
     for key, refs in groups.items():
@@ -88,7 +88,7 @@ def drop_duplicates(pads):
 def fix_thumb_nets(pads):
     """thumb keys shared one colrow net; give each switch/diode pair its own (what the new config produces)."""
     for q in pads:
-        if q.net in ('k_r', 'mirror_k_r_r') and q.fp in ('ceoloide:switch_gateron_ks27_ks33', 'ceoloide:diode_tht_sod123'):
+        if q.net in ('k_r', 'mirror_k_r_r') and q.fp in ('ceoloide:switch_gateron_ks27_ks33', 'custom:switch_gateron_hotswap', 'ceoloide:diode_tht_sod123'):
             n = re.sub(r'\D', '', q.ref)
             q.net = f'{q.net}_{n}'
 
