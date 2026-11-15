@@ -138,7 +138,6 @@ points:
     # Thumb keys, positioned from the middle column's bottom key (offsets measured from the sketch).
     # The thumb keys form a fourth matrix row (`thumb`), on the middle, index and inner columns.
     thumb_d:
-      key.tags: thumb_key
       key.row_net: thumb
       anchor:
         ref: matrix_middle_bottom
@@ -149,7 +148,6 @@ points:
           rows:
             r:
     thumb_e:
-      key.tags: thumb_key
       key.row_net: thumb
       anchor:
         ref: matrix_middle_bottom
@@ -162,7 +160,6 @@ points:
             r:
     # 1.5u key in portrait; the point is the centre of the cap, and the cutout is centred on it.
     thumb_f:
-      key.tags: [thumb_key, tall]
       key.row_net: thumb
       anchor:
         ref: matrix_middle_bottom
