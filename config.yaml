@@ -137,12 +137,15 @@ pcbs:
       main:
         outline: board
     footprints:
-      # Gateron Low Profile 2.0 (KS-33) switches in Gateron LP hot-swap sockets on the back.
+      # Gateron Low Profile 2.0 (KS-33) switches in Gateron LP hot-swap sockets.
+      # Reversible: socket pads on both sides, so the same PCB works for either
+      # hand (flip it over for the other half and fit the sockets on that side).
       switch:
         what: ceoloide/switch_gateron_ks27_ks33
         where: true
         params:
           side: B
+          reversible: true
           hotswap: true
           solder: false
           include_keycap: true
