@@ -13,6 +13,12 @@
 // The right half is this PCB flipped, so it needs the B set. Both sets exist on the PCB
 // (the B set is offset in x by the config so the holes do not collide); populate one.
 //
+// upside_down: true mounts the breakout from the bottom of this PCB with its component side
+// (the USB-C receptacle) facing up into a cutout (cut it in the outline), so the port sits
+// level with the PCB. The header goes through both boards at the pad row. Seen from the top
+// the pin order is the F order (V at the bottom); outline and text go on the back layers.
+// Overrides `side`.
+//
 // Pin order and sizes are read from the seller's product image; check them against your
 // part before ordering boards.
 
@@ -20,6 +26,7 @@ module.exports = {
   params: {
     designator: 'J',
     side: 'F',
+    upside_down: false,
     vbus: { type: 'net', value: 'VBUS' },
     dp: { type: 'net', value: 'D_P' },
     gnd: { type: 'net', value: 'GND' },
@@ -29,12 +36,14 @@ module.exports = {
     show_silk: true,
   },
   body: p => {
-    const side = p.side === 'B' ? 'B' : 'F';
+    const flip = !!p.upside_down;
+    const side = flip || p.side === 'B' ? 'B' : 'F';
     const L = name => `"${side}.${name}"`;
     const mirror = side === 'B' ? ' (justify mirror)' : '';
     const pitch = 2.54;
-    // KiCad y points down. F: V at the bottom (+y); B: V at the top (-y).
-    const dir = side === 'B' ? -1 : 1;
+    // KiCad y points down. F (and upside down): V at the bottom (+y); B: V at the top (-y).
+    const dir = side === 'B' && !flip ? -1 : 1;
+    const refY = flip ? 7.5 : -7.5; // upside down: below the module, clear of the MCU pads
     const pads = [
       ['1', 'V', 1.5 * pitch * dir, p.vbus.str],
       ['2', 'D-', 0.5 * pitch * dir, ''],
@@ -44,7 +53,7 @@ module.exports = {
     let out = `
   (footprint "custom:usbc_breakout_4pin" (layer "${side}.Cu")
     (at ${p.x} ${p.y} ${p.r})
-    (property "Reference" "${p.ref}" (at 5 -7.5 ${p.r}) (layer ${L('SilkS')})
+    (property "Reference" "${p.ref}" (at 5 ${refY} ${p.r}) (layer ${L('SilkS')})
       (effects (font (size 1 1) (thickness 0.15))${mirror}))
     (attr through_hole)
     (descr "4-pin USB-C female breakout module, 2.54mm row, plugged in via a straight header")`;
@@ -68,7 +77,8 @@ module.exports = {
       out += line(x1, -h, x1, h, 'SilkS', 0.12);
       out += line(x1, h, x0, h, 'SilkS', 0.12);
       out += line(x0, h, x0, -h, 'SilkS', 0.12);
-      out += `
+      // (the label would fall in the cutout when upside down)
+      if (!flip) out += `
     (fp_text user "USB-C ${side} V" (at 5 ${side === 'B' ? -3.2 : 3.2} ${p.r}) (layer ${L('SilkS')})
       (effects (font (size 0.8 0.8) (thickness 0.12))${mirror}))`;
     }

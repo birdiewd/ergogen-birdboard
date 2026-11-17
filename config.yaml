@@ -28,8 +28,12 @@ units:
   mcu_cut_w: 12.4                                  # 0.57 mm clear of the side pads
   mcu_cut_down: 8.75                               # from the module centre down to the cutout bottom
   mcu_cut_up: mcu_h / 2 + 2                        # from the module centre up, past the board edge
-  link_back_dx: 2.54                               # front-side breakout sits this much further in
-  link_x: 0.5px + mcu_area_w - 12.6                # back-side breakout pad row: shell flush with the edge
+  link_x: 0.5px + mcu_area_w - 12.6                # breakout pad row: shell flush with the edge
+  # Cutout under the upside-down breakout for its USB-C receptacle (open at the edge).
+  # The breakout's 12 mm board rests on the PCB underside along both sides of it.
+  link_cut_w: 9.6                                  # receptacle ~8.9 wide, so ~1.2 mm rests either side
+  link_cut_start: 3                                # from the pad row forward to the cutout (2.1 mm clear of the pads)
+  link_cut_len: 12.6 - link_cut_start + 2          # to the board edge, plus 2 past it
   link_y: 0.5py - mcu_h - usb_gap - usb_h / 2
 points:
   zones:
@@ -179,13 +183,24 @@ outlines:
       shift: [mcu_x, mcu_y + (mcu_cut_up - mcu_cut_down) / 2]
     size: [mcu_cut_w, mcu_cut_up + mcu_cut_down]
     corner: 1
-  # PCB outline: the key area plus the electronics strip, minus the MCU cutout.
+  # Open-sided cutout for the receptacle of the upside-down USB-C breakout.
+  link_cutout:
+  - what: rectangle
+    where: matrix_inner_top
+    bound: false
+    adjust:
+      shift: [link_x + link_cut_start + link_cut_len / 2, link_y]
+    size: [link_cut_len, link_cut_w]
+    corner: 1
+  # PCB outline: the key area plus the electronics strip, minus the module cutouts.
   board_mcu:
     - name: board
     - operation: add
       name: mcu_area
     - operation: subtract
       name: mcu_cutout
+    - operation: subtract
+      name: link_cutout
   # Reference only (not cut): where the modules sit, to check fit in the viewer.
   modules:
   # RP2040-Zero, top edge flush with the PCB edge, USB-C facing up
@@ -271,27 +286,18 @@ pcbs:
           GP8: R2
           GP9: R3
           GP12: LINK
-      # 4-pin USB-C breakout (VBUS, D+ as single-wire serial, GND) on a 1x4 header,
-      # opening toward the other half. Both sides have their own holes, offset in x
-      # so they don't collide (the pin order flips); fit the one matching the MCU.
+      # 4-pin USB-C breakout (VBUS, D+ as single-wire serial, GND), opening toward the
+      # other half. Like the MCU: one unmirrored footprint, mounted upside down from the
+      # bottom with the receptacle facing up into link_cutout, so the port sits level
+      # with the PCB. A straight 1x4 header goes through both boards at the pad row.
       link:
-        what: usbc_breakout_4pin
-        where:
-          ref: matrix_inner_top
-        adjust:
-          shift: [link_x - link_back_dx, link_y]
-        params:
-          side: F
-          vbus: 5V
-          dp: LINK
-      link_back:
         what: usbc_breakout_4pin
         where:
           ref: matrix_inner_top
         adjust:
           shift: [link_x, link_y]
         params:
-          side: B
+          upside_down: true
           vbus: 5V
           dp: LINK
 cases:
