@@ -35,6 +35,10 @@ units:
   link_cut_start: 3                                # from the pad row forward to the cutout (2.1 mm clear of the pads)
   link_cut_len: 12.6 - link_cut_start + 2          # to the board edge, plus 2 past it
   link_y: 0.5py - mcu_h - usb_gap - usb_h / 2
+  # WS2812B status LED below the breakout, centred on it, halfway between the breakout's
+  # bottom edge and the thumb key's padded top edge (16 mm apart at this x).
+  led_x: link_x + 5.25                             # breakout board centre (it spans -2.1 to 12.6 from the pad row)
+  led_y: link_y - usb_h / 2 - 8
 points:
   zones:
     matrix:
@@ -307,6 +311,7 @@ pcbs:
           GP7: R1
           GP8: R2
           GP9: R3
+          GP10: LED
           GP12: LINK
       # 4-pin USB-C breakout (VBUS, D+ as single-wire serial, GND), opening toward the
       # other half. Like the MCU: one unmirrored footprint, mounted upside down from the
@@ -323,6 +328,25 @@ pcbs:
           upside_down: true
           vbus: 5V
           dp: LINK
+      # WS2812B status LED (5V supply, 3.3V data from GP10). Front and back copies at the
+      # same spot so it can face up on either half: fit F on the left, B on the right.
+      led: &led
+        what: led_ws2812b_5050
+        where:
+          ref: matrix_inner_top
+        adjust:
+          - *thumb_edge
+          - shift: [led_x, led_y]
+        params:
+          side: F
+          din: LED
+          vdd: 5V
+      led_back:
+        <<: *led
+        params:
+          side: B
+          din: LED
+          vdd: 5V
 cases:
   # 3D-printable switch plate, sitting directly on the PCB (z = 0 is the PCB top).
   #   - frame: the combo outline (keycap-sized openings), frame_t thick, fills the
