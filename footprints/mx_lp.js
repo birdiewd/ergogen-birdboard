@@ -1,8 +1,14 @@
 // Cherry MX Low Profile switch footprint (through-hole, solder-in) for Ergogen v4.
 // Uses KiCad 8 syntax, so the PCB must set `template: kicad8`.
 //
-// Pad and hole positions come from Keebio's Cherry-MX-Low-Profile.kicad_mod,
-// linked from https://github.com/ergogen/ergogen/issues/91
+// Geometry matches siderakb's SW_MX_LowProfile_THT
+// (https://github.com/siderakb/key-switches.pretty), whose hole positions agree
+// with Keebio's Cherry-MX-Low-Profile.kicad_mod (linked from ergogen issue #91).
+// Cherry's own footprint drawing hasn't been checked.
+//
+// The centre hole and the 2.3 mm hole overlap on purpose: together they form one
+// keyhole-shaped cutout (round for three arms of the stem's cross, plus a hole for
+// the longer fourth arm). KiCad's design check reports this as hole-to-hole.
 //
 // Params:
 //   designator: reference prefix (default 'S')
@@ -67,8 +73,8 @@ module.exports = {
     ${rect(15, 15, 'Eco2.User', 0.15)}
     (pad "" np_thru_hole circle (at 0 0 ${p.r}) (size 6.25 6.25) (drill 6.25) (layers "*.Cu" "*.Mask"))
     (pad "" np_thru_hole circle (at 0 3.7 ${p.r}) (size 2.3 2.3) (drill 2.3) (layers "*.Cu" "*.Mask"))
-    (pad "1" thru_hole circle (at 0 6.05 ${p.r}) (size 2.25 2.25) (drill 1.47) (layers "*.Cu" "*.Mask") ${p.from.str})
-    (pad "2" thru_hole circle (at 4.13 3.3 ${p.r}) (size 2.25 2.25) (drill 1.47) (layers "*.Cu" "*.Mask") ${p.to.str})
+    (pad "1" thru_hole circle (at 0 6.05 ${p.r}) (size 2 2) (drill 1.2) (layers "*.Cu" "*.Mask") ${p.from.str})
+    (pad "2" thru_hole circle (at 4.13 3.3 ${p.r}) (size 2 2) (drill 1.2) (layers "*.Cu" "*.Mask") ${p.to.str})
   )
   `
   }

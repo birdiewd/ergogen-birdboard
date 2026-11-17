@@ -137,12 +137,17 @@ pcbs:
       main:
         outline: board
     footprints:
-      mx_lp:
-        what: mx_lp
+      # Gateron Low Profile 2.0 (KS-33) switches in Gateron LP hot-swap sockets on the back.
+      switch:
+        what: ceoloide/switch_gateron_ks27_ks33
         where: true
         params:
-          keycaps: true
-          reverse: false
+          side: B
+          hotswap: true
+          solder: false
+          include_keycap: true
+          include_corner_marks: true
+          include_socket_silks: true
           from: "{{column_net}}"
           to: "{{name}}"
       # One diode per key, column-to-row: anode on the switch, cathode on the row net.
