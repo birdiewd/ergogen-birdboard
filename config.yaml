@@ -13,6 +13,15 @@ units:
   mount_pad: 3
   hole_d: 2.2         # M2 clearance hole (PCB and plate)
   hole_off: 2.5       # hole centre distance outside the keycap edge
+  # 3D-printed cover over the electronics strip (MCU, USB-C breakout, LED), screwed on
+  # through the strip's three mounting holes. It sits on the PCB top: a wall layer with a
+  # pocket for the parts that stand above the PCB (both USB-C shells and the LED reach
+  # about 1.6 mm), then a solid lid.
+  cover_wall: 1.5     # outer wall width
+  cover_pocket: 2.5   # pocket depth (wall height): 1.6 mm parts + 0.9 mm clearance
+  cover_lid: 1.5      # lid thickness on top (4 mm total)
+  cover_boss: 3       # radius of the solid boss around each screw hole
+  cover_gap: 0.3      # gap between the cover and the switch plate
   # Switch plate (Gateron LP 2.0 / KS-33 dimensional drawing)
   switch_cut: 14      # switch body at plate level: 14.00 +/- 0.03
   print_tol: 0.1      # extra clearance added to each cutout for 3D printing
@@ -315,6 +324,76 @@ outlines:
     adjust: &h_link
       - *thumb_edge
       - shift: [link_x - 2.1 - hole_off - 0.5, link_y]
+  # The key area of the board grown by cover_gap: the cover stays out of it.
+  # (`expand` applies to everything built so far, so it gets its own outline.)
+  cover_keepout:
+    - name: board
+      expand: cover_gap
+  # The hole below the LED sits on the line between the cover and the switch plate, so
+  # the cover gets a round tab around it and the plate a matching notch (cover_gap wider).
+  cover_tab:
+  - what: circle
+    where: thumbfan_home_thumb
+    radius: cover_boss
+    adjust: *h_thumb
+  cover_tab_clear:
+  - what: circle
+    where: thumbfan_home_thumb
+    radius: cover_boss + cover_gap
+    adjust: *h_thumb
+  # Electronics cover. Footprint: the strip right of the inner column, minus the keys'
+  # padded areas (so it stays 2 mm clear of the keycaps) and minus the key area of the
+  # board plus cover_gap, so it never overlaps the switch plate.
+  cover_area:
+    - name: mcu_area
+    - operation: intersect
+      what: rectangle
+      where: matrix_inner_top
+      bound: false
+      adjust:
+        shift: [0.5px + 50, -50]
+      size: [100, 200]
+    - operation: subtract
+      name: raw
+    - operation: subtract
+      name: cover_keepout
+    - operation: add
+      name: cover_tab
+  # Solid bosses around the cover's three screw holes.
+  cover_bosses:
+  - what: circle
+    where: matrix_inner_top
+    radius: cover_boss
+    adjust: *h_strip
+  - what: circle
+    where: thumbfan_home_thumb
+    radius: cover_boss
+    adjust: *h_thumb
+  - what: circle
+    where: matrix_inner_top
+    radius: cover_boss
+    adjust: *h_link
+  # Pocket under the lid: inset by the wall, opened out through the edge where the two
+  # USB-C ports are (the module cutouts reach past the edge), minus the bosses.
+  cover_pocket:
+    - name: cover_area
+      expand: -cover_wall
+    - operation: add
+      name: mcu_cutout
+    - operation: add
+      name: link_cutout
+    - operation: subtract
+      name: cover_bosses
+  cover_base:
+    - name: cover_area
+    - operation: subtract
+      name: cover_pocket
+    - operation: subtract
+      name: mount_holes
+  cover_top:
+    - name: cover_area
+    - operation: subtract
+      name: mount_holes
   # Top layer of the switch plate: the board outline with a switch cutout per key,
   # and the mounting holes.
   plate:
@@ -323,11 +402,16 @@ outlines:
       name: switch_cutouts
     - operation: subtract
       name: mount_holes
-  # Bottom (frame) layer of the switch plate: combo with the mounting holes.
+    - operation: subtract
+      name: cover_tab_clear
+  # Bottom (frame) layer of the switch plate: combo with the mounting holes (and the
+  # notch for the cover's tab).
   frame:
     - name: combo
     - operation: subtract
       name: mount_holes
+    - operation: subtract
+      name: cover_tab_clear
 pcbs:
   tutorial:
     template: kicad8
@@ -490,4 +574,17 @@ cases:
       name: plate
       extrude: plate_t
       shift: [0, 0, frame_t]
+      operation: add
+  # Cover for the MCU, USB-C breakout and LED (z = 0 is the PCB top). Screws through the
+  # three strip holes (between the MCU and breakout, left of the breakout, below the LED).
+  # Print it upside down (lid on the bed). The LED is under the lid: print in a
+  # translucent filament if it should show through.
+  mcu_cover:
+    - what: outline
+      name: cover_base
+      extrude: cover_pocket
+    - what: outline
+      name: cover_top
+      extrude: cover_lid
+      shift: [0, 0, cover_pocket]
       operation: add
