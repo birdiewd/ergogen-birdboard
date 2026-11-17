@@ -290,7 +290,13 @@ pcbs:
       # Mounted upside down from the bottom (left half as reference): component side up,
       # into mcu_cutout, so its USB-C port sits level with the PCB. One footprint serves
       # both halves: on the flipped right half the same assembly is just turned over.
-      # Columns C0-C5 on GP0-GP5, rows R0-R3 on GP6-GP9, half-to-half link on GP12.
+      # Pins as seen from the top of the PCB. The switch matrix uses the side facing the
+      # keys: all six GPIOs on the left edge for the columns, then the bottom row
+      # (left to right) for the rows. LED and link use the bottom-right corner, next to
+      # the breakout and the LED.
+      #   left, top to bottom:  5V GND 3V3 | GP29=C0 GP28=C1 GP27=C2 GP26=C3 GP15=C4 GP14=C5
+      #   bottom, left to right: GP13=R0 GP12=R1 GP11=R2 GP10=R3 GP9=LED
+      #   right, bottom pin:     GP8=LINK
       mcu:
         what: mcu_rp2040_zero
         where:
@@ -301,18 +307,18 @@ pcbs:
         params:
           upside_down: true
           mount: smd
-          GP0: C0
-          GP1: C1
-          GP2: C2
-          GP3: C3
-          GP4: C4
-          GP5: C5
-          GP6: R0
-          GP7: R1
-          GP8: R2
-          GP9: R3
-          GP10: LED
-          GP12: LINK
+          GP29: C0
+          GP28: C1
+          GP27: C2
+          GP26: C3
+          GP15: C4
+          GP14: C5
+          GP13: R0
+          GP12: R1
+          GP11: R2
+          GP10: R3
+          GP9: LED
+          GP8: LINK
       # 4-pin USB-C breakout (VBUS, D+ as single-wire serial, GND), opening toward the
       # other half. Like the MCU: one unmirrored footprint, mounted upside down from the
       # bottom with the receptacle facing up into link_cutout, so the port sits level
@@ -328,8 +334,8 @@ pcbs:
           upside_down: true
           vbus: 5V
           dp: LINK
-      # WS2812B status LEDs (5V supply, 3.3V data from GP10), one on each side of the
-      # board at the same spot, both fitted. Chained: GP10 -> front LED -> back LED,
+      # WS2812B status LEDs (5V supply, 3.3V data from GP9), one on each side of the
+      # board at the same spot, both fitted. Chained: GP9 -> front LED -> back LED,
       # so each can be set on its own (LED 0 = front, LED 1 = back).
       led: &led
         what: led_ws2812b_5050
