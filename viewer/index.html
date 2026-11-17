@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ergogen viewer</title>
+<style>
+  :root { --bg: #16181c; --panel: #1f2228; --line: #2c3038; --text: #d8dce3; --muted: #8a909b; --ok: #3fb950; --warn: #d29922; --err: #f85149; --accent: #58a6ff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, sans-serif; }
+  body { display: grid; grid-template-columns: 220px auto 1fr; grid-template-rows: auto 1fr; height: 100vh; }
+  header { grid-column: 1 / 4; display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 14px; margin: 0; font-weight: 600; }
+  .tabs { display: flex; gap: 2px; background: #15171b; padding: 2px; border-radius: 8px; }
+  .tabs button { border: 0; background: transparent; color: var(--muted); padding: 4px 12px; border-radius: 6px; }
+  .tabs button.active { background: #2b3038; color: var(--text); }
+  .status { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .dot.ok { background: var(--ok); } .dot.building { background: var(--warn); } .dot.error, .dot.unavailable { background: var(--err); }
+  header .spacer { flex: 1; }
+  #coords { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 160px; text-align: right; }
+  button { background: #2b3038; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; }
+  button:hover { background: #343a44; }
+  label.tog { display: flex; align-items: center; gap: 4px; color: var(--muted); cursor: pointer; }
+  aside { background: var(--panel); border-right: 1px solid var(--line); overflow: auto; padding: 10px; }
+  aside h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 4px 0 8px; }
+  aside select { width: 100%; margin-bottom: 8px; background: #2b3038; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px; font: inherit; }
+  .item { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 6px; cursor: pointer; user-select: none; }
+  .item:hover { background: #2a2e36; }
+  .item input { margin: 0; }
+  .swatch { width: 12px; height: 3px; border-radius: 2px; flex: none; }
+  .swatch.box { height: 10px; }
+  .item .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .count { margin-left: auto; color: var(--muted); font-size: 11px; }
+  .hint { color: var(--muted); font-size: 12px; padding: 4px 6px; }
+  main { position: relative; overflow: hidden; }
+  .pane { position: absolute; inset: 0; display: none; }
+  .pane.active { display: block; }
+  .stage { width: 100%; height: 100%; display: block; cursor: grab; overflow: hidden; position: relative; }
+  .stage.dragging { cursor: grabbing; }
+  #pcbWorld { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  #pcbWorld img { position: absolute; left: 0; top: 0; pointer-events: none; }
+  #pcbWorld.back { transform: scaleX(-1); }
+  #pcbGrid { position: absolute; inset: 0; }
+  .banner { position: absolute; left: 12px; right: 12px; bottom: 12px; max-height: 40%; overflow: auto; background: #2d1517; border: 1px solid var(--err); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; font: 12px/1.4 ui-monospace, monospace; display: none; z-index: 5; }
+  .empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); pointer-events: none; text-align: center; padding: 20px; }
+  #threeCanvas { width: 100%; height: 100%; display: block; }
+  aside { grid-column: 1; grid-row: 2; }
+  main { grid-column: 3; grid-row: 2; }
+  #editor { grid-column: 2; grid-row: 2; position: relative; display: none; flex-direction: column; min-width: 0; border-right: 1px solid var(--line); background: #1e1e1e; }
+  body.editing #editor { display: flex; }
+  #edBar { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  #edBar select { flex: 1; min-width: 0; background: #2b3038; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 3px 4px; font: inherit; }
+  #edBar button { padding: 3px 8px; }
+  #edDirty { width: 8px; height: 8px; border-radius: 50%; background: transparent; flex: none; }
+  #edDirty.dirty { background: var(--warn); }
+  #edDirty.saved { background: var(--ok); }
+  #monaco { flex: 1; min-height: 0; }
+  #edNote { display: none; padding: 8px 10px; background: #2d2414; border-top: 1px solid var(--warn); color: var(--text); }
+  #edNote button { margin-left: 6px; }
+  #splitter { position: absolute; top: 0; right: -4px; width: 8px; height: 100%; cursor: col-resize; z-index: 10; }
+  #editorBtn.on { background: #1f3b5c; border-color: #2f5f93; }
+  .seg { display: flex; gap: 2px; background: #15171b; padding: 2px; border-radius: 8px; margin-bottom: 10px; }
+  .seg button { flex: 1; border: 0; background: transparent; color: var(--muted); padding: 4px 6px; border-radius: 6px; }
+  .seg button.active { background: #2b3038; color: var(--text); }
+  #kcHost { position: absolute; inset: 0; display: none; }
+  #kcHost kicanvas-embed { display: block; width: 100%; height: 100%; }
+</style>
+<link rel="stylesheet" data-name="vs/editor/editor.main" href="/vendor/monaco/vs/editor/editor.main.css">
+<script type="importmap">
+{ "imports": { "three": "/vendor/three/build/three.module.js", "three/addons/": "/vendor/three/examples/jsm/" } }
+</script>
+</head>
+<body>
+<header>
+  <h1>Ergogen viewer</h1>
+  <div class="tabs">
+    <button data-tab="outlines">Outlines</button>
+    <button data-tab="pcb">PCB</button>
+    <button data-tab="cases">3D</button>
+  </div>
+  <div class="status"><span class="dot" id="dot"></span><span id="statusText">connecting…</span></div>
+  <div class="status" id="pcbStatusBox" style="display:none"><span class="dot" id="pcbDot"></span><span id="pcbStatusText"></span></div>
+  <div class="spacer"></div>
+  <label class="tog" id="gridTog"><input type="checkbox" id="grid" checked> grid</label>
+  <label class="tog" id="backTog" style="display:none"><input type="checkbox" id="back"> view from back</label>
+  <button id="editorBtn" title="Show or hide the editor (E)">Editor</button>
+  <button id="fit" title="Fit to view (F)">Fit</button>
+  <button id="rebuild" title="Rebuild now (R)">Rebuild</button>
+  <span id="coords"></span>
+</header>
+<aside>
+  <div data-side="outlines"><h2>Outlines</h2><div id="dxfList"></div></div>
+  <div data-side="pcb">
+    <h2>PCB</h2>
+    <div class="seg" id="pcbMode">
+      <button data-mode="kicanvas" title="Interactive viewer: layers, zoom, click a footprint or pad to inspect it">KiCanvas</button>
+      <button data-mode="plot" title="Layer images drawn by KiCad's own command-line tool">KiCad plot</button>
+    </div>
+    <div id="kcSide"><select id="kcSelect"></select><div class="hint">Layers, zoom and the inspector are in the KiCanvas panels on the right of the view.</div></div>
+    <div id="plotSide"><select id="pcbSelect"></select><div id="layerList"></div></div>
+  </div>
+  <div data-side="cases"><h2>Cases</h2><div id="stlList"></div></div>
+</aside>
+<section id="editor">
+  <div id="edBar">
+    <span id="edDirty" title="Unsaved changes"></span>
+    <select id="edFile" title="File to edit"></select>
+    <button id="edNew" title="Create a new footprint file">+ Footprint</button>
+    <label class="tog" title="Save automatically shortly after you stop typing"><input type="checkbox" id="edAuto"> auto-save</label>
+    <button id="edSave" title="Save (Ctrl+S)">Save</button>
+  </div>
+  <div id="monaco"></div>
+  <div id="edNote"></div>
+  <div id="splitter"></div>
+</section>
+<main>
+  <section class="pane" data-pane="outlines">
+    <svg class="stage" id="dxfStage" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="grid1" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M1 0H0V1" fill="none" stroke="#252931" stroke-width="0.05"/></pattern>
+        <pattern id="grid10" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="url(#grid1)"/><path d="M10 0H0V10" fill="none" stroke="#323743" stroke-width="0.12"/></pattern>
+      </defs>
+      <g id="dxfWorld">
+        <rect id="gridRect" fill="url(#grid10)"/>
+        <g id="dxfLayers" transform="scale(1,-1)"></g>
+      </g>
+    </svg>
+    <div class="empty" id="dxfEmpty">No outlines selected</div>
+  </section>
+  <section class="pane" data-pane="pcb">
+    <div class="stage" id="pcbStage"><div id="pcbWorld"></div></div>
+    <div id="kcHost"></div>
+    <div class="empty" id="pcbEmpty">Waiting for the PCB plot…</div>
+  </section>
+  <section class="pane" data-pane="cases">
+    <canvas id="threeCanvas"></canvas>
+    <div class="empty" id="stlEmpty">No cases yet. Add a <code>cases:</code> section to config.yaml and they will appear here.</div>
+  </section>
+  <pre class="banner" id="error"></pre>
+</main>
+<script type="module">
+const COLORS = ['#58a6ff', '#f0883e', '#3fb950', '#d2a8ff', '#ff7b72', '#e3b341', '#56d4dd', '#f778ba']
+const LAYER_COLORS = { 'F.Cu': '#C83434', 'B.Cu': '#4D7FC4', 'F.Silkscreen': '#F2EDA1', 'B.Silkscreen': '#E8B2A7', 'F.Fab': '#AFAFAF', 'B.Fab': '#585D84', 'Dwgs.User': '#C2C2C2', 'Edge.Cuts': '#D0D2CD' }
+const $ = id => document.getElementById(id)
+const store = (k, v) => v === undefined ? JSON.parse(localStorage.getItem('viewer:' + k) || 'null') : localStorage.setItem('viewer:' + k, JSON.stringify(v))
+let st = null
+
+// =====================================================================
+// Tabs
+// =====================================================================
+let tab = store('tab') || 'outlines'
+let pcbMode = store('pcbMode') || 'kicanvas'
+function updateHeader() {
+  const plot = tab === 'pcb' && pcbMode === 'plot', kicanvas = tab === 'pcb' && pcbMode === 'kicanvas'
+  $('gridTog').style.display = tab === 'outlines' || plot ? '' : 'none'
+  $('backTog').style.display = plot ? '' : 'none'
+  $('fit').style.display = kicanvas ? 'none' : ''
+}
+function setTab(t) {
+  tab = t; store('tab', t)
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === t))
+  document.querySelectorAll('[data-pane]').forEach(p => p.classList.toggle('active', p.dataset.pane === t))
+  document.querySelectorAll('[data-side]').forEach(p => (p.style.display = p.dataset.side === t ? '' : 'none'))
+  updateHeader()
+  $('coords').textContent = ''
+  showBanner()
+  if (t === 'outlines') dxf.apply()
+  if (t === 'pcb') setPcbMode(pcbMode)
+  if (t === 'cases') three.activate()
+}
+function setPcbMode(m) {
+  pcbMode = m; store('pcbMode', m)
+  document.querySelectorAll('#pcbMode button').forEach(b => b.classList.toggle('active', b.dataset.mode === m))
+  $('kcHost').style.display = m === 'kicanvas' ? 'block' : 'none'
+  $('pcbStage').style.display = m === 'plot' ? '' : 'none'
+  $('kcSide').style.display = m === 'kicanvas' ? '' : 'none'
+  $('plotSide').style.display = m === 'plot' ? '' : 'none'
+  updateHeader()
+  if (m === 'kicanvas') kc.render()
+  else { $('pcbEmpty').style.display = pcb.hasBoard() ? 'none' : 'grid'; pcb.apply() }
+}
+document.querySelectorAll('#pcbMode button').forEach(b => (b.onclick = () => setPcbMode(b.dataset.mode)))
+document.querySelectorAll('.tabs button').forEach(b => (b.onclick = () => setTab(b.dataset.tab)))
+
+function showBanner() {
+  let text = ''
+  if (st) {
+    if (st.status === 'error') text = st.log
+    else if (tab === 'pcb' && (st.pcbStatus === 'error' || st.pcbStatus === 'unavailable')) text = st.pcbLog
+    else if (tab === 'cases' && st.stlLog) text = st.stlLog
+  }
+  $('error').textContent = text
+  $('error').style.display = text ? 'block' : 'none'
+}
+
+// =====================================================================
+// Pan / zoom helper (shared by outlines and PCB)
+// =====================================================================
+function panZoom(el, onApply, onMove) {
+  const v = { x: 0, y: 0, s: 1, set: false }
+  let drag = null
+  el.addEventListener('mousedown', e => { drag = { x: e.clientX, y: e.clientY, vx: v.x, vy: v.y }; el.classList.add('dragging') })
+  window.addEventListener('mouseup', () => { drag = null; el.classList.remove('dragging') })
+  el.addEventListener('mousemove', e => {
+    if (drag) { v.x = drag.vx + e.clientX - drag.x; v.y = drag.vy + e.clientY - drag.y; onApply() }
+    if (onMove) { const r = el.getBoundingClientRect(); onMove(e.clientX - r.left, e.clientY - r.top) }
+  })
+  el.addEventListener('mouseleave', () => ($('coords').textContent = ''))
+  el.addEventListener('wheel', e => {
+    e.preventDefault()
+    const r = el.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top
+    const k = Math.exp(-e.deltaY * 0.0015)
+    v.x = mx - (mx - v.x) * k; v.y = my - (my - v.y) * k; v.s *= k
+    onApply()
+  }, { passive: false })
+  return v
+}
+
+// =====================================================================
+// Outlines (DXF)
+// =====================================================================
+function parseDxf(text) {
+  const lines = text.split(/\r?\n/)
+  const pairs = []
+  for (let i = 0; i + 1 < lines.length; i += 2) pairs.push([parseInt(lines[i].trim(), 10), lines[i + 1].trim()])
+  const ents = []
+  let inEntities = false, cur = null
+  const flush = () => { if (cur) ents.push(cur); cur = null }
+  for (let i = 0; i < pairs.length; i++) {
+    const [c, v] = pairs[i]
+    if (c === 2 && pairs[i - 1] && pairs[i - 1][1] === 'SECTION') inEntities = v === 'ENTITIES'
+    if (!inEntities) continue
+    if (c === 0) { flush(); cur = { type: v, pts: [] }; continue }
+    if (!cur) continue
+    const n = parseFloat(v)
+    switch (c) {
+      case 10: if (cur.type === 'LWPOLYLINE') cur.pts.push({ x: n, y: 0, b: 0 }); else cur.x1 = n; break
+      case 20: if (cur.type === 'LWPOLYLINE') cur.pts[cur.pts.length - 1].y = n; else cur.y1 = n; break
+      case 11: cur.x2 = n; break
+      case 21: cur.y2 = n; break
+      case 40: cur.r = n; break
+      case 42: if (cur.pts.length) cur.pts[cur.pts.length - 1].b = n; break
+      case 50: cur.a1 = n; break
+      case 51: cur.a2 = n; break
+      case 70: cur.flags = n; break
+    }
+  }
+  flush()
+  return ents.filter(e => ['LINE', 'ARC', 'CIRCLE', 'LWPOLYLINE'].includes(e.type))
+}
+
+const fx = n => +n.toFixed(4)
+function entityPath(e, bb) {
+  const add = (x, y) => { bb.minX = Math.min(bb.minX, x); bb.maxX = Math.max(bb.maxX, x); bb.minY = Math.min(bb.minY, y); bb.maxY = Math.max(bb.maxY, y) }
+  const rad = d => d * Math.PI / 180
+  if (e.type === 'LINE') { add(e.x1, e.y1); add(e.x2, e.y2); return `M${fx(e.x1)} ${fx(e.y1)}L${fx(e.x2)} ${fx(e.y2)}` }
+  if (e.type === 'CIRCLE') {
+    add(e.x1 - e.r, e.y1 - e.r); add(e.x1 + e.r, e.y1 + e.r)
+    return `M${fx(e.x1 + e.r)} ${fx(e.y1)}A${fx(e.r)} ${fx(e.r)} 0 1 1 ${fx(e.x1 - e.r)} ${fx(e.y1)}A${fx(e.r)} ${fx(e.r)} 0 1 1 ${fx(e.x1 + e.r)} ${fx(e.y1)}`
+  }
+  if (e.type === 'ARC') {
+    const sx = e.x1 + e.r * Math.cos(rad(e.a1)), sy = e.y1 + e.r * Math.sin(rad(e.a1))
+    const ex = e.x1 + e.r * Math.cos(rad(e.a2)), ey = e.y1 + e.r * Math.sin(rad(e.a2))
+    const sweep = ((e.a2 - e.a1) % 360 + 360) % 360
+    for (let a = 0; a <= 360; a += 90) if (((a - e.a1) % 360 + 360) % 360 <= sweep) add(e.x1 + e.r * Math.cos(rad(a)), e.y1 + e.r * Math.sin(rad(a)))
+    add(sx, sy); add(ex, ey)
+    return `M${fx(sx)} ${fx(sy)}A${fx(e.r)} ${fx(e.r)} 0 ${sweep > 180 ? 1 : 0} 1 ${fx(ex)} ${fx(ey)}`
+  }
+  if (e.type === 'LWPOLYLINE' && e.pts.length) {
+    const closed = (e.flags & 1) === 1
+    let d = `M${fx(e.pts[0].x)} ${fx(e.pts[0].y)}`
+    const n = closed ? e.pts.length : e.pts.length - 1
+    e.pts.forEach(p => add(p.x, p.y))
+    for (let i = 0; i < n; i++) {
+      const p = e.pts[i], q = e.pts[(i + 1) % e.pts.length]
+      if (p.b) {
+        const chord = Math.hypot(q.x - p.x, q.y - p.y), r = chord * (1 + p.b * p.b) / (4 * Math.abs(p.b))
+        d += `A${fx(r)} ${fx(r)} 0 ${Math.abs(p.b) > 1 ? 1 : 0} ${p.b > 0 ? 1 : 0} ${fx(q.x)} ${fx(q.y)}`
+      } else d += `L${fx(q.x)} ${fx(q.y)}`
+    }
+    return closed ? d + 'Z' : d
+  }
+  return ''
+}
+
+const dxf = (() => {
+  const stage = $('dxfStage'), world = $('dxfWorld'), layersEl = $('dxfLayers')
+  let files = [], cache = {}, first = true
+  const sel = new Set(store('dxf') || ['outlines/board.dxf', 'outlines/keys.dxf'])
+  const color = f => COLORS[files.indexOf(f) % COLORS.length]
+  const v = panZoom(stage, () => apply(), (mx, my) => {
+    $('coords').textContent = `x ${((mx - v.x) / v.s).toFixed(2)}  y ${(-(my - v.y) / v.s).toFixed(2)} mm`
+  })
+
+  function apply() {
+    if (!v.set) return
+    world.setAttribute('transform', `translate(${v.x} ${v.y}) scale(${v.s})`)
+    const r = stage.getBoundingClientRect(), g = $('gridRect')
+    g.style.display = $('grid').checked ? '' : 'none'
+    g.setAttribute('x', -v.x / v.s); g.setAttribute('y', -v.y / v.s)
+    g.setAttribute('width', r.width / v.s); g.setAttribute('height', r.height / v.s)
+  }
+  function shown() { return files.filter(f => sel.has(f) && cache[f]) }
+  function fit() {
+    const r = stage.getBoundingClientRect()
+    if (!r.width) return
+    const bb = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
+    for (const f of (shown().length ? shown() : files.filter(x => cache[x]))) {
+      const b = cache[f].bb
+      bb.minX = Math.min(bb.minX, b.minX); bb.minY = Math.min(bb.minY, b.minY); bb.maxX = Math.max(bb.maxX, b.maxX); bb.maxY = Math.max(bb.maxY, b.maxY)
+    }
+    if (!isFinite(bb.minX)) return
+    const pad = 40, w = bb.maxX - bb.minX || 1, h = bb.maxY - bb.minY || 1
+    v.s = Math.min((r.width - 2 * pad) / w, (r.height - 2 * pad) / h)
+    v.x = r.width / 2 - (bb.minX + w / 2) * v.s
+    v.y = r.height / 2 + (bb.minY + h / 2) * v.s
+    v.set = true
+    apply()
+  }
+  function list() {
+    const box = $('dxfList'); box.innerHTML = ''
+    for (const f of files) {
+      const row = document.createElement('label'); row.className = 'item'
+      row.innerHTML = `<input type="checkbox" ${sel.has(f) ? 'checked' : ''}><span class="swatch" style="background:${color(f)}"></span><span class="name" title="${f}">${f.replace(/^outlines\//, '')}</span><span class="count">${cache[f] ? cache[f].count : ''}</span>`
+      row.querySelector('input').onchange = e => { e.target.checked ? sel.add(f) : sel.delete(f); store('dxf', [...sel]); draw() }
+      box.appendChild(row)
+    }
+    if (!files.length) box.innerHTML = '<div class="hint">No outlines</div>'
+  }
+  function draw() {
+    layersEl.innerHTML = ''
+    $('dxfEmpty').style.display = shown().length ? 'none' : 'grid'
+    for (const f of shown()) {
+      const p = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      p.setAttribute('d', cache[f].d); p.setAttribute('fill', 'none'); p.setAttribute('stroke', color(f))
+      p.setAttribute('stroke-width', '1.5'); p.setAttribute('vector-effect', 'non-scaling-stroke'); p.setAttribute('stroke-linecap', 'round')
+      layersEl.appendChild(p)
+    }
+    if (first && shown().length && tab === 'outlines') { first = false; fit() }
+    apply()
+  }
+  async function update(newFiles) {
+    files = newFiles
+    await Promise.all(files.map(async f => {
+      const text = await (await fetch('/output/' + f + '?t=' + Date.now())).text()
+      const bb = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
+      const ents = parseDxf(text)
+      cache[f] = { d: ents.map(e => entityPath(e, bb)).join(''), bb, count: ents.length }
+    }))
+    for (const k of Object.keys(cache)) if (!files.includes(k)) delete cache[k]
+    list(); draw()
+  }
+  return { update, fit, apply: () => { if (first && shown().length) { first = false; fit() } else apply() } }
+})()
+
+// =====================================================================
+// PCB (layer SVGs plotted by kicad-cli)
+// =====================================================================
+const pcb = (() => {
+  const stage = $('pcbStage'), world = $('pcbWorld')
+  let boards = [], current = store('pcb'), box = null, first = true, stamp = 0
+  const sel = new Set(store('pcbLayers') || ['B.Cu', 'F.Cu', 'F.Silkscreen', 'F.Fab', 'Edge.Cuts'])
+  const v = panZoom(stage, () => apply(), (mx, my) => {
+    if (!box) return
+    let x = (mx - v.x) / v.s, y = (my - v.y) / v.s
+    if ($('back').checked) x = box.w - x
+    $('coords').textContent = `x ${x.toFixed(2)}  y ${y.toFixed(2)} mm (board area)`
+  })
+  const board = () => boards.find(b => b.name === current) || boards[0]
+
+  function apply() {
+    if (!box || !v.set) return
+    world.style.left = v.x + 'px'; world.style.top = v.y + 'px'
+    world.style.width = box.w * v.s + 'px'; world.style.height = box.h * v.s + 'px'
+    world.style.transformOrigin = `${box.w * v.s / 2}px 0`
+    for (const img of world.children) { img.style.width = box.w * v.s + 'px'; img.style.height = box.h * v.s + 'px' }
+    stage.style.backgroundImage = $('grid').checked
+      ? `linear-gradient(#323743 1px, transparent 1px), linear-gradient(90deg, #323743 1px, transparent 1px)` : 'none'
+    stage.style.backgroundSize = `${10 * v.s}px ${10 * v.s}px`
+    stage.style.backgroundPosition = `${v.x}px ${v.y}px`
+  }
+  function fit() {
+    const r = stage.getBoundingClientRect()
+    if (!box || !r.width) return
+    const pad = 30
+    v.s = Math.min((r.width - 2 * pad) / box.w, (r.height - 2 * pad) / box.h)
+    v.x = (r.width - box.w * v.s) / 2; v.y = (r.height - box.h * v.s) / 2; v.set = true
+    apply()
+  }
+  function list() {
+    const s = $('pcbSelect')
+    s.style.display = boards.length > 1 ? '' : 'none'
+    s.innerHTML = boards.map(b => `<option ${b === board() ? 'selected' : ''}>${b.name}</option>`).join('')
+    s.onchange = () => { current = s.value; store('pcb', current); first = true; draw() }
+    const el = $('layerList'); el.innerHTML = ''
+    const b = board()
+    if (!b) { el.innerHTML = '<div class="hint">No PCBs</div>'; return }
+    for (const { layer } of [...b.layers].reverse()) {
+      const row = document.createElement('label'); row.className = 'item'
+      row.innerHTML = `<input type="checkbox" ${sel.has(layer) ? 'checked' : ''}><span class="swatch box" style="background:${LAYER_COLORS[layer] || '#888'}"></span><span class="name">${layer}</span>`
+      row.querySelector('input').onchange = e => { e.target.checked ? sel.add(layer) : sel.delete(layer); store('pcbLayers', [...sel]); draw() }
+      el.appendChild(row)
+    }
+  }
+  async function draw() {
+    const b = board()
+    world.innerHTML = ''
+    if (pcbMode === 'plot') $('pcbEmpty').style.display = b ? 'none' : 'grid'
+    if (!b) return
+    if (!box && b.layers.length) {
+      const t = await (await fetch('/output/' + b.layers[0].file + '?t=' + stamp)).text()
+      const m = t.match(/viewBox="([\d.\-]+) ([\d.\-]+) ([\d.]+) ([\d.]+)"/)
+      box = m ? { w: +m[3], h: +m[4] } : { w: 100, h: 100 }
+    }
+    const back = $('back').checked
+    world.classList.toggle('back', back)
+    const layers = b.layers.filter(l => sel.has(l.layer))
+    // Bottom-to-top stacking; from the back, the B.* layers go on top.
+    const ordered = back ? [...layers].sort((a, c) => (a.layer.startsWith('B.') - c.layer.startsWith('B.')) || 0) : layers
+    for (const l of ordered) {
+      const img = new Image()
+      img.src = '/output/' + l.file + '?t=' + stamp
+      if (/Cu$/.test(l.layer)) img.style.opacity = '0.85'
+      world.appendChild(img)
+    }
+    if (first && tab === 'pcb') { first = false; fit() } else apply()
+  }
+  async function update(newBoards) {
+    boards = newBoards; box = null; stamp = Date.now()
+    list(); await draw()
+  }
+  $('back').onchange = () => draw()
+  return { update, fit, hasBoard: () => !!board(), apply: () => { if (first && box) { first = false; fit() } else apply() } }
+})()
+
+// =====================================================================
+// PCB in KiCanvas (viewer/vendor/kicanvas.js, from kicanvas.org)
+// =====================================================================
+const kc = (() => {
+  const host = $('kcHost')
+  let files = [], stamp = '', rendered = '', loading = null
+  const name = f => f.replace(/^pcbs\//, '').replace(/\.kicad_pcb$/i, '')
+  const file = () => files.find(f => name(f) === store('pcb')) || files[0]
+  const load = () => (loading = loading || new Promise((resolve, reject) => {
+    const s = document.createElement('script')
+    s.src = '/vendor/kicanvas.js'
+    s.onload = () => customElements.whenDefined('kicanvas-embed').then(resolve)
+    s.onerror = () => reject(new Error('Could not load viewer/vendor/kicanvas.js'))
+    document.head.appendChild(s)
+  }))
+  function list() {
+    const s = $('kcSelect')
+    s.style.display = files.length > 1 ? '' : 'none'
+    s.innerHTML = files.map(f => `<option value="${f}" ${f === file() ? 'selected' : ''}>${name(f)}</option>`).join('')
+    s.onchange = () => { store('pcb', name(s.value)); render() }
+  }
+  async function render() {
+    if (tab !== 'pcb' || pcbMode !== 'kicanvas') return
+    const f = file()
+    $('pcbEmpty').style.display = f ? 'none' : 'grid'
+    if (!f) { host.innerHTML = ''; rendered = ''; return }
+    const key = stamp + '|' + f
+    if (key === rendered) return
+    rendered = key
+    try { await load() } catch (err) { host.innerHTML = `<div class="empty">${err.message}</div>`; return }
+    // A fresh element per build: KiCanvas loads its source once.
+    const el = document.createElement('kicanvas-embed')
+    el.setAttribute('src', `/kicanvas/${stamp}/${f}`)
+    el.setAttribute('controls', 'full')
+    host.replaceChildren(el)
+  }
+  function update(newFiles, time) {
+    files = newFiles
+    stamp = String(Date.parse(time) || Date.now())
+    list(); render()
+  }
+  return { update, render }
+})()
+
+// =====================================================================
+// 3D (STL via three.js, loaded on first use)
+// =====================================================================
+const three = (() => {
+  let files = [], ready = null, T = null, ctx = null, first = true
+  const sel = new Set(store('stl') || [])
+  const known = new Set(store('stlKnown') || [])
+  const meshes = {}
+  const color = f => COLORS[files.indexOf(f) % COLORS.length]
+
+  async function init() {
+    T = await import('three')
+    const { OrbitControls } = await import('three/addons/controls/OrbitControls.js')
+    const { STLLoader } = await import('three/addons/loaders/STLLoader.js')
+    const canvas = $('threeCanvas')
+    const renderer = new T.WebGLRenderer({ canvas, antialias: true })
+    renderer.setPixelRatio(window.devicePixelRatio)
+    renderer.setClearColor(0x16181c)
+    const scene = new T.Scene()
+    const camera = new T.PerspectiveCamera(40, 1, 1, 5000)
+    camera.up.set(0, 0, 1)
+    camera.position.set(0, -300, 250)
+    const controls = new OrbitControls(camera, canvas)
+    controls.enableDamping = true
+    scene.add(new T.HemisphereLight(0xffffff, 0x30343c, 1.6))
+    const sun = new T.DirectionalLight(0xffffff, 1.6); sun.position.set(1, -1.5, 2); scene.add(sun)
+    const grid = new T.GridHelper(400, 40, 0x3a404c, 0x262a31); grid.rotation.x = Math.PI / 2; scene.add(grid)
+    const group = new T.Group(); scene.add(group)
+    const resize = () => {
+      const r = canvas.getBoundingClientRect()
+      if (!r.width) return
+      renderer.setSize(r.width, r.height, false)
+      camera.aspect = r.width / r.height; camera.updateProjectionMatrix()
+    }
+    new ResizeObserver(resize).observe(canvas)
+    const loop = () => { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera) }
+    loop()
+    ctx = { scene, camera, controls, group, grid, loader: new STLLoader(), resize }
+  }
+
+  function fit() {
+    if (!ctx) return
+    const visible = Object.entries(meshes).filter(([f]) => sel.has(f)).map(([, m]) => m)
+    if (!visible.length) return
+    const bb = new T.Box3(); visible.forEach(m => bb.expandByObject(m))
+    ctx.resize()
+    const c = bb.getCenter(new T.Vector3()), radius = bb.getSize(new T.Vector3()).length() / 2
+    const cam = ctx.camera, halfFov = T.MathUtils.degToRad(cam.fov / 2)
+    // Distance at which a sphere around the model fits both vertically and horizontally.
+    const dist = radius / Math.sin(Math.min(halfFov, Math.atan(Math.tan(halfFov) * cam.aspect))) * 1.1
+    const dir = new T.Vector3(0, -0.75, 0.66).normalize()
+    ctx.grid.position.set(c.x, c.y, bb.min.z)
+    ctx.controls.target.copy(c)
+    cam.position.copy(c).addScaledVector(dir, dist)
+    cam.near = dist / 100; cam.far = dist * 20; cam.updateProjectionMatrix()
+    ctx.controls.update()
+  }
+  function list() {
+    const box = $('stlList'); box.innerHTML = ''
+    for (const f of files) {
+      const row = document.createElement('label'); row.className = 'item'
+      row.innerHTML = `<input type="checkbox" ${sel.has(f) ? 'checked' : ''}><span class="swatch box" style="background:${color(f)}"></span><span class="name" title="${f}">${f.replace(/^cases\//, '')}</span>`
+      row.querySelector('input').onchange = e => { e.target.checked ? sel.add(f) : sel.delete(f); store('stl', [...sel]); show() }
+      box.appendChild(row)
+    }
+    if (!files.length) box.innerHTML = '<div class="hint">No cases</div>'
+    $('stlEmpty').style.display = files.length ? 'none' : 'grid'
+  }
+  function show() { for (const [f, m] of Object.entries(meshes)) m.visible = sel.has(f) }
+  let loading = Promise.resolve()
+  // Loads run one at a time so a rebuild during a load can't leave stale meshes behind.
+  function load() { return (loading = loading.then(loadNow)) }
+  async function loadNow() {
+    if (!ctx) return
+    for (const m of Object.values(meshes)) { ctx.group.remove(m); m.geometry.dispose() }
+    for (const k of Object.keys(meshes)) delete meshes[k]
+    await Promise.all(files.map(async f => {
+      const geo = await ctx.loader.loadAsync('/output/' + f + '?t=' + Date.now())
+      geo.computeVertexNormals()
+      const mesh = new T.Mesh(geo, new T.MeshStandardMaterial({ color: color(f), metalness: 0.05, roughness: 0.7 }))
+      meshes[f] = mesh; ctx.group.add(mesh)
+    }))
+    show()
+    if (first && Object.keys(meshes).length) { first = false; fit() }
+  }
+  async function update(newFiles) {
+    files = newFiles
+    // New cases start visible; ones you have hidden stay hidden.
+    for (const f of files) if (!known.has(f)) { known.add(f); sel.add(f) }
+    store('stlKnown', [...known]); store('stl', [...sel])
+    list()
+    if (ctx) await load()
+  }
+  async function activate() {
+    if (!ready) ready = init().then(load)
+    await ready
+    ctx.resize()
+  }
+  return { update, fit, activate }
+})()
+
+// =====================================================================
+// Editor (Monaco), reading and writing config.yaml and footprints/*.js on disk
+// =====================================================================
+const FOOTPRINT_TEMPLATE = name => `// ${name}: custom Ergogen footprint.
+// Use it in config.yaml with:  what: ${name}
+// This project's PCB uses \`template: kicad8\`, so write KiCad 8 syntax.
+
+module.exports = {
+  params: {
+    designator: 'X',
+    side: 'F',
+    from: undefined,
+    to: undefined,
+  },
+  body: p => \`
+  (footprint "${name}"
+    (layer "\${p.side}.Cu")
+    \${p.at}
+    (property "Reference" "\${p.ref}" (at 0 0 \${p.r}) (layer "\${p.side}.SilkS") \${p.ref_hide}
+      (effects (font (size 1 1) (thickness 0.15))))
+  )
+  \`
+}
+`
+
+const editor = (() => {
+  const body = document.body
+  const docs = {}          // path -> { model, mtime, savedVer, conflict }
+  let files = [], current = store('edFile') || 'config.yaml', ed = null, monaco = null, saveTimer = null
+  $('edAuto').checked = store('edAuto') ?? true
+
+  const loadMonaco = () => new Promise((resolve, reject) => {
+    const s = document.createElement('script')
+    s.src = '/vendor/monaco/vs/loader.js'
+    s.onload = () => {
+      window.require.config({ paths: { vs: '/vendor/monaco/vs' } })
+      window.require(['vs/editor/editor.main'], () => resolve(window.monaco), reject)
+    }
+    s.onerror = reject
+    document.head.appendChild(s)
+  })
+  const lang = p => (p.endsWith('.yaml') ? 'yaml' : 'javascript')
+  const isDirty = d => d && d.model.getAlternativeVersionId() !== d.savedVer
+
+  function showDirty() {
+    const d = docs[current], el = $('edDirty')
+    el.className = isDirty(d) ? 'dirty' : ''
+    el.title = isDirty(d) ? 'Unsaved changes' : 'Saved'
+    const opts = $('edFile').options
+    for (const o of opts) o.textContent = o.value + (isDirty(docs[o.value]) ? ' •' : '')
+  }
+  function note(html, buttons = []) {
+    const n = $('edNote')
+    n.style.display = html ? 'block' : 'none'
+    n.innerHTML = html || ''
+    for (const [label, fn] of buttons) { const b = document.createElement('button'); b.textContent = label; b.onclick = fn; n.appendChild(b) }
+  }
+  function listFiles() {
+    const sel = $('edFile')
+    if (!files.includes(current)) current = files[0] || 'config.yaml'
+    sel.innerHTML = files.map(f => `<option value="${f}" ${f === current ? 'selected' : ''}>${f}</option>`).join('')
+    showDirty()
+  }
+
+  async function fetchFile(p) {
+    const r = await fetch('/api/file?path=' + encodeURIComponent(p))
+    if (!r.ok) throw new Error((await r.json()).error)
+    return r.json()
+  }
+  async function open(p) {
+    current = p; store('edFile', p)
+    if (!docs[p]) {
+      const { content, mtime } = await fetchFile(p)
+      const model = monaco.editor.createModel(content, lang(p), monaco.Uri.file('/' + p))
+      docs[p] = { model, mtime, savedVer: model.getAlternativeVersionId() }
+      model.onDidChangeContent(() => {
+        showDirty()
+        if ($('edAuto').checked && !docs[p].conflict) { clearTimeout(saveTimer); saveTimer = setTimeout(() => save(p), 800) }
+      })
+    }
+    ed.setModel(docs[p].model)
+    $('edFile').value = p
+    showConflict()
+    showDirty()
+  }
+
+  async function save(p = current, force = false) {
+    const d = docs[p]
+    if (!d || (!isDirty(d) && !force)) return
+    const ver = d.model.getAlternativeVersionId()
+    const r = await fetch('/api/file?path=' + encodeURIComponent(p), {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: d.model.getValue(), baseMtime: force ? null : d.mtime }),
+    })
+    const res = await r.json()
+    if (r.status === 409) { d.conflict = true; showConflict(); return }
+    if (!r.ok) { note(`Could not save ${p}: ${res.error}`); return }
+    d.mtime = res.mtime; d.savedVer = ver; d.conflict = false
+    showConflict(); showDirty()
+    if (p === current) { $('edDirty').className = isDirty(d) ? 'dirty' : 'saved'; setTimeout(showDirty, 800) }
+  }
+
+  function replaceText(d, text) {
+    // Keep undo history: replace the whole document as one edit.
+    d.model.pushEditOperations([], [{ range: d.model.getFullModelRange(), text }], () => null)
+    d.savedVer = d.model.getAlternativeVersionId()
+  }
+  async function reloadFromDisk(p) {
+    const d = docs[p], { content, mtime } = await fetchFile(p)
+    d.mtime = mtime; d.conflict = false
+    if (content !== d.model.getValue()) replaceText(d, content)
+    else d.savedVer = d.model.getAlternativeVersionId()
+    showConflict(); showDirty()
+  }
+  function showConflict() {
+    const d = docs[current]
+    if (d && d.conflict) {
+      note(`<b>${current}</b> changed on disk while you had unsaved edits here.`, [
+        ['Load disk version', () => reloadFromDisk(current)],
+        ['Keep mine and save', () => save(current, true)],
+      ])
+    } else note('')
+  }
+
+  // Files changed on disk (by you elsewhere, by Claude, or by our own save).
+  async function onSources({ files: f, changed }) {
+    files = f; if (monaco) listFiles()
+    for (const p of changed) {
+      const d = docs[p]
+      if (!d) continue
+      let disk
+      try { disk = await fetchFile(p) } catch { continue }
+      if (disk.content === d.model.getValue()) { d.mtime = disk.mtime; d.savedVer = isDirty(d) ? d.savedVer : d.model.getAlternativeVersionId(); continue }
+      if (!isDirty(d)) { d.mtime = disk.mtime; replaceText(d, disk.content) }
+      else d.conflict = true
+    }
+    showConflict(); showDirty()
+  }
+
+  async function newFootprint() {
+    let name = prompt('Name for the new footprint (letters, numbers, _ and -):', 'my_footprint')
+    if (!name) return
+    name = name.trim().replace(/\.js$/i, '')
+    if (!/^[\w\-]+$/.test(name)) { alert('Use only letters, numbers, _ and -.'); return }
+    const p = `footprints/${name}.js`
+    const r = await fetch('/api/file?path=' + encodeURIComponent(p), {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: FOOTPRINT_TEMPLATE(name), create: true }),
+    })
+    if (r.status === 409) { alert(`${p} already exists.`) }
+    else if (!r.ok) { alert('Could not create the file: ' + (await r.json()).error); return }
+    if (!files.includes(p)) files = [...files, p].sort((a, b) => (a === 'config.yaml' ? -1 : b === 'config.yaml' ? 1 : a.localeCompare(b)))
+    listFiles(); open(p)
+  }
+
+  // Resizable width
+  let width = store('edWidth') || 520
+  const applyWidth = () => { $('editor').style.width = width + 'px'; window.dispatchEvent(new Event('resize')) }
+  $('splitter').addEventListener('mousedown', e => {
+    e.preventDefault()
+    const startX = e.clientX, startW = width
+    const move = ev => { width = Math.max(260, Math.min(window.innerWidth - 400, startW + ev.clientX - startX)); applyWidth() }
+    const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); store('edWidth', width) }
+    window.addEventListener('mousemove', move); window.addEventListener('mouseup', up)
+  })
+
+  let started = null
+  async function start() {
+    monaco = await loadMonaco()
+    ed = monaco.editor.create($('monaco'), {
+      theme: 'vs-dark', automaticLayout: true, fontSize: 13, tabSize: 2, insertSpaces: true,
+      minimap: { enabled: false }, scrollBeyondLastLine: false, renderWhitespace: 'boundary',
+    })
+    ed.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => save())
+    files = (await (await fetch('/api/sources')).json()).files
+    listFiles()
+    await open(files.includes(current) ? current : files[0])
+  }
+  async function setOpen(on) {
+    body.classList.toggle('editing', on)
+    $('editorBtn').classList.toggle('on', on)
+    store('edOpen', on)
+    applyWidth()
+    if (on) { started = started || start(); await started; ed.focus() }
+  }
+
+  $('edFile').onchange = e => open(e.target.value)
+  $('edSave').onclick = () => save()
+  $('edNew').onclick = newFootprint
+  $('edAuto').onchange = e => store('edAuto', e.target.checked)
+  $('editorBtn').onclick = () => setOpen(!body.classList.contains('editing'))
+  // Ctrl+S outside the editor (inside it, Monaco's own command handles it).
+  window.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); if (!e.target.closest?.('#monaco')) save() }
+  })
+  window.addEventListener('beforeunload', e => { if (Object.values(docs).some(isDirty)) { e.preventDefault(); e.returnValue = '' } })
+
+  return {
+    init: () => { if (store('edOpen')) setOpen(true) },
+    toggle: () => setOpen(!body.classList.contains('editing')),
+    onSources,
+  }
+})()
+
+// =====================================================================
+// Controls and live updates
+// =====================================================================
+const fitCurrent = () => (tab === 'outlines' ? dxf.fit() : tab === 'pcb' ? pcb.fit() : three.fit())
+$('fit').onclick = fitCurrent
+$('rebuild').onclick = () => fetch('/rebuild', { method: 'POST' })
+$('grid').onchange = () => (tab === 'pcb' ? pcb.apply() : dxf.apply())
+window.addEventListener('resize', () => (tab === 'pcb' ? pcb.apply() : dxf.apply()))
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.closest?.('#editor')) return
+  if (e.ctrlKey || e.metaKey || e.altKey) return
+  if (e.key === 'e' || e.key === 'E') editor.toggle()
+  if (e.key === 'f' || e.key === 'F') fitCurrent()
+  if (e.key === 'r' || e.key === 'R') fetch('/rebuild', { method: 'POST' })
+})
+
+let lastBuild = null, lastPcb = null
+const es = new EventSource('/events')
+es.onmessage = async ev => {
+  const prev = st
+  st = JSON.parse(ev.data)
+  $('dot').className = 'dot ' + st.status
+  const t = st.time ? new Date(st.time).toLocaleTimeString() : ''
+  $('statusText').textContent = { idle: 'waiting for first build', building: 'building…', ok: `built ${t}`, error: `build failed ${t}` }[st.status]
+  $('pcbStatusBox').style.display = st.pcbStatus === 'idle' ? 'none' : ''
+  $('pcbDot').className = 'dot ' + st.pcbStatus
+  $('pcbStatusText').textContent = { building: 'plotting PCB…', ok: 'PCB plotted', error: 'PCB plot failed', unavailable: 'no kicad-cli' }[st.pcbStatus] || ''
+  showBanner()
+  if (st.status === 'ok' && st.time !== lastBuild) {
+    lastBuild = st.time
+    kc.update(st.pcbFiles || [], st.time)
+    await Promise.all([dxf.update(st.dxf), three.update(st.stl)])
+  }
+  if (st.pcbStatus === 'ok' && (st.time + JSON.stringify(st.pcbs)) !== lastPcb) {
+    lastPcb = st.time + JSON.stringify(st.pcbs)
+    await pcb.update(st.pcbs)
+  }
+}
+es.onerror = () => { $('dot').className = 'dot error'; $('statusText').textContent = 'viewer server stopped' }
+es.addEventListener('sources', ev => editor.onSources(JSON.parse(ev.data)))
+
+setTab(tab)
+editor.init()
+</script>
+</body>
+</html>

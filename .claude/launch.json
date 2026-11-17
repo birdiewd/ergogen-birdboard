@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ergogen-viewer",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:\\Users\\birdiewd\\Documents\\KiCad\\ergogen-birdboard\\v3\\viewer\\server.js"],
+      "port": 4600
+    }
+  ]
+}

@@ -13,48 +13,69 @@ points:
       # Fix placement on KiCAD sheet.
       anchor:
         shift: [100, -100]
+      # Column nets C0-C5 run outer to inner.
+      # Row nets: R0 top, R1 home, R2 bottom, R3 thumb (mod + thumbfan).
       columns:
         outer:
+          key.column_net: C0
         pinky:
+          key.column_net: C1
         ring:
           key:
             stagger: 0.5ky
+            column_net: C2
         middle:
           key.stagger: .25ky
+          key.column_net: C3
         index:
           key.stagger: -.33ky
+          key.column_net: C4
         inner:
           key.stagger: -.15ky
+          key.column_net: C5
       rows:
         bottom:
+          row_net: R2
         home:
+          row_net: R1
         top:
+          row_net: R0
     mod:
       anchor:
         ref: matrix_outer_bottom
         shift: [0, -1.1ky]
+      # Thumb row, first half: wired to the outer, pinky and ring columns.
       columns:
         outer:
+          key.column_net: C0
         pinky:
+          key.column_net: C1
         ring:
+          key.column_net: C2
       rows:
         thumb:
+          row_net: R3
     thumbfan:
       anchor:
         ref: matrix_inner_bottom
         shift: [-1.4kx, -1.2ky]
+      # Thumb row, second half: wired to the middle, index and inner columns.
       columns:
         outer:
+          key.column_net: C3
         fn:
           key.shift: [.15kx, -.1ky]
           key.splay: -15
+          key.column_net: C4
         home:
           key:
             width: 1.5kx
             shift: [.1kx, -.33ky]
             splay: 75
+            column_net: C5
       rows:
         thumb:
+          row_net: R3
   # Mirror keyboard halves
   # mirror: &mirror
   #   ref: matrix_inner_top
@@ -123,5 +144,14 @@ pcbs:
           keycaps: true
           reverse: false
           from: "{{column_net}}"
-          to: "{{colrow}}"
+          to: "{{name}}"
+      # One diode per key, column-to-row: anode on the switch, cathode on the row net.
+      diode:
+        what: diode_k8
+        where: true
+        adjust:
+          shift: [0, 5]
+        params:
+          from: "{{name}}"
+          to: "{{row_net}}"
 cases:
