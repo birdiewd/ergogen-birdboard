@@ -7,6 +7,30 @@ units:
   # Padding Variables
   px: kx + 4
   py: ky + 4
+  # Switch plate (Gateron LP 2.0 / KS-33 dimensional drawing)
+  switch_cut: 14      # switch body at plate level: 14.00 +/- 0.03
+  print_tol: 0.1      # extra clearance added to each cutout for 3D printing
+  plate_t: 1.2        # plate thickness the switch clips are made for: 1.20 +/- 0.05
+  frame_t: 1.3        # gap from plate underside to PCB (switch housing below the plate)
+  # Electronics strip beside the inner column (MCU at the top, USB-C link below it)
+  mcu_area_w: 23      # strip width beyond the inner column's padded edge (MCU pads need ~20.6)
+  mcu_area_h: 42      # strip height, measured down from the inner column's top edge
+  mcu_w: 18.3         # Waveshare RP2040-Zero board
+  mcu_h: 23.9
+  usb_w: 13.8         # 4-pin USB-C breakout: length along the cable direction
+  usb_h: 12           #   and width
+  usb_gap: 2          # space between the MCU and the breakout
+  # Footprint positions, from matrix_inner_top
+  mcu_x: 0.5px + mcu_area_w / 2                    # RP2040-Zero centre (pad field centre)
+  mcu_y: 0.5py - mcu_h / 2
+  # Cutout under the upside-down MCU for its components (inside the pad ring, open at the top
+  # so the USB-C port sits in the PCB edge). Pad inner edges: x +/-6.77, bottom row y 9.26.
+  mcu_cut_w: 12.4                                  # 0.57 mm clear of the side pads
+  mcu_cut_down: 8.75                               # from the module centre down to the cutout bottom
+  mcu_cut_up: mcu_h / 2 + 2                        # from the module centre up, past the board edge
+  link_back_dx: 2.54                               # front-side breakout sits this much further in
+  link_x: 0.5px + mcu_area_w - 12.6                # back-side breakout pad row: shell flush with the edge
+  link_y: 0.5py - mcu_h - usb_gap - usb_h / 2
 points:
   zones:
     matrix:
@@ -130,12 +154,72 @@ outlines:
     - name: board
     - operation: subtract
       name: keys
+  # 14 x 14 mm switch cutouts (Gateron LP KS-33), plus a little print tolerance.
+  switch_cutouts:
+  - what: rectangle
+    where: true
+    bound: false
+    size: [switch_cut + print_tol, switch_cut + print_tol]
+  # Strip beside the inner column for the MCU and the USB-C link breakout.
+  # Starts inside the inner column so it merges with the board outline.
+  mcu_area:
+  - what: rectangle
+    where: matrix_inner_top
+    bound: false
+    adjust:
+      shift: [(0.5px + mcu_area_w) / 2, 0.5py - mcu_area_h / 2]
+    size: [0.5px + mcu_area_w, mcu_area_h]
+    corner: 2
+  # Open-topped cutout for the components of the upside-down RP2040-Zero.
+  mcu_cutout:
+  - what: rectangle
+    where: matrix_inner_top
+    bound: false
+    adjust:
+      shift: [mcu_x, mcu_y + (mcu_cut_up - mcu_cut_down) / 2]
+    size: [mcu_cut_w, mcu_cut_up + mcu_cut_down]
+    corner: 1
+  # PCB outline: the key area plus the electronics strip, minus the MCU cutout.
+  board_mcu:
+    - name: board
+    - operation: add
+      name: mcu_area
+    - operation: subtract
+      name: mcu_cutout
+  # Reference only (not cut): where the modules sit, to check fit in the viewer.
+  modules:
+  # RP2040-Zero, top edge flush with the PCB edge, USB-C facing up
+  - what: rectangle
+    where: matrix_inner_top
+    bound: false
+    adjust:
+      shift: [mcu_x, mcu_y]
+    size: [mcu_w, mcu_h]
+  # its USB-C receptacle, sticking out about 1.8 mm past the board edge
+  - what: rectangle
+    where: matrix_inner_top
+    bound: false
+    adjust:
+      shift: [mcu_x, mcu_y + 11.05]
+    size: [9, 5.3]
+  # USB-C breakout below the MCU, opening facing +x (towards the other half)
+  - what: rectangle
+    where: matrix_inner_top
+    bound: false
+    adjust:
+      shift: [0.5px + mcu_area_w - usb_w / 2, 0.5py - mcu_h - usb_gap - usb_h / 2]
+    size: [usb_w, usb_h]
+  # Top layer of the switch plate: the board outline with a switch cutout per key.
+  plate:
+    - name: board
+    - operation: subtract
+      name: switch_cutouts
 pcbs:
   tutorial:
     template: kicad8
     outlines:
       main:
-        outline: board
+        outline: board_mcu
     footprints:
       # Gateron Low Profile 2.0 (KS-33) switches in Gateron LP hot-swap sockets.
       # Reversible: socket pads on both sides, so the same PCB works for either
@@ -162,4 +246,66 @@ pcbs:
         params:
           from: "{{name}}"
           to: "{{row_net}}"
+      # Waveshare RP2040-Zero, castellated (SMD) pads on the back layer, not mirrored.
+      # Mounted upside down from the bottom (left half as reference): component side up,
+      # into mcu_cutout, so its USB-C port sits level with the PCB. One footprint serves
+      # both halves: on the flipped right half the same assembly is just turned over.
+      # Columns C0-C5 on GP0-GP5, rows R0-R3 on GP6-GP9, half-to-half link on GP12.
+      mcu:
+        what: mcu_rp2040_zero
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [mcu_x, mcu_y]
+        params:
+          upside_down: true
+          mount: smd
+          GP0: C0
+          GP1: C1
+          GP2: C2
+          GP3: C3
+          GP4: C4
+          GP5: C5
+          GP6: R0
+          GP7: R1
+          GP8: R2
+          GP9: R3
+          GP12: LINK
+      # 4-pin USB-C breakout (VBUS, D+ as single-wire serial, GND) on a 1x4 header,
+      # opening toward the other half. Both sides have their own holes, offset in x
+      # so they don't collide (the pin order flips); fit the one matching the MCU.
+      link:
+        what: usbc_breakout_4pin
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [link_x - link_back_dx, link_y]
+        params:
+          side: F
+          vbus: 5V
+          dp: LINK
+      link_back:
+        what: usbc_breakout_4pin
+        where:
+          ref: matrix_inner_top
+        adjust:
+          shift: [link_x, link_y]
+        params:
+          side: B
+          vbus: 5V
+          dp: LINK
 cases:
+  # 3D-printable switch plate, sitting directly on the PCB (z = 0 is the PCB top).
+  #   - frame: the combo outline (keycap-sized openings), frame_t thick, fills the
+  #     gap between PCB and plate and stiffens it; clears the switch's lower housing
+  #   - plate: plate_t thick on top, with 14 mm switch cutouts for the clips
+  # Print it upside down (plate layer on the bed) for a flat top surface.
+  switchplate:
+    - what: outline
+      name: combo
+      extrude: frame_t
+    - what: outline
+      name: plate
+      extrude: plate_t
+      shift: [0, 0, frame_t]
+      operation: add
