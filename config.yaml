@@ -7,6 +7,12 @@ units:
   # Padding Variables
   px: kx + 4
   py: ky + 4
+  # Extra board on the left and bottom edges for M2 mounting holes. With it the edge is
+  # 5 mm past the keycaps, so a hole centred 2.5 mm out clears an M2 head (3.8 mm)
+  # on the keycap side and keeps 2.5 mm to the board edge.
+  mount_pad: 3
+  hole_d: 2.2         # M2 clearance hole (PCB and plate)
+  hole_off: 2.5       # hole centre distance outside the keycap edge
   # Switch plate (Gateron LP 2.0 / KS-33 dimensional drawing)
   switch_cut: 14      # switch body at plate level: 14.00 +/- 0.03
   print_tol: 0.1      # extra clearance added to each cutout for 3D printing
@@ -127,12 +133,12 @@ outlines:
       operation: stack
       fillet: 2
       points:
-        # top-left corner
+        # top-left corner (mount_pad: room for mounting holes on the left edge)
         - ref: matrix_outer_top
-          shift: [-0.5px, 0.5py]
-        # top-left corner
+          shift: [-0.5px - mount_pad, 0.5py]
+        # top-left corner, raised by mount_pad for the hole above the ring key
         - ref: matrix_ring_top
-          shift: [-0.5px, 0.5py]
+          shift: [-0.5px, 0.5py + mount_pad]
         # top-left corner
         - ref: matrix_middle_top
           shift: [-0.5px, 0.5py]
@@ -149,15 +155,16 @@ outlines:
         # right-most corner
         - ref: thumbfan_home_thumb
           shift: [0.75px, -0.5py]
-        # bottom-most corner (added)
+        # bottom-most corner (added); pushed out along the key's length by mount_pad
+        # (down and slightly left) so the bottom edge gets the same extra room
         - ref: thumbfan_home_thumb
-          shift: [-0.75px, -0.5py]
+          shift: [-0.75px - mount_pad, -0.5py]
         # bottom-right corner
         - ref: mod_ring_thumb
-          shift: [0.5px, -0.5py]
+          shift: [0.5px, -0.5py - mount_pad]
         # bottom-left corner
         - ref: mod_outer_thumb
-          shift: [-0.5px, -0.5py]
+          shift: [-0.5px - mount_pad, -0.5py - mount_pad]
   combo:
     - name: board
     - operation: subtract
@@ -249,11 +256,74 @@ outlines:
       - *thumb_edge
       - shift: [-usb_w / 2, link_y]
     size: [usb_w, usb_h]
-  # Top layer of the switch plate: the board outline with a switch cutout per key.
+  # M2 mounting holes, 2.5 mm outside the keycaps: two on the left edge, two along the
+  # bottom, one in the electronics strip between the MCU and the USB-C breakout and one
+  # beyond the thumb key's outer end. The PCB footprints below use the same positions.
+  mount_holes:
+  - what: circle
+    where: matrix_outer_top
+    radius: hole_d / 2
+    adjust: &h_left_top
+      shift: [-0.5kx - hole_off, 0]
+  - what: circle
+    where: mod_outer_thumb
+    radius: hole_d / 2
+    adjust: &h_left_bottom
+      shift: [-0.5kx - hole_off, -0.5ky - hole_off]
+  - what: circle
+    where: mod_ring_thumb
+    radius: hole_d / 2
+    adjust: &h_bottom
+      shift: [0.5kx, -0.5ky - hole_off]
+  - what: circle
+    where: matrix_inner_top
+    radius: hole_d / 2
+    adjust: &h_strip
+      - *thumb_edge
+      - shift: [led_x, 0.5py - mcu_h - usb_gap / 2]
+  - what: circle
+    where: thumbfan_home_thumb
+    radius: hole_d / 2
+    adjust: &h_thumb
+      shift: [0.75kx + hole_off, 0]
+  # above the ring column's top key (the top edge is raised there by mount_pad)
+  - what: circle
+    where: matrix_ring_top
+    radius: hole_d / 2
+    adjust: &h_ring
+      shift: [0, 0.5ky + hole_off]
+  # below the middle column's bottom key
+  - what: circle
+    where: matrix_middle_bottom
+    radius: hole_d / 2
+    adjust: &h_middle
+      shift: [0, -0.5ky - hole_off]
+  # below the right-most thumb key: past its lower (down-left facing) end
+  - what: circle
+    where: thumbfan_home_thumb
+    radius: hole_d / 2
+    adjust: &h_thumb_low
+      shift: [-0.75kx - hole_off, 0]
+  # left of the USB-C breakout (its board starts 2.1 mm behind the pad row)
+  - what: circle
+    where: matrix_inner_top
+    radius: hole_d / 2
+    adjust: &h_link
+      - *thumb_edge
+      - shift: [link_x - 2.1 - hole_off - 0.5, link_y]
+  # Top layer of the switch plate: the board outline with a switch cutout per key,
+  # and the mounting holes.
   plate:
     - name: board
     - operation: subtract
       name: switch_cutouts
+    - operation: subtract
+      name: mount_holes
+  # Bottom (frame) layer of the switch plate: combo with the mounting holes.
+  frame:
+    - name: combo
+    - operation: subtract
+      name: mount_holes
 pcbs:
   tutorial:
     template: kicad8
@@ -356,6 +426,52 @@ pcbs:
           din: LED_2
           dout: LED_DOUT
           vdd: 5V
+      # M2 mounting holes, at the same positions as the mount_holes outline.
+      hole_left_top:
+        what: mounting_hole
+        where: matrix_outer_top
+        adjust: *h_left_top
+        params: {drill: hole_d}
+      hole_left_bottom:
+        what: mounting_hole
+        where: mod_outer_thumb
+        adjust: *h_left_bottom
+        params: {drill: hole_d}
+      hole_bottom:
+        what: mounting_hole
+        where: mod_ring_thumb
+        adjust: *h_bottom
+        params: {drill: hole_d}
+      hole_strip:
+        what: mounting_hole
+        where: matrix_inner_top
+        adjust: *h_strip
+        params: {drill: hole_d}
+      hole_thumb:
+        what: mounting_hole
+        where: thumbfan_home_thumb
+        adjust: *h_thumb
+        params: {drill: hole_d}
+      hole_ring:
+        what: mounting_hole
+        where: matrix_ring_top
+        adjust: *h_ring
+        params: {drill: hole_d}
+      hole_middle:
+        what: mounting_hole
+        where: matrix_middle_bottom
+        adjust: *h_middle
+        params: {drill: hole_d}
+      hole_thumb_low:
+        what: mounting_hole
+        where: thumbfan_home_thumb
+        adjust: *h_thumb_low
+        params: {drill: hole_d}
+      hole_link:
+        what: mounting_hole
+        where: matrix_inner_top
+        adjust: *h_link
+        params: {drill: hole_d}
 cases:
   # 3D-printable switch plate, sitting directly on the PCB (z = 0 is the PCB top).
   #   - frame: the combo outline (keycap-sized openings), frame_t thick, fills the
@@ -364,7 +480,7 @@ cases:
   # Print it upside down (plate layer on the bed) for a flat top surface.
   switchplate:
     - what: outline
-      name: combo
+      name: frame
       extrude: frame_t
     - what: outline
       name: plate
