@@ -285,7 +285,11 @@ outlines:
     where: thumbfan_home_thumb
     radius: hole_d / 2
     adjust: &h_thumb
-      shift: [0.75kx + hole_off, 0]
+      - shift: [0.75kx + hole_off, 0]
+      # then 3 mm to the right on the board (drop the key's rotation first)
+      - ref: matrix_inner_top
+        affect: r
+      - shift: [3, 0]
   # above the ring column's top key (the top edge is raised there by mount_pad)
   - what: circle
     where: matrix_ring_top
