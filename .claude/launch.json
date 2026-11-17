@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "ergogen-viewer",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["C:\\Users\\birdiewd\\Documents\\KiCad\\ergogen-birdboard\\v3\\viewer\\server.js"],
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["run", "view"],
       "port": 4600
     }
   ]

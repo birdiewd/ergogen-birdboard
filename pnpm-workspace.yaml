@@ -1,0 +1,9 @@
+# pnpm settings for this project.
+
+# Install scripts pnpm may run. OpenJSCAD's only prints a donation message.
+allowBuilds:
+  '@jscad/openjscad': false
+
+# Ergogen depends on two libraries straight from GitHub (kle-serial and hull)
+# rather than from the npm registry; pnpm 11 blocks that by default.
+blockExoticSubdeps: false
