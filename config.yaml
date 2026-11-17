@@ -22,6 +22,22 @@ units:
   cover_lid: 1.5      # lid thickness on top (4 mm total)
   cover_boss: 3       # radius of the solid boss around each screw hole
   cover_gap: 0.3      # gap between the cover and the switch plate
+  # Case: a tray the PCB screws into (z = 0 is the bottom of the case). Stack:
+  #   floor 1.5 | gap 2.5 under the PCB (hot-swap sockets ~1.8, diodes, MCU and breakout
+  #   boards) | PCB 1.6 (top at 5.6) | switch plate 2.5 (top at 8.1) | cover 4 (top at 9.6)
+  # so everything sits below the 10 mm wall.
+  case_h: 10          # total wall height
+  case_floor: 1.5     # floor thickness
+  case_gap: 2.5       # floor to PCB underside (standoff height)
+  pcb_t: 1.6
+  case_wall: 2        # wall thickness
+  case_clear: 0.5     # gap between the PCB edge and the wall
+  case_off: case_clear + case_wall
+  standoff_r: 2.5     # standoff radius (5 mm)
+  insert_r: 1.6       # hole for an M2 heat-set insert (3.2 mm)
+  usb_z: case_floor + case_gap + pcb_t    # USB-C port centre height (level with the PCB top)
+  usb_notch_w: 13     # wall opening for a USB-C plug's overmould
+  usb_notch_down: 3.5 # opening reaches this far below the port centre (open to the top)
   # Switch plate (Gateron LP 2.0 / KS-33 dimensional drawing)
   switch_cut: 14      # switch body at plate level: 14.00 +/- 0.03
   print_tol: 0.1      # extra clearance added to each cutout for 3D printing
@@ -412,6 +428,46 @@ outlines:
       name: mount_holes
     - operation: subtract
       name: cover_tab_clear
+  # Case outlines. The PCB's full shape (key area + electronics strip, without the module
+  # cutouts, which would otherwise put wall material inside them), then grown outwards.
+  _pcb_full:
+    - name: board
+    - operation: add
+      name: mcu_area
+  case_outer:
+    - name: _pcb_full
+      expand: case_off
+  _case_inner:
+    - name: _pcb_full
+      expand: case_clear
+  case_walls:
+    - name: case_outer
+    - operation: subtract
+      name: _case_inner
+  # Standoffs under every mounting hole, with a hole for an M2 heat-set insert.
+  case_standoffs:
+    - name: mount_holes
+      expand: standoff_r - hole_d / 2
+  case_inserts:
+    - name: mount_holes
+      expand: insert_r - hole_d / 2
+  # Wall openings for the two USB-C plugs: the MCU's port on the top edge, the link
+  # breakout's port on the right edge (towards the other half).
+  case_usb_notches:
+  - what: rectangle
+    where: matrix_inner_top
+    bound: false
+    adjust:
+      - *thumb_edge
+      - shift: [mcu_x, 0.5py + 5]
+    size: [usb_notch_w, 14]
+  - what: rectangle
+    where: matrix_inner_top
+    bound: false
+    adjust:
+      - *thumb_edge
+      - shift: [5, link_y]
+    size: [14, usb_notch_w]
 pcbs:
   tutorial:
     template: kicad8
@@ -575,6 +631,31 @@ cases:
       extrude: plate_t
       shift: [0, 0, frame_t]
       operation: add
+  # Keyboard case (z = 0 is the case bottom): floor, 10 mm walls with openings for both
+  # USB-C plugs, and standoffs with M2 heat-set insert holes under all mounting holes.
+  # The PCB sits on the standoffs; the switch plate and the cover fit inside the walls.
+  # This is the left half; mirror it in the slicer for the right half.
+  keyboard_case:
+    - what: outline
+      name: case_outer
+      extrude: case_floor
+    - what: outline
+      name: case_walls
+      extrude: case_h
+      operation: add
+    - what: outline
+      name: case_standoffs
+      extrude: case_floor + case_gap
+      operation: add
+    - what: outline
+      name: case_inserts
+      extrude: case_h
+      operation: subtract
+    - what: outline
+      name: case_usb_notches
+      extrude: case_h
+      shift: [0, 0, usb_z - usb_notch_down]
+      operation: subtract
   # Cover for the MCU, USB-C breakout and LED (z = 0 is the PCB top). Screws through the
   # three strip holes (between the MCU and breakout, left of the breakout, below the LED).
   # Print it upside down (lid on the bed). The LED is under the lid: print in a
