@@ -20,7 +20,7 @@ units:
   mcu_h: 23.9
   usb_w: 13.8         # 4-pin USB-C breakout: length along the cable direction
   usb_h: 12           #   and width
-  usb_gap: 2          # space between the MCU and the breakout
+  usb_gap: 10         # space between the MCU and the breakout
   mcu_x: -11.5                                     # RP2040-Zero centre: its pads end 1.23 mm from the edge
   mcu_y: 0.5py - mcu_h / 2
   # Cutout under the upside-down MCU for its components (inside the pad ring, open at the top
