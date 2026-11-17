@@ -12,23 +12,23 @@ units:
   print_tol: 0.1      # extra clearance added to each cutout for 3D printing
   plate_t: 1.2        # plate thickness the switch clips are made for: 1.20 +/- 0.05
   frame_t: 1.3        # gap from plate underside to PCB (switch housing below the plate)
-  # Electronics strip beside the inner column (MCU at the top, USB-C link below it)
-  mcu_area_w: 23      # strip width beyond the inner column's padded edge (MCU pads need ~20.6)
-  mcu_area_h: 42      # strip height, measured down from the inner column's top edge
+  # Electronics strip beside the inner column (MCU at the top, USB-C link below it).
+  # Its right edge lines up with the thumb cluster's right-most corner, and it runs down
+  # to meet the thumb cluster. x positions below are measured from that edge (negative
+  # = inwards), y positions from the inner column's top key (matrix_inner_top).
   mcu_w: 18.3         # Waveshare RP2040-Zero board
   mcu_h: 23.9
   usb_w: 13.8         # 4-pin USB-C breakout: length along the cable direction
   usb_h: 12           #   and width
   usb_gap: 2          # space between the MCU and the breakout
-  # Footprint positions, from matrix_inner_top
-  mcu_x: 0.5px + mcu_area_w / 2                    # RP2040-Zero centre (pad field centre)
+  mcu_x: -11.5                                     # RP2040-Zero centre: its pads end 1.23 mm from the edge
   mcu_y: 0.5py - mcu_h / 2
   # Cutout under the upside-down MCU for its components (inside the pad ring, open at the top
   # so the USB-C port sits in the PCB edge). Pad inner edges: x +/-6.77, bottom row y 9.26.
   mcu_cut_w: 12.4                                  # 0.57 mm clear of the side pads
   mcu_cut_down: 8.75                               # from the module centre down to the cutout bottom
   mcu_cut_up: mcu_h / 2 + 2                        # from the module centre up, past the board edge
-  link_x: 0.5px + mcu_area_w - 12.6                # breakout pad row: shell flush with the edge
+  link_x: -12.6                                    # breakout pad row: shell flush with the edge
   # Cutout under the upside-down breakout for its USB-C receptacle (open at the edge).
   # The breakout's 12 mm board rests on the PCB underside along both sides of it.
   link_cut_w: 9.6                                  # receptacle ~8.9 wide, so ~1.2 mm rests either side
@@ -164,23 +164,40 @@ outlines:
     where: true
     bound: false
     size: [switch_cut + print_tol, switch_cut + print_tol]
-  # Strip beside the inner column for the MCU and the USB-C link breakout.
-  # Starts inside the inner column so it merges with the board outline.
+  # Strip beside the inner column for the MCU and the USB-C link breakout. Its right
+  # edge is vertical through the thumb cluster's right-most corner and runs down to
+  # meet it; the other corners sit inside the key area so it merges with the board.
+  # `thumb_edge` is an anchor step that keeps y but takes x from that corner.
   mcu_area:
-  - what: rectangle
-    where: matrix_inner_top
-    bound: false
-    adjust:
-      shift: [(0.5px + mcu_area_w) / 2, 0.5py - mcu_area_h / 2]
-    size: [0.5px + mcu_area_w, mcu_area_h]
-    corner: 2
+  - what: polygon
+    fillet: 2
+    points:
+      # top-left, on the board's top edge above the inner key
+      - ref: matrix_inner_top
+        shift: [0, 0.5py]
+      # top-right: same height, x of the thumb corner
+      - - ref: matrix_inner_top
+          shift: [0, 0.5py]
+        - &thumb_edge
+          ref: thumbfan_home_thumb
+          shift: [0.75px, -0.5py]
+          affect: x
+      # the thumb cluster's right-most corner
+      - ref: thumbfan_home_thumb
+        shift: [0.75px, -0.5py]
+      # along the board edge from that corner, then back through the keys
+      - ref: thumbfan_home_thumb
+        shift: [0, -0.5py]
+      - ref: thumbfan_home_thumb
+      - ref: matrix_inner_bottom
   # Open-topped cutout for the components of the upside-down RP2040-Zero.
   mcu_cutout:
   - what: rectangle
     where: matrix_inner_top
     bound: false
     adjust:
-      shift: [mcu_x, mcu_y + (mcu_cut_up - mcu_cut_down) / 2]
+      - *thumb_edge
+      - shift: [mcu_x, mcu_y + (mcu_cut_up - mcu_cut_down) / 2]
     size: [mcu_cut_w, mcu_cut_up + mcu_cut_down]
     corner: 1
   # Open-sided cutout for the receptacle of the upside-down USB-C breakout.
@@ -189,7 +206,8 @@ outlines:
     where: matrix_inner_top
     bound: false
     adjust:
-      shift: [link_x + link_cut_start + link_cut_len / 2, link_y]
+      - *thumb_edge
+      - shift: [link_x + link_cut_start + link_cut_len / 2, link_y]
     size: [link_cut_len, link_cut_w]
     corner: 1
   # PCB outline: the key area plus the electronics strip, minus the module cutouts.
@@ -208,21 +226,24 @@ outlines:
     where: matrix_inner_top
     bound: false
     adjust:
-      shift: [mcu_x, mcu_y]
+      - *thumb_edge
+      - shift: [mcu_x, mcu_y]
     size: [mcu_w, mcu_h]
   # its USB-C receptacle, sticking out about 1.8 mm past the board edge
   - what: rectangle
     where: matrix_inner_top
     bound: false
     adjust:
-      shift: [mcu_x, mcu_y + 11.05]
+      - *thumb_edge
+      - shift: [mcu_x, mcu_y + 11.05]
     size: [9, 5.3]
   # USB-C breakout below the MCU, opening facing +x (towards the other half)
   - what: rectangle
     where: matrix_inner_top
     bound: false
     adjust:
-      shift: [0.5px + mcu_area_w - usb_w / 2, 0.5py - mcu_h - usb_gap - usb_h / 2]
+      - *thumb_edge
+      - shift: [-usb_w / 2, link_y]
     size: [usb_w, usb_h]
   # Top layer of the switch plate: the board outline with a switch cutout per key.
   plate:
@@ -271,7 +292,8 @@ pcbs:
         where:
           ref: matrix_inner_top
         adjust:
-          shift: [mcu_x, mcu_y]
+          - *thumb_edge
+          - shift: [mcu_x, mcu_y]
         params:
           upside_down: true
           mount: smd
@@ -295,7 +317,8 @@ pcbs:
         where:
           ref: matrix_inner_top
         adjust:
-          shift: [link_x, link_y]
+          - *thumb_edge
+          - shift: [link_x, link_y]
         params:
           upside_down: true
           vbus: 5V
