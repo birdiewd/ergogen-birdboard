@@ -328,8 +328,9 @@ pcbs:
           upside_down: true
           vbus: 5V
           dp: LINK
-      # WS2812B status LED (5V supply, 3.3V data from GP10). Front and back copies at the
-      # same spot so it can face up on either half: fit F on the left, B on the right.
+      # WS2812B status LEDs (5V supply, 3.3V data from GP10), one on each side of the
+      # board at the same spot, both fitted. Chained: GP10 -> front LED -> back LED,
+      # so each can be set on its own (LED 0 = front, LED 1 = back).
       led: &led
         what: led_ws2812b_5050
         where:
@@ -340,12 +341,14 @@ pcbs:
         params:
           side: F
           din: LED
+          dout: LED_2
           vdd: 5V
       led_back:
         <<: *led
         params:
           side: B
-          din: LED
+          din: LED_2
+          dout: LED_DOUT
           vdd: 5V
 cases:
   # 3D-printable switch plate, sitting directly on the PCB (z = 0 is the PCB top).
