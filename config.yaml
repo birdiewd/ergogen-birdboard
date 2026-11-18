@@ -719,6 +719,54 @@ pcbs:
       pwr_gnd_hop: {what: trace, where: matrix_inner_top, params: {net: GND, layer: F, width: 0.5, points: [[10, 30.59], [10, 35.79]], vias: [[10, 30.59], [10, 35.79]], via_size: 0.8, via_drill: 0.4}}
       pwr_gnd_led: {what: trace, where: matrix_inner_top, params: {net: GND, layer: B, width: 0.5, points: [[10, 35.79], [10, 43], [12, 45], [25.45, 45], [25.45, 46.59], [30.35, 46.59]], vias: [[30.35, 46.59]], via_size: 0.8, via_drill: 0.4}}
       pwr_gnd_led_front: {what: trace, where: matrix_inner_top, params: {net: GND, layer: F, width: 0.5, points: [[30.35, 46.59], [30.35, 45]]}}
+      # ---- Rows (back layer). Points are relative to matrix_inner_top. ----
+      # Each row runs 2.6 mm above its diodes and steps between columns 8.6 mm right of
+      # each key centre, with a stub down to every diode's row hole. The thumb row (R3)
+      # runs straight under the bottom-row keys. Near the MCU the rows cross the 5V/GND
+      # corridor on short front-layer hops (a via each side), then fan into the MCU's
+      # bottom pads on the back layer. Generated; re-derive if keys or the MCU move.
+      row_r0_d1: {what: trace, where: matrix_inner_top, params: {net: R0, layer: B, points: [[-79.81, -3.01], [-79.81, -0.41]]}}
+      row_r0_d2: {what: trace, where: matrix_inner_top, params: {net: R0, layer: B, points: [[-60.81, -11.51], [-60.81, -8.91]]}}
+      row_r0_d3: {what: trace, where: matrix_inner_top, params: {net: R0, layer: B, points: [[-41.81, -15.76], [-41.81, -13.16]]}}
+      row_r0_d4: {what: trace, where: matrix_inner_top, params: {net: R0, layer: B, points: [[-22.81, -10.15], [-22.81, -7.55]]}}
+      row_r0_d5: {what: trace, where: matrix_inner_top, params: {net: R0, layer: B, points: [[-3.81, -7.6], [-3.81, -5]]}}
+      row_r0_main: {what: trace, where: matrix_inner_top, params: {net: R0, layer: B, points: [[-98.81, -0.41], [-98.81, -3.01], [-67.4, -3.01], [-67.4, -11.51], [-48.4, -11.51], [-48.4, -15.76], [-29.4, -15.76], [-29.4, -10.15], [-10.4, -10.15], [-10.4, -7.6], [7.9, -7.6], [7.9, 15.39], [7.2, 16.09]]}}
+      row_r1_d1: {what: trace, where: matrix_inner_top, params: {net: R1, layer: B, points: [[-79.81, 15.99], [-79.81, 18.59]]}}
+      row_r1_d2: {what: trace, where: matrix_inner_top, params: {net: R1, layer: B, points: [[-60.81, 7.49], [-60.81, 10.09]]}}
+      row_r1_d3: {what: trace, where: matrix_inner_top, params: {net: R1, layer: B, points: [[-41.81, 3.24], [-41.81, 5.84]]}}
+      row_r1_d4: {what: trace, where: matrix_inner_top, params: {net: R1, layer: B, points: [[-22.81, 8.85], [-22.81, 11.45]]}}
+      row_r1_d5: {what: trace, where: matrix_inner_top, params: {net: R1, layer: B, points: [[-3.81, 11.4], [-3.81, 14]]}}
+      row_r1_main: {what: trace, where: matrix_inner_top, params: {net: R1, layer: B, points: [[-98.81, 18.59], [-98.81, 15.99], [-67.4, 15.99], [-67.4, 7.49], [-48.4, 7.49], [-48.4, 3.24], [-29.4, 3.24], [-29.4, 8.85], [-10.4, 8.85], [-10.4, 11.4], [6, 11.4], [6, 17.29]]}}
+      row_r2_d1: {what: trace, where: matrix_inner_top, params: {net: R2, layer: B, points: [[-79.81, 34.99], [-79.81, 37.59]]}}
+      row_r2_d2: {what: trace, where: matrix_inner_top, params: {net: R2, layer: B, points: [[-60.81, 26.49], [-60.81, 29.09]]}}
+      row_r2_d3: {what: trace, where: matrix_inner_top, params: {net: R2, layer: B, points: [[-41.81, 22.24], [-41.81, 24.84]]}}
+      row_r2_d4: {what: trace, where: matrix_inner_top, params: {net: R2, layer: B, points: [[-22.81, 27.85], [-22.81, 30.45]]}}
+      row_r2_d5: {what: trace, where: matrix_inner_top, params: {net: R2, layer: B, points: [[-3.81, 30.4], [-3.81, 33]]}}
+      row_r2_main: {what: trace, where: matrix_inner_top, params: {net: R2, layer: B, points: [[-98.81, 37.59], [-98.81, 34.99], [-67.4, 34.99], [-67.4, 26.49], [-48.4, 26.49], [-48.4, 22.24], [-29.4, 22.24], [-29.4, 27.85], [-10.4, 27.85], [-10.4, 30.4], [6, 30.4]]}}
+      row_r0_hop: {what: trace, where: matrix_inner_top, params: {net: R0, layer: F, points: [[7.2, 16.09], [11.3, 16.09]], vias: [[7.2, 16.09], [11.3, 16.09]]}}
+      row_r1_hop: {what: trace, where: matrix_inner_top, params: {net: R1, layer: F, points: [[6, 17.29], [11.3, 17.29]], vias: [[6, 17.29], [11.3, 17.29]]}}
+      row_r2_hop: {what: trace, where: matrix_inner_top, params: {net: R2, layer: F, points: [[6, 30.4], [6, 27.19], [9.9, 27.19], [9.9, 19.09], [10.5, 18.49], [11.3, 18.49]], vias: [[6, 30.4], [11.3, 18.49]]}}
+      row_r3_main: {what: trace, where: matrix_inner_top, params: {net: R3, layer: B, points: [[-98.81, 56.29], [-98.81, 50.8], [8.8, 50.8], [8.8, 34.39], [12.5, 34.39]]}}
+      row_r3_d1: {what: trace, where: matrix_inner_top, params: {net: R3, layer: B, points: [[-79.81, 50.8], [-79.81, 56.29]]}}
+      row_r3_d2: {what: trace, where: matrix_inner_top, params: {net: R3, layer: B, points: [[-60.81, 50.8], [-60.81, 56.29]]}}
+      row_r3_d3: {what: trace, where: matrix_inner_top, params: {net: R3, layer: B, points: [[-29.01, 50.8], [-29.01, 53.4]]}}
+      row_r3_d4: {what: trace, where: matrix_inner_top, params: {net: R3, layer: B, points: [[-6.42, 50.8], [-6.42, 54.93]]}}
+      row_r3_d5: {what: trace, where: matrix_inner_top, params: {net: R3, layer: B, points: [[8.8, 50.8], [8.8, 62.49], [11.68, 65.36]]}}
+      row_r3_hop: {what: trace, where: matrix_inner_top, params: {net: R3, layer: F, points: [[12.5, 34.39], [12.5, 20.89], [11.3, 19.69]], vias: [[12.5, 34.39], [11.3, 19.69]]}}
+      row_r0_fan: {what: trace, where: matrix_inner_top, params: {net: R0, layer: B, points: [[11.3, 16.09], [17.37, 16.09], [18.67, 14.79], [18.67, 12.51]]}}
+      row_r1_fan: {what: trace, where: matrix_inner_top, params: {net: R1, layer: B, points: [[11.3, 17.29], [18.71, 17.29], [21.21, 14.79], [21.21, 12.46]]}}
+      row_r2_fan: {what: trace, where: matrix_inner_top, params: {net: R2, layer: B, points: [[11.3, 18.49], [20.05, 18.49], [23.75, 14.79], [23.75, 12.46]]}}
+      row_r3_fan: {what: trace, where: matrix_inner_top, params: {net: R3, layer: B, points: [[11.3, 19.69], [21.39, 19.69], [26.29, 14.79], [26.29, 12.46]]}}
+      # ---- LED data and the USB-C link line (top layer). Relative to matrix_inner_top. ----
+      # LED and LINK leave the MCU's back-side pads on a via each, then run either side of
+      # the breakout's pins (LED left, LINK right), clear of the strip's screw heads.
+      # LED_2 (front LED out -> back LED in) needs one via to reach the back LED's pad.
+      sig_led_stub: {what: trace, where: matrix_inner_top, params: {net: LED, layer: B, points: [[28.83, 12.46], [28.83, 15.19]]}}
+      sig_led: {what: trace, where: matrix_inner_top, params: {net: LED, layer: F, points: [[28.83, 15.19], [21.6, 15.19], [20.6, 16.19], [20.6, 36.19], [21.6, 37.19], [29.35, 37.19], [30.35, 38.19], [30.35, 41.8]], vias: [[28.83, 15.19]]}}
+      sig_led2: {what: trace, where: matrix_inner_top, params: {net: LED_2, layer: F, points: [[25.45, 45], [24.2, 45], [23.2, 44], [23.2, 42.89]], vias: [[23.2, 42.89]]}}
+      sig_led2_stub: {what: trace, where: matrix_inner_top, params: {net: LED_2, layer: B, points: [[23.2, 42.89], [24.29, 41.8], [25.45, 41.8]]}}
+      sig_link_stub: {what: trace, where: matrix_inner_top, params: {net: LINK, layer: B, points: [[32.27, 11.61], [32.27, 14.19]]}}
+      sig_link: {what: trace, where: matrix_inner_top, params: {net: LINK, layer: F, points: [[32.27, 14.19], [31, 15.46], [31, 20.59], [30, 21.59], [25.45, 21.59], [24.45, 22.59], [24.45, 27.13], [23.45, 28.13], [22.65, 28.13]], vias: [[32.27, 14.19]]}}
 cases:
   # 3D-printable switch plate, sitting directly on the PCB (z = 0 is the PCB top).
   #   - frame: the combo outline (keycap-sized openings), frame_t thick, fills the
