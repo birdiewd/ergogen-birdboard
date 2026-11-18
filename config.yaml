@@ -480,7 +480,7 @@ outlines:
       - shift: [5, link_y]
     size: [14, usb_notch_w]
 pcbs:
-  tutorial:
+  birdboard:
     template: kicad8
     outlines:
       main:
