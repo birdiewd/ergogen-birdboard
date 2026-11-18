@@ -74,6 +74,10 @@
 //    diode_trace_layer: default is 'B'
 //      Copper layer of the trace: 'F' or 'B'.
 //    diode_trace_width: default is 0.25
+//    column_trace_up: default is 0
+//      (local addition, hotswap + reversible) if above 0, adds a 0.25 mm front-layer
+//      trace from the front socket's `from` pad at (-6.25, 5.75) straight up this
+//      far, to the same pad of the key above in the column. 0 adds nothing.
 //    switch_3dmodel_filename: default is ''
 //      Allows you to specify the path to a 3D model STEP or WRL file to be
 //      used when rendering the PCB. Use the ${VAR_NAME} syntax to point to
@@ -138,6 +142,9 @@ module.exports = {
     diode_trace_end: [3.81, -5],
     diode_trace_layer: 'B',
     diode_trace_width: 0.25,
+    // Explicitly a string: Ergogen templates a 0 to '', which a number param rejects
+    // (and it would read a plain '0' default as a number).
+    column_trace_up: { type: 'string', value: '0' },
     switch_3dmodel_filename: '',
     switch_3dmodel_xyz_offset: [0, 0, 0],
     switch_3dmodel_xyz_rotation: [0, 0, 0],
@@ -557,6 +564,14 @@ module.exports = {
   (segment (start ${p.eaxy(...pts[i])}) (end ${p.eaxy(...pts[i + 1])}) (width ${p.diode_trace_width}) (layer "${p.diode_trace_layer}.Cu") (net ${p.to.index}))`
       }
       final += '\n'
+    }
+
+    // Column bus on the front layer: own `from` pad up to the next key's.
+    const column_up = Number(p.column_trace_up) || 0
+    if (p.hotswap && p.reversible && column_up > 0) {
+      final += `
+  (segment (start ${p.eaxy(-6.25, 5.75)}) (end ${p.eaxy(-6.25, 5.75 - column_up)}) (width 0.25) (layer "F.Cu") (net ${p.from.index}))
+`
     }
     return final
   }

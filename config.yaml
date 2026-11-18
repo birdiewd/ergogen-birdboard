@@ -96,25 +96,34 @@ points:
         inner:
           key.stagger: -.15ky
           key.column_net: C5
+      # col_up: distance up to the next key in the same column, for the column trace
+      # (0 = top of the column, its route to the MCU is a separate trace below).
       rows:
         bottom:
           row_net: R2
+          col_up: 19
         home:
           row_net: R1
+          col_up: 19
         top:
           row_net: R0
+          col_up: 0
     mod:
       anchor:
         ref: matrix_outer_bottom
         shift: [0, -1.1ky]
       # Thumb row, first half: wired to the outer, pinky and ring columns.
+      # col_up reaches the column's bottom key: 1.1ky, plus the ring column's 0.5ky stagger.
       columns:
         outer:
           key.column_net: C0
+          key.col_up: 18.7
         pinky:
           key.column_net: C1
+          key.col_up: 18.7
         ring:
           key.column_net: C2
+          key.col_up: 27.2
       rows:
         thumb:
           row_net: R3
@@ -136,9 +145,11 @@ points:
             shift: [.1kx, -.33ky]
             splay: 75
             column_net: C5
+      # Not stacked on their columns: routed by the col_route_thumb_* traces instead.
       rows:
         thumb:
           row_net: R3
+          col_up: 0
   # Mirror keyboard halves
   # mirror: &mirror
   #   ref: matrix_inner_top
@@ -493,6 +504,8 @@ pcbs:
           # 5 mm above the switch centre, see `diode` below). Serves both socket sides.
           include_diode_trace: true
           diode_trace_end: [3.81, -5]
+          # Front-layer column trace up to the next key in the column (see col_up).
+          column_trace_up: "{{col_up}}"
           from: "{{column_net}}"
           to: "{{name}}"
       # One diode per key, column-to-row: anode on the switch, cathode on the row net.
@@ -621,6 +634,78 @@ pcbs:
         where: matrix_inner_top
         adjust: *h_link
         params: {drill: hole_d}
+      # ---- Column routes (front layer). Points are relative to matrix_inner_top. ----
+      # The three thumbfan keys sit off their columns: each joins its column's bottom key.
+      col_route_thumb_c3:
+        what: trace
+        where: matrix_inner_top
+        params:
+          net: C3
+          points: [[-31.45, 64.15], [-31.45, 46.59], [-33.45, 44.59], [-42.25, 44.59], [-44.25, 42.59], [-44.25, 35.59]]
+      col_route_thumb_c4:
+        what: trace
+        where: matrix_inner_top
+        params:
+          net: C4
+          points: [[-11.56, 64.68], [-11.56, 47.09], [-13.56, 45.09], [-23.25, 45.09], [-25.25, 43.09], [-25.25, 41.2]]
+      col_route_thumb_c5:
+        what: trace
+        where: matrix_inner_top
+        params:
+          net: C5
+          points: [[19.77, 72.85], [8, 72.85], [8, 49.09], [6, 47.09], [-4.25, 47.09], [-6.25, 45.09], [-6.25, 43.75]]
+      # Top keys to the MCU. C0-C4 run as a 0.5 mm-pitch bundle 0.8 mm inside the top
+      # edge, dipping under the ring column's screw head (its head sits on the top
+      # copper), then drop beside the MCU; C5 tees straight across from its column.
+      # Each ends on a via, then a short back-layer stub to the MCU's back-side pad.
+      col_route_c0:
+        what: trace
+        where: matrix_inner_top
+        params:
+          net: C0
+          points: [[-101.25, 10.34], [-101.25, -7.25], [-82.86, -12.41], [-54, -12.41], [-48.55, -17.86], [-27.25, -17.86], [-26.91, -17.83], [12.31, -9.4], [12.31, -1.09], [12.7, -1.09]]
+          vias: [[12.7, -1.09]]
+      col_route_c1:
+        what: trace
+        where: matrix_inner_top
+        params:
+          net: C1
+          points: [[-82.25, 10.34], [-82.25, -11.91], [-53.79, -11.91], [-48.34, -17.36], [-27.27, -17.36], [-26.99, -17.33], [11.8, -9], [11.8, 1.45], [12.7, 1.45]]
+          vias: [[12.7, 1.45]]
+      col_route_c2:
+        what: trace
+        where: matrix_inner_top
+        params:
+          net: C2
+          points: [[-63.25, 1.84], [-63.25, -11.41], [-53.59, -11.41], [-48.14, -16.86], [-27.3, -16.86], [-27.07, -16.84], [11.29, -8.6], [11.29, 3.99], [12.7, 3.99]]
+          vias: [[12.7, 3.99]]
+      col_route_c3:
+        what: trace
+        where: matrix_inner_top
+        params:
+          net: C3
+          points: [[-44.25, -2.41], [-44.25, -16.36], [-27.32, -16.36], [-27.14, -16.34], [10.78, -8.19], [10.78, 6.53], [12.7, 6.53]]
+          vias: [[12.7, 6.53]]
+      col_route_c4:
+        what: trace
+        where: matrix_inner_top
+        params:
+          net: C4
+          points: [[-25.25, 3.2], [-25.25, -15.43], [10.27, -7.79], [10.27, 9.07], [12.7, 9.07]]
+          vias: [[12.7, 9.07]]
+      col_route_c5:
+        what: trace
+        where: matrix_inner_top
+        params:
+          net: C5
+          points: [[-6.25, 11.61], [12.7, 11.61]]
+          vias: [[12.7, 11.61]]
+      col_stub_c0: {what: trace, where: matrix_inner_top, params: {net: C0, layer: B, points: [[12.7, -1.09], [15.23, -1.09]]}}
+      col_stub_c1: {what: trace, where: matrix_inner_top, params: {net: C1, layer: B, points: [[12.7, 1.45], [15.23, 1.45]]}}
+      col_stub_c2: {what: trace, where: matrix_inner_top, params: {net: C2, layer: B, points: [[12.7, 3.99], [15.28, 3.99]]}}
+      col_stub_c3: {what: trace, where: matrix_inner_top, params: {net: C3, layer: B, points: [[12.7, 6.53], [15.28, 6.53]]}}
+      col_stub_c4: {what: trace, where: matrix_inner_top, params: {net: C4, layer: B, points: [[12.7, 9.07], [15.28, 9.07]]}}
+      col_stub_c5: {what: trace, where: matrix_inner_top, params: {net: C5, layer: B, points: [[12.7, 11.61], [15.28, 11.61]]}}
 cases:
   # 3D-printable switch plate, sitting directly on the PCB (z = 0 is the PCB top).
   #   - frame: the combo outline (keycap-sized openings), frame_t thick, fills the
