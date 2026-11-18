@@ -489,6 +489,10 @@ pcbs:
           include_keycap: true
           include_corner_marks: true
           include_socket_silks: true
+          # One back-layer trace from the socket to the diode's pin-2 hole (diode
+          # 5 mm above the switch centre, see `diode` below). Serves both socket sides.
+          include_diode_trace: true
+          diode_trace_end: [3.81, -5]
           from: "{{column_net}}"
           to: "{{name}}"
       # One diode per key, column-to-row: anode on the switch, cathode on the row net.
@@ -500,6 +504,7 @@ pcbs:
         params:
           from: "{{name}}"
           to: "{{row_net}}"
+          include_pad_links: true
       # Waveshare RP2040-Zero, castellated (SMD) pads on the back layer, not mirrored.
       # Mounted upside down from the bottom (left half as reference): component side up,
       # into mcu_cutout, so its USB-C port sits level with the PCB. One footprint serves

@@ -62,6 +62,18 @@
 //      Disables 'solder mask aperture bridges items with different nets' DRC check when set to true
 //      setting this option to false may be useful for debugging purposes, (applied locally to this footprint only)
 //      for global setting see `allow_soldermask_bridges_in_footprints` in a kicad template
+//    include_diode_trace: default is false
+//      (local addition, hotswap only) if true, adds one trace from the hotswap
+//      socket's `to` hole at (4.4, 4.7) to the diode's `to`-side plated hole.
+//      The plated holes connect both layers, so a socket fitted on either side
+//      uses the same trace.
+//    diode_trace_end: default is [3.81, -5]
+//      Where the trace ends, in this footprint's own KiCad coordinates
+//      (y points down). Default: pin-2 hole of `diode_k8` placed 5 mm above
+//      the switch centre.
+//    diode_trace_layer: default is 'B'
+//      Copper layer of the trace: 'F' or 'B'.
+//    diode_trace_width: default is 0.25
 //    switch_3dmodel_filename: default is ''
 //      Allows you to specify the path to a 3D model STEP or WRL file to be
 //      used when rendering the PCB. Use the ${VAR_NAME} syntax to point to
@@ -122,6 +134,10 @@ module.exports = {
     allow_soldermask_bridges: true,
     outer_pad_width_front: 2.6,
     outer_pad_width_back: 2.6,
+    include_diode_trace: false,
+    diode_trace_end: [3.81, -5],
+    diode_trace_layer: 'B',
+    diode_trace_width: 0.25,
     switch_3dmodel_filename: '',
     switch_3dmodel_xyz_offset: [0, 0, 0],
     switch_3dmodel_xyz_rotation: [0, 0, 0],
@@ -528,6 +544,20 @@ module.exports = {
     }
 
     final += common_bottom
+
+    // Socket-to-diode trace, outside the footprint (segments are board items).
+    // Straight up from the socket hole, then a 45 degree turn into the diode hole.
+    if (p.hotswap && p.include_diode_trace) {
+      const [sx, sy] = [4.4, 4.7]
+      const [ex, ey] = p.diode_trace_end
+      const bend = [sx, ey + Math.abs(sx - ex)]
+      const pts = [[sx, sy], bend, [ex, ey]]
+      for (let i = 0; i < pts.length - 1; i++) {
+        final += `
+  (segment (start ${p.eaxy(...pts[i])}) (end ${p.eaxy(...pts[i + 1])}) (width ${p.diode_trace_width}) (layer "${p.diode_trace_layer}.Cu") (net ${p.to.index}))`
+      }
+      final += '\n'
+    }
     return final
   }
 }

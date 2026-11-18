@@ -6,12 +6,18 @@
 //   designator: reference prefix (default 'D')
 //   from: net for the anode (pin 2)
 //   to: net for the cathode (pin 1, square pad, the end with the bar)
+//   include_pad_links: if true, joins each SMD pad to its plated hole with a short
+//     trace on both layers, so an SMD diode fitted on either side reaches traces
+//     that end at the holes (default false)
+//   pad_link_width: width of those traces (default 0.25)
 
 module.exports = {
   params: {
     designator: 'D',
     from: undefined,
     to: undefined,
+    include_pad_links: false,
+    pad_link_width: 0.25,
   },
   body: p => {
     const line = (x1, y1, x2, y2, layer) =>
@@ -31,7 +37,13 @@ module.exports = {
     const smd = (num, x, side, net) =>
       `(pad "${num}" smd rect (at ${x} 0 ${p.r}) (size 0.9 1.2) (layers "${side}.Cu" "${side}.Paste" "${side}.Mask") ${net})`
 
-    return `
+    const link = (x1, x2, side, net) =>
+      `(segment (start ${p.eaxy(x1, 0)}) (end ${p.eaxy(x2, 0)}) (width ${p.pad_link_width}) (layer "${side}.Cu") (net ${net.index}))`
+    const links = !p.include_pad_links ? '' : ['F', 'B'].map(side => `
+  ${link(-1.65, -3.81, side, p.to)}
+  ${link(1.65, 3.81, side, p.from)}`).join('') + '\n'
+
+    return links + `
   (footprint "diode_k8"
     (layer "F.Cu")
     ${p.at}
