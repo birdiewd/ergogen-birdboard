@@ -634,6 +634,28 @@ pcbs:
         where: matrix_inner_top
         adjust: *h_link
         params: {drill: hole_d}
+      # Board name on both silkscreens, along the slanted bottom edge under the thumb
+      # cluster: parallel to the edge (-10.66 deg), centred between the two screw holes
+      # there. Size 8.6 gives 8 mm tall lettering (~42 mm long) with 1 mm to the edge.
+      # The back copy is mirrored so it reads correctly from the back (the top of the
+      # flipped right half). The font must be installed on the machine that makes the Gerbers.
+      silk_name: &silk_name
+        what: silk_text
+        where: thumbfan_outer_thumb
+        adjust:
+          shift: [6.30, -16.64]
+          rotate: -10.66
+        params: &silk_name_params
+          text: BirdBoard
+          font: Brush Script MT
+          italic: true
+          size: 8.6
+      silk_name_back:
+        <<: *silk_name
+        params:
+          <<: *silk_name_params
+          layer: B.SilkS
+          mirror_text: true
       # ---- Column routes (front layer). Points are relative to matrix_inner_top. ----
       # The three thumbfan keys sit off their columns: each joins its column's bottom key.
       col_route_thumb_c3:
