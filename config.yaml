@@ -706,6 +706,19 @@ pcbs:
       col_stub_c3: {what: trace, where: matrix_inner_top, params: {net: C3, layer: B, points: [[12.7, 6.53], [15.28, 6.53]]}}
       col_stub_c4: {what: trace, where: matrix_inner_top, params: {net: C4, layer: B, points: [[12.7, 9.07], [15.28, 9.07]]}}
       col_stub_c5: {what: trace, where: matrix_inner_top, params: {net: C5, layer: B, points: [[12.7, 11.61], [15.28, 11.61]]}}
+      # ---- Power (back layer, 0.5 mm). Points are relative to matrix_inner_top. ----
+      # 5V and GND leave the MCU's left pads and run down between the inner column and
+      # the column vias (5V outside), then branch to the USB-C link pins and the LED,
+      # passing the strip hole's standoff. Each front-layer LED pad gets a via + stub.
+      # GND crosses 5V once on a short front-layer hop (two vias) on its way to the LED.
+      pwr_5v_main: {what: trace, where: matrix_inner_top, params: {net: 5V, layer: B, width: 0.5, points: [[15.23, -8.71], [8.6, -8.71], [8.6, 31.21], [10.6, 33.21], [22.65, 33.21]]}}
+      pwr_5v_led: {what: trace, where: matrix_inner_top, params: {net: 5V, layer: B, width: 0.5, points: [[19, 33.21], [19, 38.19], [21, 40.19], [30.35, 40.19], [30.35, 41.8]], vias: [[25.45, 40.19]], via_size: 0.8, via_drill: 0.4}}
+      pwr_5v_led_front: {what: trace, where: matrix_inner_top, params: {net: 5V, layer: F, width: 0.5, points: [[25.45, 40.19], [25.45, 41.8]]}}
+      pwr_gnd_main: {what: trace, where: matrix_inner_top, params: {net: GND, layer: B, width: 0.5, points: [[15.23, -6.17], [10, -6.17], [10, 30.59]]}}
+      pwr_gnd_link: {what: trace, where: matrix_inner_top, params: {net: GND, layer: B, width: 0.5, points: [[10, 23.59], [12, 25.59], [22.65, 25.59]]}}
+      pwr_gnd_hop: {what: trace, where: matrix_inner_top, params: {net: GND, layer: F, width: 0.5, points: [[10, 30.59], [10, 35.79]], vias: [[10, 30.59], [10, 35.79]], via_size: 0.8, via_drill: 0.4}}
+      pwr_gnd_led: {what: trace, where: matrix_inner_top, params: {net: GND, layer: B, width: 0.5, points: [[10, 35.79], [10, 43], [12, 45], [25.45, 45], [25.45, 46.59], [30.35, 46.59]], vias: [[30.35, 46.59]], via_size: 0.8, via_drill: 0.4}}
+      pwr_gnd_led_front: {what: trace, where: matrix_inner_top, params: {net: GND, layer: F, width: 0.5, points: [[30.35, 46.59], [30.35, 45]]}}
 cases:
   # 3D-printable switch plate, sitting directly on the PCB (z = 0 is the PCB top).
   #   - frame: the combo outline (keycap-sized openings), frame_t thick, fills the
