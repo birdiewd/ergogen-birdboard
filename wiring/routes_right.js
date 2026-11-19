@@ -5,10 +5,11 @@
 //   - each switch's socket and diode: in this mirror frame the column tab is on the key's
 //     right (x = +7.9) and the diode on its left (x = -7.2)
 //   - the USB-C breakout is turned round, so its pins run V, D-, D+, G from the top
-//   - the RP2040-Zero is flipped (front pocket, components down), so its pinout DOES
-//     mirror: its pads sit where the left half's do. Every pin in use has a hole through
-//     the board under its pad hole: back wires come up through it into the module, front
-//     wires go down through the module into it.
+//   - the RP2040-Zero is flipped (components towards the back, in a back pocket that stops
+//     short of the front face), so its pinout DOES mirror: its pads sit where the left
+//     half's do. Every pin in use has a hole through the board's front skin under its pad
+//     hole: back wires drop into the pocket and go through the module into it; front wires
+//     come up through it and the module and are soldered on the module's component side.
 
 module.exports = ({ K, S, U, M, L }) => {
   const wires = []
@@ -24,8 +25,8 @@ module.exports = ({ K, S, U, M, L }) => {
   // MCU pad holes (same places as the left half's in this frame) and its pocket edges
   const pad = (px, py) => S(M[0] + px, M[1] - py)
   const padY = py => M[1] - py
-  const leftPad = py => [S(M[0] - U.mcu_w / 2, M[1] - py), pad(-7.62, py), 'via']
-  const bottomPad = px => [pad(px, 10.16), 'via']
+  const leftPad = py => [S(M[0] - U.mcu_w / 2, M[1] - py), 'onmodule', pad(-7.62, py), 'via']
+  const bottomPad = px => [S(M[0] + px, M[1] - U.mcu_h / 2), 'onmodule', pad(px, 10.16), 'via']
   // breakout pad holes, turned round: V at the top, then D-, D+, G
   const linkPad = py => S(L[0], L[1] + py)
 
@@ -104,7 +105,8 @@ module.exports = ({ K, S, U, M, L }) => {
   W('C5', 'C5 to the MCU', 'shallow', tee5, [S(LANE.c, 0)[0], yC5], S(LANE.c, HOR.c), S(M[0], HOR.c), ...bottomPad(0))
 
   // ---------------- power and link (front, under the MCU cover) ----------------
-  // The flipped MCU lies on the front, so these start on its own pads. The breakout is
+  // These come up from the flipped MCU's pad holes through the front skin and lie on it to the
+  // pocket's edge. The breakout is
   // turned round, so 5V and GND would cross: GND dips under 5V through the board once.
   const fx = x => S(x, 0)[0]
   const v5 = pad(-7.62, -10.16), gnd = pad(-7.62, -7.62), lk = pad(7.62, 10.16)
@@ -123,9 +125,9 @@ module.exports = ({ K, S, U, M, L }) => {
   for (const [px, t] of [[-5.08, 'C3'], [-2.54, 'C4'], [0, 'C5'], [2.54, 'R3']]) pinLabel(t, px, 10.16, 0, 2.2, 'back')
   pinLabel('5V', -7.62, -10.16, 3.4, -0.5, 'front'); pinLabel('GND', -7.62, -7.62, 3.4, -0.5, 'front'); pinLabel('LINK', 7.62, 10.16, -3.0, -0.5, 'front')
   for (const [py, t] of [[3.81, 'V'], [-1.27, 'D+'], [-3.81, 'G']]) labels.push({ p: S(L[0] - 2.2, L[1] + py - 0.5), text: t })
-  labels.push({ p: S(M[0], M[1] + 3), text: 'RP2040-Zero', size: 2, side: 'front' }, { p: S(L[0] + 6, L[1]), text: 'USB-C', size: 2 })
+  labels.push({ p: S(M[0], M[1] + 3), text: 'RP2040-Zero', size: 2, side: 'back' }, { p: S(L[0] + 6, L[1]), text: 'USB-C', size: 2 })
 
-  const pins = `- RP2040-Zero flipped, in a front pocket with its components down through the cutout (its USB-C port hangs below the board). Pins as seen from the switch side of the right half:
+  const pins = `- RP2040-Zero flipped (components towards the back) in a back pocket, resting on the board's front skin; its USB-C port hangs about 0.8 mm below the board. Pins as seen from the switch side of the right half:
 - right, top to bottom: 5V, GND, 3V3 (unused), GP29 = C0, GP28 = C1, GP27 = C2, GP26 = R0, GP15 = R1, GP14 = R2
 - bottom, right to left: GP13 = C3, GP12 = C4, GP11 = C5, GP10 = R3, GP9 free
 - left, bottom: GP8 = LINK (to the breakout's D+)

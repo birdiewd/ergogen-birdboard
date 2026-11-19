@@ -130,7 +130,7 @@ const expand = wires => {
 
 // ---------- keepouts ----------
 // ctx.lx = -1 draws each key's own parts mirrored (the right half, seen in the left half's
-// frame); ctx.mcuFront puts the MCU pocket on the front.
+// frame); ctx.mcuFlipped uses the right half's deeper MCU pocket.
 const buildKeepouts = ctx => {
   const { P, U, keyNames } = ctx
   const K = (k, x, y) => ctx.K(k, ctx.lx * x, y)
@@ -166,7 +166,7 @@ const buildKeepouts = ctx => {
   }
   const S = ctx.S, M = ctx.M, L = ctx.L
   const sRect = (cx, cy, w, h) => G.rectPoly(cx, cy, w, h, p => S(p[0], p[1]))
-  rect(sRect(M[0], M[1], U.mcu_w + 0.3, U.mcu_h + 0.3), ctx.mcuFront ? [T - U.mcu_t, T + 1] : [-1, U.mcu_pocket_d], 'MCU pocket', 'MCU')
+  rect(sRect(M[0], M[1], U.mcu_w + 0.3, U.mcu_h + 0.3), [-1, ctx.mcuFlipped ? U.mcu_pocket_d_right : U.mcu_pocket_d], 'MCU pocket', 'MCU')
   rect(sRect(ctx.mcuCut[0], ctx.mcuCut[1], U.mcu_cut_w, U.mcu_cut_up + U.mcu_cut_down), all, 'MCU cutout')
   rect(sRect(ctx.linkCut[0], ctx.linkCut[1], U.link_cut_len, U.link_cut_w), all, 'breakout cutout')
   rect(sRect((L[0] - 2.3 + ctx.edgeX + 1) / 2, L[1], ctx.edgeX + 1 - (L[0] - 2.3), U.usb_h + 0.4), [-1, U.link_pocket_d], 'breakout pocket')
@@ -372,7 +372,7 @@ const ASSEMBLY = {
 3. Turn the board over. Press a hot-swap socket into each pocket. Bend the anode leg onto the socket's diode tab and solder it.
 4. Lay the bare column wires in the deep channels, from the bottom key up, soldering to each socket's column tab on the way. Then follow the shallow channels towards the MCU. Each ends on a hole: push the end up through it.
 5. Slide one ${SET.sleeve.len} mm heat-shrink sleeve onto a row (or link) wire for each crossing listed below. Lay the rows in the shallow channels with the sleeves in the wide pockets, and shrink them. Solder each cathode leg to its row wire. Push the row ends up through their holes.
-6. From the front, lay the RP2040-Zero face down in its pocket (USB-C port down through the cutout, towards the top edge), threading the wire ends up through its pad holes. Fit the USB-C breakout (turned round, opening towards the other half) in its back pocket. Push one end each of 5V, GND and LINK through its MCU pad hole and on into the hole in the board below it. Run them in the front channels (GND dips through the board once, under 5V) and push their other ends down into the breakout's pad holes. Every MCU pin in use then has a wire right through it, which holds the module in place. Solder the MCU from the front and the breakout on the back, and trim the ends that poke out on the back.
+6. Push one end each of 5V, GND and LINK down through its hole beside the MCU cutout from the front, run them in the front channels (GND dips through the board once, under 5V), and push their other ends down into the breakout's pad holes. From the back, put the RP2040-Zero in its pocket component side up (towards you), USB-C port at the top edge, threading those three ends through its pad holes. Bring each back wire over the pocket's edge, down onto the module and through its pad hole into the hole in the board in front of it. Every MCU pin in use then has a wire right through it, which holds the module in place. Fit the USB-C breakout (turned round, opening towards the other half) in its back pocket. Solder everything on the back and trim the ends that poke out on the front.
 7. Check every row and column for continuity, and for shorts to its neighbours, before you fit the switches.`,
 }
 
@@ -383,7 +383,7 @@ const doHalf = ({ side, mirror, base, left, put, say }) => {
   const { P, U, K, S, O } = left
   const lx = mirror ? -1 : 1
   const fx = p => (mirror ? [-p[0], p[1]] : p)
-  const ctx = { ...left, lx, mcuFront: mirror, show: p => [lx * (p[0] - O[0]), p[1] - O[1]] }
+  const ctx = { ...left, lx, mcuFlipped: mirror, show: p => [lx * (p[0] - O[0]), p[1] - O[1]] }
   const { wires, labels, pins } = require(mirror ? './routes_right' : './routes')({ K, S, U, M: left.M, L: left.L })
   const ex = expand(wires)
   const keepouts = buildKeepouts(ctx)

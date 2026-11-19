@@ -47,10 +47,14 @@ units:
   # the same height and both USB-C ports end up level. Its 1 mm board is then recessed
   # 1.4 mm inside the back face; the wires drop onto it from the channel ends.
   mcu_pocket_d: link_pocket_d
-  # Right half: the RP2040-Zero is flipped, lying in a front pocket (its board flush with the
-  # front face) with its components down through mcu_cutout. Its pinout then mirrors with
-  # the board, so both halves use the same pads.
+  # Right half: the RP2040-Zero is flipped (components towards the back, so its pinout
+  # mirrors with the board and both halves use the same pads). It sits in a back pocket
+  # that stops mcu_skin short of the front face, so its board rests on that skin around
+  # mcu_cutout. Every pocket then opens to the back, and the board prints switch side down
+  # with no supports. Its USB-C port hangs ~0.8 mm below the back face.
   mcu_t: 1.0          # RP2040-Zero board thickness
+  mcu_skin: 0.6       # board left in front of the right half's MCU
+  mcu_pocket_d_right: board_t - mcu_skin
   # Case: a tray the wiring board screws into (z = 0 is the bottom of the case). Stack:
   #   floor 1.5 | gap 1.1 under the board (sockets, MCU and breakout are all recessed into
   #   it) | wiring board 4 (top at 6.6) | switch plate 2.5 (top at 9.1) | cover 4 (top at
@@ -70,8 +74,8 @@ units:
   usb_z: case_floor + case_gap + link_pocket_d + 1.6
   # Right half (built with wiring/build.js, which uses this as usb_z there): the flipped
   # RP2040-Zero's port hangs down from its board, so it sits lower. Its wall opening is cut
-  # down to suit, which also serves the breakout's port.
-  usb_z_right: case_floor + case_gap + board_t - mcu_t - 1.6
+  # down to suit (into the floor, by the port), which also serves the breakout's port.
+  usb_z_right: case_floor + case_gap + mcu_pocket_d_right - mcu_t - 1.6
   usb_notch_w: 13     # wall opening for a USB-C plug's overmould
   usb_notch_down: 3.5 # opening reaches this far below the port centre (open to the top)
   # Switch plate (Gateron LP 2.0 / KS-33 dimensional drawing)
@@ -685,12 +689,12 @@ cases:
       extrude: mcu_pocket_d + 1
       shift: [0, 0, -1]
       operation: subtract
-  # right: RP2040-Zero flipped, in a front pocket, its board flush with the front face
+  # right: RP2040-Zero flipped, in a back pocket that stops mcu_skin short of the front
   wireboard_base_right:
     - what: case
       name: _wireboard_common
     - what: outline
       name: _wb_mcu_pocket
-      extrude: mcu_t + 1
-      shift: [0, 0, board_t - mcu_t]
+      extrude: mcu_pocket_d_right + 1
+      shift: [0, 0, -1]
       operation: subtract
