@@ -1,8 +1,7 @@
 // Builds the v4 keyboard: runs Ergogen on config.yaml + footprints/, then lays out the wire
 // channels of the printed wiring board (wiring/routes.js), checks them and writes:
-//   output/...                   everything Ergogen makes (outlines, cases, the map PCB)
+//   output/...                   everything Ergogen makes (outlines, cases)
 //   output/cases/wireboard.jscad  the wiring board: Ergogen's `wireboard_base` + channels
-//   output/pcbs/birdboard.kicad_pcb  gets the wire routes, holes and sleeve marks added
 //   output/wiring/wiring_map.svg  assembly map (back view and front view)
 //   output/wiring/report.md       pin map, wire lengths, sleeves, check results
 //
@@ -275,29 +274,6 @@ function main() {
 `
 }
 
-// ---------- KiCad map ----------
-const kicadMap = (pcb, ex, sleeves) => {
-  const nets = new Map()
-  for (const m of pcb.matchAll(/\(net (\d+) "([^"]*)"\)/g)) nets.set(m[2], Number(m[1]))
-  const k = p => `${r4(p[0])} ${r4(-p[1])}`
-  const lines = []
-  for (const s of ex.segs) {
-    if (s.depth === 'onmodule') continue
-    const layer = s.depth === 'front' ? 'F.Cu' : 'B.Cu'
-    const width = s.depth === 'deep' ? 0.9 : 0.6
-    lines.push(`  (segment (start ${k(s.a)}) (end ${k(s.b)}) (width ${width}) (layer "${layer}") (net ${nets.get(s.net) || 0}))`)
-  }
-  for (const s of ex.segs.filter(s => s.depth === 'onmodule')) {
-    lines.push(`  (gr_line (start ${k(s.a)}) (end ${k(s.b)}) (stroke (width 0.3) (type dash)) (layer "Eco1.User"))`)
-  }
-  for (const v of ex.vias) lines.push(`  (via (at ${k(v.p)}) (size 1.4) (drill ${SET.via}) (layers "F.Cu" "B.Cu") (net ${nets.get(v.net) || 0}))`)
-  for (const c of sleeves) {
-    lines.push(`  (gr_circle (center ${k(c.p)}) (end ${k(G.add(c.p, [1.2, 0]))}) (stroke (width 0.25) (type solid)) (fill none) (layer "Eco1.User"))`)
-  }
-  const i = pcb.lastIndexOf(')')
-  return pcb.slice(0, i) + lines.join('\n') + '\n' + pcb.slice(i)
-}
-
 // ---------- SVG map ----------
 const svgMap = (ctx, ex, sleeves, keepouts, outline, title) => {
   const all = outline
@@ -413,8 +389,6 @@ const build = async ({ echo = false } = {}) => {
     // JSCAD
     const base = results.cases.wireboard_base.jscad
     put('cases/wireboard.jscad', buildJscad(base, ctx, ex, sleeves))
-    // KiCad map
-    for (const [name, pcb] of Object.entries(results.pcbs)) put(`pcbs/${name}.kicad_pcb`, kicadMap(pcb, ex, sleeves))
     // SVG map
     put('wiring/wiring_map.svg', svgMap(ctx, ex, sleeves, keepouts, outline, 'BirdBoard v4 wiring'))
 
