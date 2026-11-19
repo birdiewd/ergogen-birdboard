@@ -1,9 +1,11 @@
 // Builds the v4 keyboard: runs Ergogen on config.yaml + footprints/, then lays out the wire
-// channels of the printed wiring board (wiring/routes.js), checks them and writes:
-//   output/...                   everything Ergogen makes (outlines, cases)
-//   output/cases/wireboard.jscad  the wiring board: Ergogen's `wireboard_base` + channels
-//   output/wiring/wiring_map.svg  assembly map (back view and front view)
-//   output/wiring/report.md       pin map, wire lengths, sleeves, check results
+// channels of the printed wiring boards (wiring/routes.js for the left half,
+// wiring/routes_right.js for the right), checks them and writes:
+//   output/outlines, output/cases       everything Ergogen makes (left half)
+//   output/cases/*_right.jscad          the same cases from a mirrored run (right half)
+//   output/cases/wireboard_<half>.jscad the wiring boards: base case + channels
+//   output/wiring/wiring_map_<half>.svg assembly maps (back view and front view)
+//   output/wiring/report_<half>.md      pin map, wire lengths, sleeves, check results
 //
 // CLI:    node wiring/build.js        (same as `npm run build`)
 // Module: require('./wiring/build').build() -> Promise<{ code, clashes, log }>
@@ -62,8 +64,35 @@ const writeErgogenOutputs = results => {
     fs.writeFileSync(abs, data)
   }
   for (const [name, o] of Object.entries(results.outlines)) if (!name.startsWith('_')) put(`outlines/${name}.dxf`, o.dxf)
-  for (const [name, c] of Object.entries(results.cases)) if (!name.startsWith('_') && name !== 'wireboard_base') put(`cases/${name}.jscad`, c.jscad)
+  writeCases(results.cases, '', put)
   return put
+}
+const writeCases = (cases, suffix, put) => {
+  for (const [name, c] of Object.entries(cases)) {
+    if (name.startsWith('_') || name.startsWith('wireboard_base')) continue
+    put(`cases/${name}${suffix}.jscad`, c.jscad || c)
+  }
+}
+
+// The right half: the same config with every point mirrored (x -> -x, rotations negated).
+// Outlines then come out mirrored, except cuts marked `resist: true` (each switch's socket
+// and diode), which keep their own orientation. Its case openings use usb_z_right.
+const mirroredRun = text => {
+  const req = n => require(path.join(EG, n))
+  let [config] = io.interpret(text, () => {})
+  const prep = req('prepare.js')
+  config = prep.parameterize(prep.inherit(prep.unnest(config)))
+  config.units.usb_z = config.units.usb_z_right
+  const units = req('units.js').parse(config)
+  const points = req('points.js').parse(config.points, units)
+  for (const p of Object.values(points)) {
+    p.x = -p.x
+    p.r = -p.r
+    p.meta.mirrored = true
+  }
+  const outlines = req('outlines.js').parse(config.outlines || {}, points, units)
+  const cases = req('cases.js').parse(config.cases || {}, outlines, units)
+  return { points, units, cases }
 }
 
 // ---------- route expansion ----------
@@ -93,15 +122,18 @@ const expand = wires => {
       }
       last = part
     }
-    // the point where a back channel meets the MCU (just before 'onmodule')
-    w.polys.forEach((p, i) => { if (w.polys[i + 1] && w.polys[i + 1].depth === 'onmodule') ends.push(p.pts[p.pts.length - 1]) })
+    // where a channel meets the MCU: the ends of every stretch over the module
+    for (const p of w.polys) if (p.depth === 'onmodule') ends.push(p.pts[0], p.pts[p.pts.length - 1])
   }
   return { segs, vias, ends }
 }
 
 // ---------- keepouts ----------
-const buildKeepouts = (ctx, results) => {
-  const { P, U, K, keyNames } = ctx
+// ctx.lx = -1 draws each key's own parts mirrored (the right half, seen in the left half's
+// frame); ctx.mcuFront puts the MCU pocket on the front.
+const buildKeepouts = ctx => {
+  const { P, U, keyNames } = ctx
+  const K = (k, x, y) => ctx.K(k, ctx.lx * x, y)
   const T = U.board_t
   const out = []
   const all = [-1, T + 1]
@@ -134,7 +166,7 @@ const buildKeepouts = (ctx, results) => {
   }
   const S = ctx.S, M = ctx.M, L = ctx.L
   const sRect = (cx, cy, w, h) => G.rectPoly(cx, cy, w, h, p => S(p[0], p[1]))
-  rect(sRect(M[0], M[1], U.mcu_w + 0.3, U.mcu_h + 0.3), [-1, U.mcu_pocket_d], 'MCU pocket', 'MCU')
+  rect(sRect(M[0], M[1], U.mcu_w + 0.3, U.mcu_h + 0.3), ctx.mcuFront ? [T - U.mcu_t, T + 1] : [-1, U.mcu_pocket_d], 'MCU pocket', 'MCU')
   rect(sRect(ctx.mcuCut[0], ctx.mcuCut[1], U.mcu_cut_w, U.mcu_cut_up + U.mcu_cut_down), all, 'MCU cutout')
   rect(sRect(ctx.linkCut[0], ctx.linkCut[1], U.link_cut_len, U.link_cut_w), all, 'breakout cutout')
   rect(sRect((L[0] - 2.3 + ctx.edgeX + 1) / 2, L[1], ctx.edgeX + 1 - (L[0] - 2.3), U.usb_h + 0.4), [-1, U.link_pocket_d], 'breakout pocket')
@@ -146,7 +178,7 @@ const check = (ctx, ex, keepouts, outline) => {
   const T = ctx.U.board_t
   const errors = [], warnings = [], sleeves = []
   const half = SET.w / 2
-  const fmt = p => `(${(p[0] - ctx.O[0]).toFixed(2)}, ${(p[1] - ctx.O[1]).toFixed(2)})`
+  const fmt = p => { const q = ctx.show(p); return `(${q[0].toFixed(2)}, ${q[1].toFixed(2)})` }
   const chan = ex.segs.filter(s => s.depth !== 'onmodule')
   const isEnd = p => ex.ends.some(e => G.dist(e, p) < 1e-6)
 
@@ -326,100 +358,65 @@ ${lg}
 </svg>`
 }
 
-// ---------- main ----------
-const build = async ({ echo = false } = {}) => {
-  const log = []
-  const say = s => { log.push(s); if (echo) console.log(s) }
-  let results
-  try {
-    injectFootprints()
-    const text = fs.readFileSync(path.join(ROOT, 'config.yaml'), 'utf8')
-    results = await ergogen.process(text, { debug: true }, s => say(s))
-  } catch (err) {
-    say(String(err && err.stack || err))
-    return { code: 1, log: log.join('\n') }
-  }
-  const put = writeErgogenOutputs(results)
-  try {
-    const P = results.points, U = results.units
-    const K = (k, x, y) => {
-      const p = P[k]
-      if (!p) throw new Error(`wiring: unknown key ${k}`)
-      const [rx, ry] = G.rot([x, y], p.r)
-      return [p.x + rx, p.y + ry]
-    }
-    const O = [P.matrix_inner_top.x, P.matrix_inner_top.y]
-    const S = (x, y) => [O[0] + x, O[1] + y]
-    const at = spec => { const p = anchor(spec, 'wiring', P)(U); return [p.x - O[0], p.y - O[1]] }
-    const thumbEdge = { ref: 'thumbfan_home_thumb', shift: ['0.75px', '-0.5py'], affect: 'x' }
-    const fromEdge = (x, y) => at([{ ref: 'matrix_inner_top' }, thumbEdge, { shift: [x, y] }])
-    const M = fromEdge('mcu_x', 'mcu_y')
-    const L = fromEdge('link_x', 'link_y')
-    const edgeX = fromEdge(0, 0)[0]
-    const mcuCut = fromEdge('mcu_x', 'mcu_y + (mcu_cut_up - mcu_cut_down) / 2')
-    const linkCut = fromEdge('link_x + link_cut_start + link_cut_len / 2', 'link_y')
-    const keyNames = Object.keys(P)
-    // mounting holes = circles of the mount_holes outline (from its DXF model)
-    const holeModel = results.outlines.mount_holes.yaml
-    const mountHoles = []
-    makerjs.model.walk(holeModel, { onPath: w => { if (w.pathContext.type === 'circle') mountHoles.push(makerjs.point.add(w.pathContext.origin, w.offset)) } })
-    // board outline (key area + strip, before the module cutouts)
-    const chains = makerjs.model.findChains(results.outlines._pcb_full.yaml)
-    const outline = makerjs.chain.toKeyPoints(chains.sort((a, b) => b.pathLength - a.pathLength)[0], 0.5)
-    const switches = keyNames.map(k => G.rectPoly(0, 0, 14, 14, p => K(k, p[0], p[1])))
-    const ctx = { P, U, K, S, O, M, L, edgeX, mcuCut, linkCut, keyNames, mountHoles, switches, labels: [] }
-
-    const wires = require('./routes')({ K, S, U, M, L })
-    const ex = expand(wires)
-    const keepouts = buildKeepouts(ctx, results)
-    const { errors, warnings, sleeves } = check(ctx, ex, keepouts, outline)
-
-    // labels for the map: MCU pins in use, breakout pins
-    const pinNames = { '-10.16L': '5V', '-7.62L': 'GND', '-2.54L': 'C0', '0L': 'C1', '2.54L': 'C2', '5.08L': 'R0', '7.62L': 'R1', '10.16L': 'R2', '-5.08B': 'C3', '-2.54B': 'C4', '0B': 'R3', '2.54B': 'C5', '10.16R': 'LINK' }
-    for (const [key, name] of Object.entries(pinNames)) {
-      const side = key.slice(-1), v = Number(key.slice(0, -1))
-      const p = side === 'L' ? S(M[0] - 5.5, M[1] - v - 0.5) : side === 'R' ? S(M[0] + 5.5, M[1] - v - 0.5) : S(M[0] + v, M[1] - 8.2)
-      ctx.labels.push({ p, text: name, size: 1.3, fill: '#000', side: 'back' })
-    }
-    for (const [py, name] of [[3.81, 'V'], [-1.27, 'D+'], [-3.81, 'G']]) ctx.labels.push({ p: S(L[0] - 2.2, L[1] - py - 0.5), text: name, size: 1.3 })
-    ctx.labels.push({ p: S(M[0] - 4.2, M[1] + 10.16 - 0.5), text: '5V', size: 1.3, side: 'front' }, { p: S(M[0] - 4.2, M[1] + 7.62 - 0.5), text: 'GND', size: 1.3, side: 'front' },
-      { p: S(M[0] + 4.6, M[1] - 10.16 - 0.5), text: 'LINK', size: 1.3, side: 'front' })
-    ctx.labels.push({ p: S(M[0], M[1] + 3), text: 'RP2040-Zero', size: 2, side: 'back' }, { p: S(L[0] + 6, L[1]), text: 'USB-C', size: 2 })
-
-    // JSCAD
-    const base = results.cases.wireboard_base.jscad
-    put('cases/wireboard.jscad', buildJscad(base, ctx, ex, sleeves))
-    // SVG map
-    put('wiring/wiring_map.svg', svgMap(ctx, ex, sleeves, keepouts, outline, 'BirdBoard v4 wiring'))
-
-    // report
-    const lengths = wires.map(w => {
-      const l = w.polys.filter(p => p.depth !== 'onmodule').reduce((s, p) => s + G.polyLength(p.pts), 0)
-      return `| ${w.net} | ${w.name} | ${l.toFixed(0)} |`
-    })
-    const perNet = {}
-    for (const w of wires) perNet[w.net] = (perNet[w.net] || 0) + w.polys.reduce((s, p) => s + G.polyLength(p.pts), 0)
-    const sleeveList = sleeves.map(c => `| ${c.shallow.net} over ${c.deep.net} | (${(c.p[0] - O[0]).toFixed(1)}, ${(c.p[1] - O[1]).toFixed(1)}) | ${c.angle.toFixed(0)} |`)
-    const md = `# BirdBoard v4 wiring report
-
-Generated by \`wiring/build.js\`. Coordinates are in mm from the inner column's top key, x right, y up (front view).
-Left half only. Map: \`wiring/wiring_map.svg\` (back view is mirrored, as you see it when wiring).
-
-## MCU pin map (RP2040-Zero, upside down, seen from the switch side)
-
-- left, top to bottom: 5V, GND, 3V3 (unused), GP29 = C0, GP28 = C1, GP27 = C2, GP26 = R0, GP15 = R1, GP14 = R2
-- bottom, left to right: GP13 = C3, GP12 = C4, GP11 = R3, GP10 = C5, GP9 free
-- right, bottom: GP8 = LINK (to the breakout's D+)
-
-## Assembly order
-
-1. Print \`cases/wireboard.stl\` front face down (the switches need that face flat). The back's channels and pockets then face up and need no supports.
+// ---------- one half ----------
+const ASSEMBLY = {
+  left: `1. Print \`cases/wireboard_left.stl\` front face down (the switches need that face flat). The back's channels and pockets then face up and need no supports.
 2. From the front, fit a 1N4148 per key: legs through the two holes, body in its pocket, cathode band towards the upper hole (the row).
 3. Turn the board over. Press a hot-swap socket into each pocket. Bend the anode leg onto the socket's right tab and solder it.
 4. Lay the bare column wires in the deep channels, from the bottom key up, soldering to each socket's left tab on the way. Then follow the shallow channels to the MCU.
 5. Slide one ${SET.sleeve.len} mm heat-shrink sleeve onto a row (or link) wire for each crossing listed below. Lay the rows in the shallow channels with the sleeves in the wide pockets, and shrink them. Solder each cathode leg to its row wire.
-6. Put the RP2040-Zero (component side towards the front) and the USB-C breakout in their pockets. Solder the back wires into the MCU's pad holes, at the edge of its board. Run 5V, GND and LINK in the front channels and push their ends down through the holes into the MCU's and the breakout's pad holes. Solder them on the back.
-7. Check every row and column for continuity, and for shorts to its neighbours, before you fit the switches.
+6. Put the RP2040-Zero (component side towards the front) and the USB-C breakout in their back pockets. Solder the back wires into the MCU's pad holes, at the edge of its board. Run 5V, GND and LINK in the front channels and push their ends down through the holes into the MCU's and the breakout's pad holes. Solder them on the back.
+7. Check every row and column for continuity, and for shorts to its neighbours, before you fit the switches.`,
+  right: `1. Print \`cases/wireboard_right.stl\` front face down (the switches need that face flat). The back's channels and pockets then face up and need no supports.
+2. From the front, fit a 1N4148 per key: legs through the two holes, body in its pocket, cathode band towards the upper hole (the row). The switches, sockets and diodes sit exactly as on the left half; only their positions are mirrored.
+3. Turn the board over. Press a hot-swap socket into each pocket. Bend the anode leg onto the socket's diode tab and solder it.
+4. Lay the bare column wires in the deep channels, from the bottom key up, soldering to each socket's column tab on the way. Then follow the shallow channels towards the MCU. Each ends on a hole: push the end up through it.
+5. Slide one ${SET.sleeve.len} mm heat-shrink sleeve onto a row (or link) wire for each crossing listed below. Lay the rows in the shallow channels with the sleeves in the wide pockets, and shrink them. Solder each cathode leg to its row wire. Push the row ends up through their holes.
+6. From the front, lay the RP2040-Zero face down in its pocket (USB-C port down through the cutout, towards the top edge), over the wire ends; solder them in its pad holes. Fit the USB-C breakout (turned round, opening towards the other half) in its back pocket. Run 5V, GND and LINK in the front channels from the MCU's pads; GND dips through the board once, under 5V. Push their other ends down into the breakout's pad holes and solder them on the back.
+7. Check every row and column for continuity, and for shorts to its neighbours, before you fit the switches.`,
+}
+
+// Lays out, checks and writes one half. Everything is computed in the left half's frame;
+// for the right half (mirror = true) the routes and the per-key parts are drawn mirrored
+// there, and the results are mirrored into place (x -> -x) at the end.
+const doHalf = ({ side, mirror, base, left, put, say }) => {
+  const { P, U, K, S, O } = left
+  const lx = mirror ? -1 : 1
+  const fx = p => (mirror ? [-p[0], p[1]] : p)
+  const ctx = { ...left, lx, mcuFront: mirror, show: p => [lx * (p[0] - O[0]), p[1] - O[1]] }
+  const { wires, labels, pins } = require(mirror ? './routes_right' : './routes')({ K, S, U, M: left.M, L: left.L })
+  const ex = expand(wires)
+  const keepouts = buildKeepouts(ctx)
+  const { errors, warnings, sleeves } = check(ctx, ex, keepouts, left.outline)
+
+  // into place
+  const seg = s => ({ ...s, a: fx(s.a), b: fx(s.b) })
+  const exP = { segs: ex.segs.map(seg), vias: ex.vias.map(v => ({ ...v, p: fx(v.p) })), ends: ex.ends.map(fx) }
+  const sleevesP = sleeves.map(c => ({ ...c, p: fx(c.p), shallow: seg(c.shallow), deep: seg(c.deep) }))
+  const keepP = keepouts.map(k => (k.type === 'circle' ? { ...k, c: fx(k.c) } : { ...k, poly: k.poly.map(fx) }))
+  const outlineP = left.outline.map(fx)
+  const ctxP = { ...ctx, switches: left.switches.map(q => q.map(fx)), labels: labels.map(l => ({ size: 1.3, ...l, p: fx(l.p) })) }
+
+  put(`cases/wireboard_${side}.jscad`, buildJscad(base, ctxP, exP, sleevesP))
+  put(`wiring/wiring_map_${side}.svg`, svgMap(ctxP, exP, sleevesP, keepP, outlineP, `BirdBoard v4 wiring, ${side} half`))
+
+  const lengths = wires.map(w => {
+    const l = w.polys.filter(p => p.depth !== 'onmodule').reduce((s, p) => s + G.polyLength(p.pts), 0)
+    return `| ${w.net} | ${w.name} | ${l.toFixed(0)} |`
+  })
+  const sleeveList = sleeves.map(c => { const q = ctx.show(c.p); return `| ${c.shallow.net} over ${c.deep.net} | (${q[0].toFixed(1)}, ${q[1].toFixed(1)}) | ${c.angle.toFixed(0)} |` })
+  put(`wiring/report_${side}.md`, `# BirdBoard v4 wiring report: ${side} half
+
+Generated by \`wiring/build.js\`. Coordinates are in mm from the inner column's top key, x right, y up, seen from the front.
+Map: \`wiring/wiring_map_${side}.svg\` (its back view is mirrored, as you see the board when wiring it).
+
+## MCU pin map
+
+${pins}
+
+## Assembly order
+
+${ASSEMBLY[side]}
 
 ## Checks
 
@@ -441,12 +438,63 @@ Slide one ~${SET.sleeve.len} mm sleeve onto the row (or link) wire at each cross
 | crossing | at | angle (deg) |
 |---|---|---|
 ${sleeveList.join('\n')}
-`
-    put('wiring/report.md', md)
-    say(`wiring: ${wires.length} wires, ${ex.segs.length} segments, ${ex.vias.length} holes, ${sleeves.length} sleeves`)
-    for (const w of warnings) say(`wiring warning: ${w}`)
-    for (const e of errors) say(`wiring ERROR: ${e}`)
-    return { code: 0, clashes: errors.length, log: log.join('\n') }
+`)
+  say(`wiring ${side}: ${wires.length} wires, ${ex.segs.length} segments, ${ex.vias.length} holes, ${sleeves.length} sleeves`)
+  for (const w of warnings) say(`wiring ${side} warning: ${w}`)
+  for (const e of errors) say(`wiring ${side} ERROR: ${e}`)
+  return errors.length
+}
+
+// ---------- main ----------
+const build = async ({ echo = false } = {}) => {
+  const log = []
+  const say = s => { log.push(s); if (echo) console.log(s) }
+  let results, text
+  try {
+    injectFootprints()
+    text = fs.readFileSync(path.join(ROOT, 'config.yaml'), 'utf8')
+    results = await ergogen.process(text, { debug: true }, s => say(s))
+  } catch (err) {
+    say(String(err && err.stack || err))
+    return { code: 1, log: log.join('\n') }
+  }
+  const put = writeErgogenOutputs(results)
+  try {
+    const P = results.points, U = results.units
+    const K = (k, x, y) => {
+      const p = P[k]
+      if (!p) throw new Error(`wiring: unknown key ${k}`)
+      const [rx, ry] = G.rot([x, y], p.r)
+      return [p.x + rx, p.y + ry]
+    }
+    const O = [P.matrix_inner_top.x, P.matrix_inner_top.y]
+    const S = (x, y) => [O[0] + x, O[1] + y]
+    const at = spec => { const p = anchor(spec, 'wiring', P)(U); return [p.x - O[0], p.y - O[1]] }
+    const thumbEdge = { ref: 'thumbfan_home_thumb', shift: ['0.75px', '-0.5py'], affect: 'x' }
+    const fromEdge = (x, y) => at([{ ref: 'matrix_inner_top' }, thumbEdge, { shift: [x, y] }])
+    const keyNames = Object.keys(P)
+    // mounting holes = circles of the mount_holes outline (from its DXF model)
+    const mountHoles = []
+    makerjs.model.walk(results.outlines.mount_holes.yaml, { onPath: w => { if (w.pathContext.type === 'circle') mountHoles.push(makerjs.point.add(w.pathContext.origin, w.offset)) } })
+    // board outline (key area + strip, before the module cutouts)
+    const chains = makerjs.model.findChains(results.outlines._pcb_full.yaml)
+    const outline = makerjs.chain.toKeyPoints(chains.sort((a, b) => b.pathLength - a.pathLength)[0], 0.5)
+    const left = {
+      P, U, K, S, O, keyNames, mountHoles, outline,
+      M: fromEdge('mcu_x', 'mcu_y'),
+      L: fromEdge('link_x', 'link_y'),
+      edgeX: fromEdge(0, 0)[0],
+      mcuCut: fromEdge('mcu_x', 'mcu_y + (mcu_cut_up - mcu_cut_down) / 2'),
+      linkCut: fromEdge('link_x + link_cut_start + link_cut_len / 2', 'link_y'),
+      switches: keyNames.map(k => G.rectPoly(0, 0, 14, 14, p => K(k, p[0], p[1]))),
+    }
+    let clashes = doHalf({ side: 'left', mirror: false, base: results.cases.wireboard_base.jscad, left, put, say })
+
+    // right half: a mirrored run of the same config, then the mirrored routes
+    const right = mirroredRun(text)
+    writeCases(right.cases, '_right', put)
+    clashes += doHalf({ side: 'right', mirror: true, base: right.cases.wireboard_base_right, left, put, say })
+    return { code: 0, clashes, log: log.join('\n') }
   } catch (err) {
     say(String(err && err.stack || err))
     return { code: 1, log: log.join('\n') }

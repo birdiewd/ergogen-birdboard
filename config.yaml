@@ -47,6 +47,10 @@ units:
   # the same height and both USB-C ports end up level. Its 1 mm board is then recessed
   # 1.4 mm inside the back face; the wires drop onto it from the channel ends.
   mcu_pocket_d: link_pocket_d
+  # Right half: the RP2040-Zero is flipped, lying in a front pocket (its board flush with the
+  # front face) with its components down through mcu_cutout. Its pinout then mirrors with
+  # the board, so both halves use the same pads.
+  mcu_t: 1.0          # RP2040-Zero board thickness
   # Case: a tray the wiring board screws into (z = 0 is the bottom of the case). Stack:
   #   floor 1.5 | gap 1.1 under the board (sockets, MCU and breakout are all recessed into
   #   it) | wiring board 4 (top at 6.6) | switch plate 2.5 (top at 9.1) | cover 4 (top at
@@ -64,6 +68,10 @@ units:
   # face and the ports are ~3.2 tall, so both ports share this height (level with the
   # board's top, as in v3).
   usb_z: case_floor + case_gap + link_pocket_d + 1.6
+  # Right half (built with wiring/build.js, which uses this as usb_z there): the flipped
+  # RP2040-Zero's port hangs down from its board, so it sits lower. Its wall opening is cut
+  # down to suit, which also serves the breakout's port.
+  usb_z_right: case_floor + case_gap + board_t - mcu_t - 1.6
   usb_notch_w: 13     # wall opening for a USB-C plug's overmould
   usb_notch_down: 3.5 # opening reaches this far below the port centre (open to the top)
   # Switch plate (Gateron LP 2.0 / KS-33 dimensional drawing)
@@ -508,39 +516,39 @@ outlines:
   - what: circle
     where: true
     radius: 1.55
-    adjust: {shift: [-4.4, -4.7]}
+    adjust: {shift: [-4.4, -4.7], resist: true}
   - what: circle
     where: true
     radius: 1.55
-    adjust: {shift: [2.6, -5.75]}
+    adjust: {shift: [2.6, -5.75], resist: true}
   - what: circle
     where: true
     radius: leg_hole_d / 2
-    adjust: {shift: [diode_x, diode_a]}
+    adjust: {shift: [diode_x, diode_a], resist: true}
   - what: circle
     where: true
     radius: leg_hole_d / 2
-    adjust: {shift: [diode_x, diode_k]}
+    adjust: {shift: [diode_x, diode_k], resist: true}
   _wb_sockets:
   - what: rectangle
     where: true
     bound: false
-    adjust: {shift: [-3.8125, -4.7]}
+    adjust: {shift: [-3.8125, -4.7], resist: true}
     size: [6.025 + 2 sock_tol, 4.35 + 2 sock_tol]
   - what: rectangle
     where: true
     bound: false
-    adjust: {shift: [1.1625, -5.75]}
+    adjust: {shift: [1.1625, -5.75], resist: true}
     size: [7.725 + 2 sock_tol, 4.35 + 2 sock_tol]
   - what: rectangle
     where: true
     bound: false
-    adjust: {shift: [-7.6375, -4.7]}
+    adjust: {shift: [-7.6375, -4.7], resist: true}
     size: [1.625 + 2 sock_tol, 1.75 + 2 sock_tol]
   - what: rectangle
     where: true
     bound: false
-    adjust: {shift: [(5.025 + diode_x + 0.7) / 2, -5.75]}
+    adjust: {shift: [(5.025 + diode_x + 0.7) / 2, -5.75], resist: true}
     size: [diode_x + 0.7 - 5.025 + 2 sock_tol, 1.75 + 2 sock_tol]
   # DO-35 body (2 x 4 mm) on the front, sunk below the surface the switch sits on, and slots
   # for its legs out to the two holes.
@@ -548,13 +556,13 @@ outlines:
   - what: rectangle
     where: true
     bound: false
-    adjust: {shift: [diode_x, (diode_a + diode_k) / 2]}
+    adjust: {shift: [diode_x, (diode_a + diode_k) / 2], resist: true}
     size: [2.4, 4.6]
   _wb_diode_slots:
   - what: rectangle
     where: true
     bound: false
-    adjust: {shift: [diode_x, (diode_a + diode_k) / 2]}
+    adjust: {shift: [diode_x, (diode_a + diode_k) / 2], resist: true}
     size: [0.9, diode_k - diode_a]
   # RP2040-Zero (upside down, component side up, as in v3) in a back pocket as deep as the
   # breakout's (mcu_pocket_d).
@@ -594,7 +602,8 @@ cases:
   # Keyboard case (z = 0 is the case bottom): floor, 11 mm walls with openings for both
   # USB-C plugs, and standoffs with M2 heat-set insert holes under all mounting holes.
   # The PCB sits on the standoffs; the switch plate and the cover fit inside the walls.
-  # This is the left half; mirror it in the slicer for the right half.
+  # This is the left half; wiring/build.js also writes keyboard_case_right (and the other
+  # cases with _right) from a mirrored run, with its port openings at usb_z_right.
   keyboard_case:
     - what: outline
       name: case_outer
@@ -629,10 +638,11 @@ cases:
       shift: [0, 0, cover_pocket]
       operation: add
   # v4 wiring board without its wire channels (z = 0 is the back face). wiring/build.js
-  # adds the channels and writes the result as output/cases/wireboard.jscad (and .stl);
-  # this base on its own is not written out. Cuts reach 1 mm past the faces they open
-  # onto, so no zero-thickness skins are left behind.
-  wireboard_base:
+  # adds the channels and writes output/cases/wireboard_left.jscad and, from a mirrored
+  # run of this config, wireboard_right.jscad (and .stl); the bases on their own are not
+  # written out. Cuts reach 1 mm past the faces they open onto, so no zero-thickness
+  # skins are left behind. The two halves differ only in the MCU pocket.
+  _wireboard_common:
     - what: outline
       name: board_mcu
       extrude: board_t
@@ -662,12 +672,25 @@ cases:
       shift: [0, 0, board_t - diode_slot_d]
       operation: subtract
     - what: outline
+      name: _wb_link_pocket
+      extrude: link_pocket_d + 1
+      shift: [0, 0, -1]
+      operation: subtract
+  # left: RP2040-Zero in a back pocket, component side up
+  wireboard_base:
+    - what: case
+      name: _wireboard_common
+    - what: outline
       name: _wb_mcu_pocket
       extrude: mcu_pocket_d + 1
       shift: [0, 0, -1]
       operation: subtract
+  # right: RP2040-Zero flipped, in a front pocket, its board flush with the front face
+  wireboard_base_right:
+    - what: case
+      name: _wireboard_common
     - what: outline
-      name: _wb_link_pocket
-      extrude: link_pocket_d + 1
-      shift: [0, 0, -1]
+      name: _wb_mcu_pocket
+      extrude: mcu_t + 1
+      shift: [0, 0, board_t - mcu_t]
       operation: subtract

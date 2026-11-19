@@ -137,5 +137,19 @@ module.exports = ({ K, S, U, M, L }) => {
   W('LINK', 'link line to the breakout', 'front', lk, 'via', [lk[0], S(0, -13.6)[1]], S(L[0] + 1.5, -13.6),
     S(L[0] + 1.5, L[1] + 1.27), linkPad(-1.27), 'via')
 
-  return wires
+  // map labels: MCU pins in use (back) and power/link holes (front), breakout pins
+  const labels = []
+  const pinLabel = (text, px, py, dx, dy, side) => labels.push({ p: S(M[0] + px + dx, M[1] - py + dy), text, side })
+  for (const [py, t] of [[-10.16, '5V'], [-7.62, 'GND'], [-2.54, 'C0'], [0, 'C1'], [2.54, 'C2'], [5.08, 'R0'], [7.62, 'R1'], [10.16, 'R2']]) pinLabel(t, -7.62, py, 2.1, -0.5, 'back')
+  for (const [px, t] of [[-5.08, 'C3'], [-2.54, 'C4'], [0, 'R3'], [2.54, 'C5']]) pinLabel(t, px, 10.16, 0, 2.2, 'back')
+  pinLabel('LINK', 7.62, 10.16, -2.6, -0.5, 'back')
+  pinLabel('5V', -7.62, -10.16, 3.4, -0.5, 'front'); pinLabel('GND', -7.62, -7.62, 3.4, -0.5, 'front'); pinLabel('LINK', 7.62, 10.16, -3.0, -0.5, 'front')
+  for (const [py, t] of [[3.81, 'V'], [-1.27, 'D+'], [-3.81, 'G']]) labels.push({ p: S(L[0] - 2.2, L[1] - py - 0.5), text: t })
+  labels.push({ p: S(M[0], M[1] + 3), text: 'RP2040-Zero', size: 2, side: 'back' }, { p: S(L[0] + 6, L[1]), text: 'USB-C', size: 2 })
+
+  const pins = `- RP2040-Zero upside down in a back pocket (component side towards the front). Pins as seen from the switch side:
+- left, top to bottom: 5V, GND, 3V3 (unused), GP29 = C0, GP28 = C1, GP27 = C2, GP26 = R0, GP15 = R1, GP14 = R2
+- bottom, left to right: GP13 = C3, GP12 = C4, GP11 = R3, GP10 = C5, GP9 free
+- right, bottom: GP8 = LINK (to the breakout's D+)`
+  return { wires, labels, pins }
 }
