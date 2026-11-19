@@ -40,10 +40,13 @@ units:
   diode_pocket_d: 2.1 # pocket depth for the 2 mm glass body
   diode_slot_d: 1.4   # leg slots from the body to the holes
   leg_hole_d: 1.0     # diode leg / wire hole
-  mcu_pocket_d: 1.0   # RP2040-Zero board thickness: its back face sits flush with the back
   link_pcb_t: 1.6     # USB-C breakout board thickness
   link_recess: 0.8    # breakout sits this far inside the back face (solder joints stay inside)
   link_pocket_d: link_pcb_t + link_recess
+  # RP2040-Zero pocket: as deep as the breakout's, so both boards' component sides sit at
+  # the same height and both USB-C ports end up level. Its 1 mm board is then recessed
+  # 1.4 mm inside the back face; the wires drop onto it from the channel ends.
+  mcu_pocket_d: link_pocket_d
   # Case: a tray the wiring board screws into (z = 0 is the bottom of the case). Stack:
   #   floor 1.5 | gap 1.1 under the board (sockets, MCU and breakout are all recessed into
   #   it) | wiring board 4 (top at 6.6) | switch plate 2.5 (top at 9.1) | cover 4 (top at
@@ -57,10 +60,10 @@ units:
   case_off: case_clear + case_wall
   standoff_r: 2.5     # standoff radius (5 mm)
   insert_r: 1.6       # hole for an M2 heat-set insert (3.2 mm)
-  # USB-C port centre height of the RP2040-Zero (its 1 mm board is flush with the back face,
-  # the port is ~3.2 tall). The breakout's port sits 1.4 mm higher; both wall openings are
-  # open to the top, so one height (the lower one) serves both.
-  usb_z: case_floor + case_gap + mcu_pocket_d + 1.6
+  # USB-C port centre height: both boards' component sides sit link_pocket_d above the back
+  # face and the ports are ~3.2 tall, so both ports share this height (level with the
+  # board's top, as in v3).
+  usb_z: case_floor + case_gap + link_pocket_d + 1.6
   usb_notch_w: 13     # wall opening for a USB-C plug's overmould
   usb_notch_down: 3.5 # opening reaches this far below the port centre (open to the top)
   # Switch plate (Gateron LP 2.0 / KS-33 dimensional drawing)
@@ -553,8 +556,8 @@ outlines:
     bound: false
     adjust: {shift: [diode_x, (diode_a + diode_k) / 2]}
     size: [0.9, diode_k - diode_a]
-  # RP2040-Zero (upside down, component side up, as in v3) in a back pocket as deep as its
-  # board, so its castellations sit level with the wire channels that run up to them.
+  # RP2040-Zero (upside down, component side up, as in v3) in a back pocket as deep as the
+  # breakout's (mcu_pocket_d).
   _wb_mcu_pocket:
   - what: rectangle
     where: matrix_inner_top
