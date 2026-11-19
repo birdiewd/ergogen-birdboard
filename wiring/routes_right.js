@@ -6,8 +6,9 @@
 //     right (x = +7.9) and the diode on its left (x = -7.2)
 //   - the USB-C breakout is turned round, so its pins run V, D-, D+, G from the top
 //   - the RP2040-Zero is flipped (front pocket, components down), so its pinout DOES
-//     mirror: its pads sit where the left half's do. Back wires end on a hole up into the
-//     pad's hole; front wires end on the module itself.
+//     mirror: its pads sit where the left half's do. Every pin in use has a hole through
+//     the board under its pad hole: back wires come up through it into the module, front
+//     wires go down through the module into it.
 
 module.exports = ({ K, S, U, M, L }) => {
   const wires = []
@@ -108,11 +109,11 @@ module.exports = ({ K, S, U, M, L }) => {
   const fx = x => S(x, 0)[0]
   const v5 = pad(-7.62, -10.16), gnd = pad(-7.62, -7.62), lk = pad(7.62, 10.16)
   const edgeL = M[0] - U.mcu_w / 2, edgeR = M[0] + U.mcu_w / 2
-  W('5V', '5V to the breakout', 'onmodule', v5, S(edgeL, v5[1] - O[1]), 'front', [fx(12.2), v5[1]], [fx(12.2), S(0, -21.3)[1]],
+  W('5V', '5V to the breakout', 'onmodule', v5, 'via', S(edgeL, v5[1] - O[1]), 'front', [fx(12.2), v5[1]], [fx(12.2), S(0, -21.3)[1]],
     [linkPad(3.81)[0], S(0, -21.3)[1]], linkPad(3.81), 'via')
-  W('GND', 'GND to the breakout', 'onmodule', gnd, S(edgeL, gnd[1] - O[1]), 'front', [fx(13.45), gnd[1]], S(13.45, -19.3), S(19.4, -19.3),
+  W('GND', 'GND to the breakout', 'onmodule', gnd, 'via', S(edgeL, gnd[1] - O[1]), 'front', [fx(13.45), gnd[1]], S(13.45, -19.3), S(19.4, -19.3),
     S(19.4, -20.0), 'via', 'shallow', S(19.4, -22.6), 'via', 'front', [fx(19.4), linkPad(-3.81)[1]], linkPad(-3.81), 'via')
-  W('LINK', 'link line to the breakout', 'onmodule', lk, S(edgeR, lk[1] - O[1]), 'front', S(33.9, lk[1] - O[1]), S(33.9, -14.3),
+  W('LINK', 'link line to the breakout', 'onmodule', lk, 'via', S(edgeR, lk[1] - O[1]), 'front', S(33.9, lk[1] - O[1]), S(33.9, -14.3),
     S(L[0] + 1.5, -14.3), [S(L[0] + 1.5, 0)[0], linkPad(-1.27)[1]], linkPad(-1.27), 'via')
 
   // labels (in this mirror frame; the build mirrors their positions)

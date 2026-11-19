@@ -6,6 +6,9 @@
 //   'shallow'   back channel near the back face (rows, the column bundle, MCU links)
 //   'front'     front channel, under the MCU cover (power and the link line)
 //   'onmodule'  over the RP2040-Zero's own board to one of its pad holes (no channel)
+// Every MCU pin in use gets a hole through the wiring board under its pad hole, so each wire
+// goes right through the module and into the board, like a header pin: easy to solder, and
+// together they hold the module in place.
 // A 'via' marker puts a hole through the board at the current point: where a front wire
 // drops into a pad hole of the MCU or the breakout.
 // A shallow wire may cross a deep one: the build checks every crossing, gives it a sleeve
@@ -35,8 +38,8 @@ module.exports = ({ K, S, U, M, L }) => {
   // MCU pads (upside-down RP2040-Zero, footprint KiCad coordinates, y down; M is its
   // centre in strip coordinates) and the edge of its pocket where a back channel ends.
   const pad = (px, py) => S(M[0] + px, M[1] - py)
-  const leftPad = py => [S(M[0] - U.mcu_w / 2, M[1] - py), 'onmodule', pad(-7.62, py)]
-  const bottomPad = px => [S(M[0] + px, M[1] - U.mcu_h / 2), 'onmodule', pad(px, 10.16)]
+  const leftPad = py => [S(M[0] - U.mcu_w / 2, M[1] - py), 'onmodule', pad(-7.62, py), 'via']
+  const bottomPad = px => [S(M[0] + px, M[1] - U.mcu_h / 2), 'onmodule', pad(px, 10.16), 'via']
   const padY = py => M[1] - py
   // USB-C breakout pad holes (upside down: V at the bottom, then D-, D+, G going up)
   const linkPad = py => S(L[0], L[1] - py)
