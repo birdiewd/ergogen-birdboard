@@ -141,7 +141,8 @@ const buildSteps = async () => {
   broadcast()
 
   const { code, log } = await runErgogen()
-  const failed = code !== 0 || /error/i.test(log)
+  // Wiring check findings are reported in the log but don't stop the STL conversion.
+  const failed = code !== 0
   if (failed) {
     state = { ...state, status: 'error', log, time: new Date().toISOString() }
     console.log(`[${new Date().toLocaleTimeString()}] build error\n${log}`)
@@ -204,6 +205,7 @@ const schedule = rel => {
 }
 // Watch the folder rather than the file, so editors that save by replacing the file still trigger.
 fs.watch(ROOT, (_, name) => { if (name === 'config.yaml') schedule('config.yaml') })
+fs.watch(path.join(ROOT, 'wiring'), (_, name) => { if (name && name.endsWith('.js')) schedule() })
 fs.mkdirSync(FP_DIR, { recursive: true })
 fs.watch(FP_DIR, { recursive: true }, (_, name) => {
   if (name && name.toLowerCase().endsWith('.js')) schedule('footprints/' + name.replace(/\\/g, '/'))
