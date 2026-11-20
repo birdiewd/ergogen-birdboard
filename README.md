@@ -1,7 +1,7 @@
 # birdboard v4
 
 A split keyboard designed with [Ergogen](https://ergogen.xyz). Instead of an FR4 PCB, v4 uses a
-3D-printed wiring board, with channels for hand-laid 22 AWG copper wire.
+3D-printed wiring board, with channels for hand-laid 18 AWG solid copper wire.
 
 ## Setup
 

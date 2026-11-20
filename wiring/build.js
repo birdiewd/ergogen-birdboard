@@ -28,17 +28,17 @@ const anchor = require(path.join(EG, 'anchor.js')).parse
 
 // ---------- channel and clearance settings ----------
 const SET = {
-  w: 0.9,            // channel width for 22 AWG solid wire (0.64 mm)
-  deep: 2.1,         // deep channel: the wire lies on the socket tabs
-  shallow: 1.0,      // shallow channel (rows, bundle, links)
-  front: 1.0,        // front channel depth
+  w: 1.3,            // channel width for 18 AWG solid wire (1.02 mm)
+  deep: 2.4,         // deep channel: the wire runs past the column pin's tip (= pin_depth)
+  shallow: 1.3,      // shallow channel (rows, bundle, links)
+  front: 1.3,        // front channel depth
   wall: 0.3,         // minimum wall between channels, and to holes and pockets
   edge: 0.6,         // minimum wall to the board edge
-  via: 1.0,          // hole for a wire through the board
+  via: 1.4,          // hole for a wire through the board
   // case standoffs (r 2.5) press on the back face round each mounting hole. A channel may
   // run under the outer part of that ring (the wire sits below the face), but not within:
   standoff: 2.0,
-  sleeve: { w: 2.0, len: 6, depth: 1.4 },   // pocket for a heat-shrink sleeve at a crossing
+  sleeve: { w: 2.4, len: 6, depth: 1.8 },   // pocket for a heat-shrink sleeve at a crossing
   minAngle: 30,      // crossings flatter than this are flagged
 }
 
@@ -75,7 +75,7 @@ const writeCases = (cases, suffix, put) => {
 }
 
 // The right half: the same config with every point mirrored (x -> -x, rotations negated).
-// Outlines then come out mirrored, except cuts marked `resist: true` (each switch's socket
+// Outlines then come out mirrored, except cuts marked `resist: true` (each switch's pins
 // and diode), which keep their own orientation. Its case openings use usb_z_right.
 const mirroredRun = text => {
   const req = n => require(path.join(EG, n))
@@ -96,8 +96,15 @@ const mirroredRun = text => {
 }
 
 // ---------- route expansion ----------
-const BACK = new Set(['deep', 'shallow'])
-const zRange = (depth, T) => depth === 'deep' ? [0, SET.deep] : depth === 'shallow' ? [0, SET.shallow] : depth === 'front' ? [T - SET.front, T] : null
+// 'mcuback' / 'mcufront': the last stretch to one of the RP2040-Zero's castellations, cut
+// from the back (or the front) down to the module's own level, so the wire ends square
+// against the castellation. zc = { T: board thickness, mD: MCU pocket depth, mT: module thickness }.
+const BACK = new Set(['deep', 'shallow', 'mcuback'])
+const DEEPISH = new Set(['deep', 'mcuback'])
+const zRange = (depth, zc) => ({
+  deep: [0, SET.deep], shallow: [0, SET.shallow], front: [zc.T - SET.front, zc.T],
+  mcuback: [0, zc.mD], mcufront: [zc.mD - zc.mT, zc.T],
+})[depth] || null
 const zOverlap = (a, b) => a && b && a[0] < b[1] - 1e-6 && b[0] < a[1] - 1e-6
 
 const expand = wires => {
@@ -122,8 +129,8 @@ const expand = wires => {
       }
       last = part
     }
-    // where a channel meets the MCU: the ends of every stretch over the module
-    for (const p of w.polys) if (p.depth === 'onmodule') ends.push(p.pts[0], p.pts[p.pts.length - 1])
+    // where a channel meets the MCU: the ends of every stretch to a castellation
+    for (const p of w.polys) if (/^mcu/.test(p.depth)) ends.push(p.pts[0], p.pts[p.pts.length - 1])
   }
   return { segs, vias, ends }
 }
@@ -140,21 +147,19 @@ const buildKeepouts = ctx => {
   const add = (o) => out.push(o)
   const circ = (c, r, z, name, net) => add({ type: 'circle', c, r, z, name, net })
   const rect = (poly, z, name, net) => add({ type: 'poly', poly, z, name, net })
-  const tol = U.sock_tol
   for (const k of keyNames) {
     const place = p => K(k, p[0], p[1])
     const meta = P[k].meta || {}
     circ(place([0, 0]), 2.6, all, `${k} centre hole`)
-    circ(place([-4.4, -4.7]), 1.55, all, `${k} pin hole`)
-    circ(place([2.6, -5.75]), 1.55, all, `${k} pin hole`)
+    // the column wire runs right over the column pin (its own net); the diode pin is not
+    const bore = [0, U.pin_depth]
+    circ(place([-4.4, -4.7]), U.pin_hole_d / 2, all, `${k} column pin hole`, meta.column_net)
+    circ(place([-4.4, -4.7]), U.pin_bore_d / 2, bore, `${k} column pin counterbore`, meta.column_net)
+    circ(place([2.6, -5.75]), U.pin_hole_d / 2, all, `${k} diode pin hole`)
+    circ(place([2.6, -5.75]), U.pin_bore_d / 2, bore, `${k} diode pin counterbore`)
+    rect(G.rectPoly((2.6 + U.diode_x) / 2, U.diode_a, U.diode_x - 2.6, U.anode_slot_w, place), bore, `${k} anode slot`)
     circ(place([U.diode_x, U.diode_a]), U.leg_hole_d / 2, all, `${k} anode hole`)
     circ(place([U.diode_x, U.diode_k]), U.leg_hole_d / 2, all, `${k} cathode hole`, meta.row_net)
-    const sock = [0, U.sock_depth]
-    rect(G.rectPoly(-3.8125, -4.7, 6.025 + 2 * tol, 4.35 + 2 * tol, place), sock, `${k} socket`)
-    rect(G.rectPoly(1.1625, -5.75, 7.725 + 2 * tol, 4.35 + 2 * tol, place), sock, `${k} socket`)
-    rect(G.rectPoly(-7.6375, -4.7, 1.625 + 2 * tol, 1.75 + 2 * tol, place), sock, `${k} column tab`, meta.column_net)
-    const t2x = U.diode_x + 0.7
-    rect(G.rectPoly((5.025 + t2x) / 2, -5.75, t2x - 5.025 + 2 * tol, 1.75 + 2 * tol, place), sock, `${k} diode tab`)
     const cy = (U.diode_a + U.diode_k) / 2
     rect(G.rectPoly(U.diode_x, cy, 2.4, 4.6, place), [T - U.diode_pocket_d, T], `${k} diode pocket`)
     rect(G.rectPoly(U.diode_x, cy, 0.9, U.diode_k - U.diode_a, place), [T - U.diode_slot_d, T], `${k} diode legs`)
@@ -175,11 +180,11 @@ const buildKeepouts = ctx => {
 
 // ---------- checks ----------
 const check = (ctx, ex, keepouts, outline) => {
-  const T = ctx.U.board_t
+  const zc = ctx.zc
   const errors = [], warnings = [], sleeves = []
   const half = SET.w / 2
   const fmt = p => { const q = ctx.show(p); return `(${q[0].toFixed(2)}, ${q[1].toFixed(2)})` }
-  const chan = ex.segs.filter(s => s.depth !== 'onmodule')
+  const chan = ex.segs
   const isEnd = p => ex.ends.some(e => G.dist(e, p) < 1e-6)
 
   // wire against wire
@@ -187,11 +192,11 @@ const check = (ctx, ex, keepouts, outline) => {
     for (let j = i + 1; j < chan.length; j++) {
       const s = chan[i], t = chan[j]
       if (s.net === t.net) continue
-      const za = zRange(s.depth, T), zb = zRange(t.depth, T)
+      const za = zRange(s.depth, zc), zb = zRange(t.depth, zc)
       if (!zOverlap(za, zb)) continue
       const x = G.segInter(s.a, s.b, t.a, t.b)
       if (x) {
-        if (BACK.has(s.depth) && BACK.has(t.depth) && s.depth !== t.depth) {
+        if ((s.depth === 'shallow' && DEEPISH.has(t.depth)) || (t.depth === 'shallow' && DEEPISH.has(s.depth))) {
           const sh = s.depth === 'shallow' ? s : t, dp = s.depth === 'shallow' ? t : s
           const u = G.sub(sh.b, sh.a), v = G.sub(dp.b, dp.a)
           const ang = Math.abs(Math.asin(Math.max(-1, Math.min(1, G.cross(u, v) / (G.len(u) * G.len(v)))))) * 180 / Math.PI
@@ -212,7 +217,7 @@ const check = (ctx, ex, keepouts, outline) => {
   }
   // wire against keepouts and the board edge
   for (const s of chan) {
-    const zs = zRange(s.depth, T)
+    const zs = zRange(s.depth, zc)
     for (const k of keepouts) {
       if (!zOverlap(zs, k.z)) continue
       if (k.net && k.net === s.net) continue
@@ -272,17 +277,18 @@ function ${name}() {
 
 const buildJscad = (base, ctx, ex, sleeves) => {
   const T = ctx.U.board_t
-  const layers = { deep: [SET.deep, -1], shallow: [SET.shallow, -1], front: [T + 1, T - SET.front] }
   const parts = []
   const fns = []
-  for (const [depth, _] of Object.entries(layers)) {
+  for (const depth of ['deep', 'shallow', 'front', 'mcuback', 'mcufront']) {
     const segs = ex.segs.filter(s => s.depth === depth)
     if (!segs.length) continue
     const polys = segs.map(s => segRect(s.a, s.b, SET.w))
     const pts = new Map()
     for (const s of segs) for (const p of [s.a, s.b]) pts.set(p.map(r4).join(','), p)
     const circles = [...pts.values()].map(p => [r4(p[0]), r4(p[1]), SET.w / 2])
-    const [z0, z1] = depth === 'front' ? [T - SET.front, T + 1] : [-1, depth === 'deep' ? SET.deep : SET.shallow]
+    // open to the face the channel is cut from (1 mm past it)
+    const [a, b] = zRange(depth, ctx.zc)
+    const [z0, z1] = a <= 0 ? [-1, b] : [a, T + 1]
     fns.push(jscadLayer(`wb_${depth}`, polys, circles, z0, z1))
     parts.push(`wb_${depth}()`)
   }
@@ -324,16 +330,17 @@ const svgMap = (ctx, ex, sleeves, keepouts, outline, title) => {
       if (k.name === 'case standoff') { g.push(`<circle cx="${r4(tx(k.c))}" cy="${r4(ty(k.c))}" r="${k.r}" fill="none" stroke="#aaa" stroke-width="0.2" stroke-dasharray="0.6 0.6"/>`); continue }
       const back = k.z[0] < 0.5
       if (mirror !== back && !(k.z[0] < 0 && k.z[1] > ctx.U.board_t)) continue
-      const fill = /pocket|socket|tab/.test(k.name) ? '#d9d2c3' : /hole|cutout/.test(k.name) ? '#fff' : '#ccc'
+      const fill = /pocket|counterbore|slot/.test(k.name) ? '#d9d2c3' : /hole|cutout/.test(k.name) ? '#fff' : '#ccc'
       if (k.type === 'circle') g.push(`<circle cx="${r4(tx(k.c))}" cy="${r4(ty(k.c))}" r="${k.r}" fill="${fill}" stroke="#888" stroke-width="0.15"/>`)
       else g.push(`<polygon points="${k.poly.map(P).join(' ')}" fill="${fill}" stroke="#888" stroke-width="0.15"/>`)
     }
     if (!mirror) for (const poly of ctx.switches) g.push(`<polygon points="${poly.map(P).join(' ')}" fill="none" stroke="#999" stroke-width="0.2" stroke-dasharray="1 0.6"/>`)
-    const colour = s => s.depth === 'front' ? '#2a9d4a' : s.net[0] === 'C' ? '#2b6cb0' : s.net[0] === 'R' ? '#c0392b' : '#8e44ad'
-    const show = s => mirror ? BACK.has(s.depth) || s.depth === 'onmodule' : s.depth === 'front'
+    const front = s => s.depth === 'front' || s.depth === 'mcufront'
+    const colour = s => front(s) ? '#2a9d4a' : s.net[0] === 'C' ? '#2b6cb0' : s.net[0] === 'R' ? '#c0392b' : '#8e44ad'
+    const show = s => mirror ? BACK.has(s.depth) : front(s)
     for (const s of ex.segs.filter(show)) {
-      const w = s.depth === 'deep' ? 0.9 : s.depth === 'onmodule' ? 0.3 : 0.7
-      g.push(`<line x1="${r4(tx(s.a))}" y1="${r4(ty(s.a))}" x2="${r4(tx(s.b))}" y2="${r4(ty(s.b))}" stroke="${colour(s)}" stroke-width="${w}" stroke-linecap="round"${s.depth === 'onmodule' ? ' stroke-dasharray="0.6 0.4"' : ''}/>`)
+      const w = DEEPISH.has(s.depth) ? 1.3 : 1.0
+      g.push(`<line x1="${r4(tx(s.a))}" y1="${r4(ty(s.a))}" x2="${r4(tx(s.b))}" y2="${r4(ty(s.b))}" stroke="${colour(s)}" stroke-width="${w}" stroke-linecap="round"${/^mcu/.test(s.depth) ? ' stroke-opacity="0.55"' : ''}/>`)
     }
     for (const v of ex.vias) g.push(`<circle cx="${r4(tx(v.p))}" cy="${r4(ty(v.p))}" r="0.7" fill="#2a9d4a" stroke="#000" stroke-width="0.15"/>`)
     if (mirror) sleeves.forEach((c, i) => {
@@ -346,7 +353,7 @@ const svgMap = (ctx, ex, sleeves, keepouts, outline, title) => {
     }
     return g.join('\n')
   }
-  const legend = [['#2b6cb0', 'column wire (deep: on the socket tabs)'], ['#c0392b', 'row wire (shallow)'], ['#8e44ad', 'other back wire'], ['#2a9d4a', 'front wire / hole through the board'], ['#f1c40f', 'heat-shrink sleeve at a crossing']]
+  const legend = [['#2b6cb0', 'column wire (deep: over the column pins)'], ['#c0392b', 'row wire (shallow)'], ['#8e44ad', 'other back wire'], ['#2a9d4a', 'front wire / hole through the board'], ['#f1c40f', 'heat-shrink sleeve at a crossing']]
   const lg = legend.map(([c, t], i) => `<rect x="2" y="${H * 2 + 14 + i * 4}" width="6" height="2.4" fill="${c}"/><text x="10" y="${H * 2 + 16 + i * 4}" font-size="2.4" font-family="sans-serif">${t}</text>`).join('\n')
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${r4(W)} ${r4(H * 2 + 36)}" width="${r4(W * 5)}" height="${r4((H * 2 + 36) * 5)}">
 <rect width="100%" height="100%" fill="#fff"/>
@@ -362,18 +369,20 @@ ${lg}
 const ASSEMBLY = {
   left: `1. Print \`cases/wireboard_left.stl\` front face down (the switches need that face flat). The back's channels and pockets then face up and need no supports.
 2. From the front, fit a 1N4148 per key: legs through the two holes, body in its pocket, cathode band towards the upper hole (the row).
-3. Turn the board over. Press a hot-swap socket into each pocket. Bend the anode leg onto the socket's right tab and solder it.
-4. Lay the bare column wires in the deep channels, from the bottom key up, soldering to each socket's left tab on the way. Then follow the shallow channels to the MCU.
-5. Slide one ${SET.sleeve.len} mm heat-shrink sleeve onto a row (or link) wire for each crossing listed below. Lay the rows in the shallow channels with the sleeves in the wide pockets, and shrink them. Solder each cathode leg to its row wire.
-6. Run 5V, GND and LINK in the front channels and push their ends down through the holes. Put the RP2040-Zero (component side towards the front) and the USB-C breakout in their back pockets, threading those ends through their pad holes. Bring each back wire over the edge of the MCU's board and push it through its pad hole and on into the hole in the board behind it. Every MCU pin in use then has a wire right through it, which holds the module in place. Solder all of them on the back, and trim the ends that poke out on the front.
-7. Check every row and column for continuity, and for shorts to its neighbours, before you fit the switches.`,
+3. Clip the switches into the switch plate, lay the plate on the front and push every switch's pins through the board; they come out in the counterbores on the back.
+4. Turn the board over. Bend each anode leg along its slot to the switch's right pin and solder it there.
+5. Lay the bare column wires in the deep channels, from the bottom key up, soldering each to the switch's left pin as it passes through the counterbore. Then follow the shallow channels to the MCU.
+6. Slide one ${SET.sleeve.len} mm heat-shrink sleeve onto a row (or link) wire for each crossing listed below. Lay the rows in the shallow channels with the sleeves in the wide pockets, and shrink them. Solder each cathode leg to its row wire.
+7. Run 5V, GND and LINK in the front channels, each from its castellation (the front cut drops to the module's level there) to its hole by the USB-C breakout, and push those ends down through the holes. Put the RP2040-Zero (component side towards the front) and the USB-C breakout in their back pockets, threading the three ends through the breakout's pad holes. Every back wire ends square against its castellation in the short cut at the pocket edge; solder each wire to its castellation, and the breakout's wires on the back. Trim the ends that poke out.
+8. Check every row and column for shorts to its neighbours, and every key (press it) for continuity from its column pin to its row's MCU pin, before you close the case.`,
   right: `1. Print \`cases/wireboard_right.stl\` front face down (the switches need that face flat). The back's channels and pockets then face up and need no supports.
-2. From the front, fit a 1N4148 per key: legs through the two holes, body in its pocket, cathode band towards the upper hole (the row). The switches, sockets and diodes sit exactly as on the left half; only their positions are mirrored.
-3. Turn the board over. Press a hot-swap socket into each pocket. Bend the anode leg onto the socket's diode tab and solder it.
-4. Lay the bare column wires in the deep channels, from the bottom key up, soldering to each socket's column tab on the way. Then follow the shallow channels towards the MCU. Each ends on a hole: push the end up through it.
-5. Slide one ${SET.sleeve.len} mm heat-shrink sleeve onto a row (or link) wire for each crossing listed below. Lay the rows in the shallow channels with the sleeves in the wide pockets, and shrink them. Solder each cathode leg to its row wire. Push the row ends up through their holes.
-6. Push one end each of 5V, GND and LINK down through its hole beside the MCU cutout from the front, run them in the front channels (GND dips through the board once, under 5V), and push their other ends down into the breakout's pad holes. From the back, put the RP2040-Zero in its pocket component side up (towards you), USB-C port at the top edge, threading those three ends through its pad holes. Bring each back wire over the pocket's edge, down onto the module and through its pad hole into the hole in the board in front of it. Every MCU pin in use then has a wire right through it, which holds the module in place. Fit the USB-C breakout (turned round, opening towards the other half) in its back pocket. Solder everything on the back and trim the ends that poke out on the front.
-7. Check every row and column for continuity, and for shorts to its neighbours, before you fit the switches.`,
+2. From the front, fit a 1N4148 per key: legs through the two holes, body in its pocket, cathode band towards the upper hole (the row). The switches and diodes sit exactly as on the left half; only their positions are mirrored.
+3. Clip the switches into the switch plate, lay the plate on the front and push every switch's pins through the board; they come out in the counterbores on the back.
+4. Turn the board over. Bend each anode leg along its slot to the switch's diode pin and solder it there.
+5. Lay the bare column wires in the deep channels, from the bottom key up, soldering each to the switch's column pin as it passes through the counterbore. Then follow the shallow channels towards the MCU. Each ends on a hole: push the end up through it.
+6. Slide one ${SET.sleeve.len} mm heat-shrink sleeve onto a row (or link) wire for each crossing listed below. Lay the rows in the shallow channels with the sleeves in the wide pockets, and shrink them. Solder each cathode leg to its row wire. Push the row ends up through their holes.
+7. Lay 5V, GND and LINK in the front channels, each from its castellation (the front cut drops to the module's level there) to the holes by the USB-C breakout; GND dips through the board once, under 5V. Push their ends down into the breakout's pad holes. From the back, put the RP2040-Zero in its pocket component side up (towards you), USB-C port at the top edge, and fit the USB-C breakout (turned round, opening towards the other half) in its back pocket. Every back wire ends square against its castellation in the short cut at the pocket edge. Solder each wire to its castellation (the front ones through the cut from the front), solder the breakout's wires on the back, and trim the ends that poke out.
+8. Check every row and column for shorts to its neighbours, and every key (press it) for continuity from its column pin to its row's MCU pin, before you close the case.`,
 }
 
 // Lays out, checks and writes one half. Everything is computed in the left half's frame;
@@ -383,8 +392,9 @@ const doHalf = ({ side, mirror, base, left, put, say }) => {
   const { P, U, K, S, O } = left
   const lx = mirror ? -1 : 1
   const fx = p => (mirror ? [-p[0], p[1]] : p)
-  const ctx = { ...left, lx, mcuFlipped: mirror, show: p => [lx * (p[0] - O[0]), p[1] - O[1]] }
-  const { wires, labels, pins } = require(mirror ? './routes_right' : './routes')({ K, S, U, M: left.M, L: left.L })
+  const zc = { T: U.board_t, mD: mirror ? U.mcu_pocket_d_right : U.mcu_pocket_d, mT: U.mcu_t }
+  const ctx = { ...left, lx, zc, mcuFlipped: mirror, show: p => [lx * (p[0] - O[0]), p[1] - O[1]] }
+  const { wires, labels, pins } = require(mirror ? './routes_right' : './routes')({ K, S, U, M: left.M, L: left.L, pitch: SET.w + SET.wall })
   const ex = expand(wires)
   const keepouts = buildKeepouts(ctx)
   const { errors, warnings, sleeves } = check(ctx, ex, keepouts, left.outline)
@@ -401,7 +411,7 @@ const doHalf = ({ side, mirror, base, left, put, say }) => {
   put(`wiring/wiring_map_${side}.svg`, svgMap(ctxP, exP, sleevesP, keepP, outlineP, `BirdBoard v4 wiring, ${side} half`))
 
   const lengths = wires.map(w => {
-    const l = w.polys.filter(p => p.depth !== 'onmodule').reduce((s, p) => s + G.polyLength(p.pts), 0)
+    const l = w.polys.reduce((s, p) => s + G.polyLength(p.pts), 0)
     return `| ${w.net} | ${w.name} | ${l.toFixed(0)} |`
   })
   const sleeveList = sleeves.map(c => { const q = ctx.show(c.p); return `| ${c.shallow.net} over ${c.deep.net} | (${q[0].toFixed(1)}, ${q[1].toFixed(1)}) | ${c.angle.toFixed(0)} |` })
