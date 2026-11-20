@@ -23,6 +23,7 @@ The printable STLs are kept in the repo in `stl/`:
 | `keyboard_case.stl`, `keyboard_case_right.stl` | cases, with the module seats and standoffs |
 | `switchplate.stl`, `switchplate_right.stl` | switch plates (they also cover the pods) |
 | `keyboard_case_art.stl`, `keyboard_case_art_right.stl` | the moose on the case's underside, in a second colour |
+| `switchplate_text.stl`, `switchplate_text_right.stl` | "moose" on the plate's top, in a second colour |
 
 ### The moose on the underside
 
@@ -39,6 +40,14 @@ down.
 
 `npm run build` writes a preview of each half, seen from below, to `output/art/moose_left.svg`
 and `output/art/moose_right.svg`.
+
+The word "moose" is also hand-lettered on top of each switch plate, in [art/text.js](art/text.js).
+It sits in the band of plate below the thumb cluster, which still shows with the keycaps on,
+and runs parallel to the bottom edge. It reads left to right on both halves. It's inlaid the same
+way, 0.6 mm into the plate's top face. The plate prints top-down, so the lettering comes out in the
+first layers. Load `switchplate.stl` and `switchplate_text.stl` together as one multi-part object.
+The previews, seen from above with the keycaps shaded, are `output/art/text_left.svg` and
+`text_right.svg`.
 
 ## Wiring guide
 

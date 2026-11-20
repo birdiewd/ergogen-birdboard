@@ -101,8 +101,9 @@ const mirrorShape = s => {
   return s
 }
 
-// art: shapes; holes: insert hole centres; outline: the case's outer edge; mirror: right half
-const build = ({ art, holes, holeR, depth, outline, edge = 0.5, mirror = false }) => {
+// art: shapes; holes: insert hole centres; outline: the part's outer edge; mirror: right half.
+// The art goes into the part's bottom face, or with `top` (that face's height) into its top.
+const build = ({ art, holes, holeR, depth, outline, edge = 0.5, mirror = false, top = null }) => {
   const fx = p => (mirror ? [-p[0], p[1]] : p)
   const flat = flatten(mirror ? art.map(mirrorShape) : art)
 
@@ -132,29 +133,33 @@ function unionAll(parts) {
 function art2d() { return ${cagOf(flat)}.subtract(${holeCuts}); }
 `
   const extrude = (z0, z1) => `art2d().extrude({ offset: [0, 0, ${r4(z1 - z0)}] }).translate([0, 0, ${r4(z0)}])`
+  const [z0, z1] = top === null ? [0, depth] : [top - depth, top]
   return {
     warnings,
-    // the case, with the art cut into its bottom face
+    // the part, with the art cut into its face
     caseWith: base => base.replace(/function main\(\)\s*\{\s*return (\w+)\(\);\s*\}/, 'function case_base() { return $1(); }') + lib + `
 function main() {
-  return case_base().subtract(${extrude(-1, depth)});
+  return case_base().subtract(${top === null ? extrude(-1, depth) : extrude(top - depth, top + 1)});
 }
 `,
-    art: lib + `\nfunction main() { return ${extrude(0, depth)}; }\n`,
+    art: lib + `\nfunction main() { return ${extrude(z0, z1)}; }\n`,
     flat,
   }
 }
 
-// Preview of the underside, seen from below (mirrored)
-const preview = ({ polys, lines }, outline, holes, colours = { case: '#7a5536', art: '#f2ead8' }) => {
+// Preview of the art on its part: seen from below (mirrored), or from the top with fromTop.
+// extra: more outlines to draw over the part (e.g. the keycaps), in a darker shade.
+const preview = ({ polys, lines }, outline, holes, colours = { case: '#7a5536', art: '#f2ead8' }, { fromTop = false, extra = [] } = {}) => {
   const xs = outline.map(p => p[0]), ys = outline.map(p => p[1])
   const pad = 6
   const minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad, minY = Math.min(...ys) - pad, maxY = Math.max(...ys) + pad
-  const P = p => `${r4(maxX - p[0])},${r4(maxY - p[1])}`
+  const X = x => (fromTop ? x - minX : maxX - x)
+  const P = p => `${r4(X(p[0]))},${r4(maxY - p[1])}`
   const s = [`<polygon points="${outline.map(P).join(' ')}" fill="${colours.case}"/>`]
   for (const p of polys) s.push(`<polygon points="${p.map(P).join(' ')}" fill="${colours.art}"/>`)
   for (const { pts, w } of lines) s.push(`<polyline points="${pts.map(P).join(' ')}" fill="none" stroke="${colours.art}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`)
-  for (const h of holes) s.push(`<circle cx="${r4(maxX - h[0])}" cy="${r4(maxY - h[1])}" r="1.6" fill="#fff"/>`)
+  for (const h of holes) s.push(`<circle cx="${r4(X(h[0]))}" cy="${r4(maxY - h[1])}" r="1.6" fill="#fff"/>`)
+  for (const e of extra) s.push(`<polygon points="${e.map(P).join(' ')}" fill="#000" fill-opacity="0.45"/>`)
   const W = maxX - minX, H = maxY - minY
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${r4(W)} ${r4(H)}" width="${r4(W * 5)}" height="${r4(H * 5)}"><rect width="100%" height="100%" fill="#fff"/>\n${s.join('\n')}\n</svg>`
 }
