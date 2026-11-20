@@ -70,6 +70,8 @@ units:
   usb_z_link: case_floor + link_pcb_t + 1.6
   usb_notch_w: 13     # wall opening for a USB-C plug's overmould
   usb_notch_down: 3.3 # opening reaches this far below the port centre (open to the top)
+  # Moose head inlaid in the case's bottom face (art/moose.js), as its own body
+  art_depth: 0.6      # 3 layers at 0.2 mm
 points:
   zones:
     matrix:
@@ -235,6 +237,10 @@ outlines:
     - name: board
     - operation: add
       name: pods
+  # The moose's head line on the underside (art/moose.js): the key area grown by 1 mm.
+  _head:
+    - name: board
+      expand: 1
   # Reference only (not cut): where the modules sit, to check fit in the viewer.
   modules:
   # RP2040-Zero, top edge on the pod's top edge, USB-C facing up

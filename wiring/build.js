@@ -18,6 +18,7 @@
 const fs = require('fs')
 const path = require('path')
 const G = require('./geom')
+const Inlay = require('../art/inlay')
 
 const ROOT = path.resolve(__dirname, '..')
 const OUT = path.join(ROOT, 'output')
@@ -249,6 +250,8 @@ const placement = (results, U) => {
     out[`cases/${name}.stl`] = [0, 0, z[name] || 0]
     out[`cases/${name}_right.stl`] = [dx, 0, z[name] || 0]
   }
+  out['cases/keyboard_case_art.stl'] = [0, 0, 0]
+  out['cases/keyboard_case_art_right.stl'] = [dx, 0, 0]
   return out
 }
 
@@ -291,6 +294,21 @@ const build = async ({ echo = false } = {}) => {
     }
     const right = mirroredRun(text)
     writeCases(right.cases, '_right', put)
+    // the moose on the underside: cut into each case, plus one body per colour
+    const caseChains = makerjs.model.findChains(results.outlines.case_outer.yaml)
+    const caseOutline = makerjs.chain.toKeyPoints(caseChains.sort((a, b) => b.pathLength - a.pathLength)[0], 0.5)
+    const o = P.matrix_outer_top
+    const headChains = makerjs.model.findChains(results.outlines._head.yaml)
+    // the head line bends round any insert hole it would otherwise run over
+    const head = Inlay.skirt(makerjs.chain.toKeyPoints(headChains.sort((a, b) => b.pathLength - a.pathLength)[0], 0.5), mountHoles, U.insert_r + 0.4 + 0.8 + 0.3)
+    const art = require('../art/moose')({ at: (x, y) => [o.x + x - 100, o.y + y + 62], head })
+    for (const [suffix, mirror, base] of [['', false, results.cases.keyboard_case.jscad], ['_right', true, right.cases.keyboard_case.jscad || right.cases.keyboard_case]]) {
+      const inlay = Inlay.build({ art, holes: mountHoles, holeR: U.insert_r + 0.4, depth: U.art_depth, outline: caseOutline, mirror })
+      put(`cases/keyboard_case${suffix}.jscad`, inlay.caseWith(base))
+      put(`cases/keyboard_case_art${suffix}.jscad`, inlay.art)
+      put(`art/moose${suffix || '_left'}.svg`, Inlay.preview(inlay.flat, caseOutline.map(p => (mirror ? [-p[0], p[1]] : p)), mountHoles.map(p => (mirror ? [-p[0], p[1]] : p))))
+      for (const w of inlay.warnings) say(`art${suffix} warning: ${w}`)
+    }
     put('cases/placement.json', JSON.stringify(placement(results, U), null, 2))
     return { code: 0, clashes: 0, log: log.join('\n') }
   } catch (err) {

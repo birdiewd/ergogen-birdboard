@@ -22,22 +22,23 @@ The printable STLs are kept in the repo in `stl/`:
 | --- | --- |
 | `keyboard_case.stl`, `keyboard_case_right.stl` | cases, with the module seats and standoffs |
 | `switchplate.stl`, `switchplate_right.stl` | switch plates (they also cover the pods) |
+| `keyboard_case_art.stl`, `keyboard_case_art_right.stl` | the moose on the case's underside, in a second colour |
 
-After changing the design (`config.yaml`, `footprints/` or `wiring/`), regenerate them:
+### The moose on the underside
 
-```bash
-npm run stl
-```
+Seen from below, each case reads as a cartoon moose head, drawn in one colour in
+[art/moose.js](art/moose.js):
+- **Head:** a line just inside the case edge, following it round the key area.
+- **Antlers:** small blocky antlers with three prongs each, in the two pods.
+- **Face:** a simple line face on the thumb-cluster muzzle.
 
-This runs [viewer/export-stl.js](viewer/export-stl.js). It builds the project into `output/`,
-converts every `output/cases/*.jscad` to a binary STL with OpenJSCAD, and replaces the files in
-`stl/`.
+It's inlaid into the case's bottom face, `art_depth` (0.6 mm, 3 layers) deep. To print it in two
+colours, load `keyboard_case.stl` and `keyboard_case_art.stl` together as one multi-part object.
+They share coordinates, so they line up. Give the art its own filament and print the case floor
+down.
 
-`output/` is build output and is ignored by git, so commit `stl/` after regenerating:
-
-```bash
-git add stl && git commit -m "Regenerate STLs"
-```
+`npm run build` writes a preview of each half, seen from below, to `output/art/moose_left.svg`
+and `output/art/moose_right.svg`.
 
 ## Wiring guide
 

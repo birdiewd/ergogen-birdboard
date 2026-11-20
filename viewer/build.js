@@ -9,10 +9,10 @@
 
 const path = require('path')
 
-const WIRING = path.resolve(__dirname, '..', 'wiring') + path.sep
+const FRESH = ['wiring', 'art'].map(d => path.resolve(__dirname, '..', d) + path.sep)
 
 const build = opts => {
-  for (const key of Object.keys(require.cache)) if (key.startsWith(WIRING)) delete require.cache[key]
+  for (const key of Object.keys(require.cache)) if (FRESH.some(d => key.startsWith(d))) delete require.cache[key]
   return require('../wiring/build').build(opts)
 }
 
