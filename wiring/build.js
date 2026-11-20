@@ -1,5 +1,8 @@
 // Builds the v4.5 keyboard: runs Ergogen on config.yaml + footprints/, writes everything it
-// makes, builds the right half's cases from a mirrored run, and draws the handwiring guide:
+// makes, builds the right half's cases from a mirrored run, and draws the handwiring guide.
+// The RP2040-Zero (USB to the computer) sits in a pod off the outer column's top key and the
+// USB-C breakout (the link between the halves) in one off the inner column's; both ports
+// come out of the top wall.
 //   output/outlines, output/cases       everything Ergogen makes (left half)
 //   output/cases/*_right.jscad          the same cases from a mirrored run (right half)
 //   output/wiring/wiring_<half>.svg     wiring guide, seen from below (as you wire it)
@@ -137,7 +140,7 @@ const layout = (L, mirror) => {
     outline: L.outline.map(fx),
     holes: L.mountHoles.map(fx),
     mcu: G.rectPoly(0, 0, L.U.mcu_w, L.U.mcu_h, p => G.add(M, p)),
-    link: G.rectPoly(0, 0, L.U.usb_w, L.U.usb_h, p => G.add(Lk, p)),
+    link: G.rectPoly(0, 0, L.U.usb_h, L.U.usb_w, p => G.add(Lk, p)),
   }
 }
 
@@ -191,10 +194,10 @@ const ASSEMBLY = half => `1. Print \`stl/switchplate${half === 'right' ? '_right
 2. Fit a 1N4148 on every switch: the anode leg (the end without the band) bent over to the switch pin nearer the middle of the key and soldered there, the body standing beside the switch, and the cathode leg pointing along the row. The band faces the row wire.
 3. Rows: lay a bare 18 AWG wire along each row over the cathode legs (red on the guide) and solder each leg to it. Trim the legs.
 4. Columns: cut each column wire to length, slide heat shrink over every stretch between two switches (the yellow marks show where it passes over a row), strip it at each column pin and solder it to the pins (blue).
-5. Put the RP2040-Zero in its floor seat in the case (component side up, USB-C at the wall) and the USB-C breakout in its seat (opening at the wall), on double-sided tape.
-6. Wire each row and column from its end (labelled on the guide) to its MCU pin, going by the pin labels printed on the module, and 5V to the breakout's V, GND to G and GP8 to D+. Keep these wires low, under the plate's standoff height.
+5. Put the RP2040-Zero in its seat in the pod by the outer column and the USB-C breakout in its seat in the pod by the inner column, both component side up with their ports at the top wall, on double-sided tape.
+6. Wire each row and column from its end (labelled on the guide) to its MCU pin, going by the pin labels printed on the module, and 5V to the breakout's V, GND to G and GP8 to D+ (these three run across the half, from pod to pod). Keep every wire low, under the plate's standoff height.
 7. Check every key (press it) for continuity from its column's MCU pin to its row's MCU pin, and the rows and columns for shorts to each other.
-8. Screw the switch plate and the strip cover onto the standoffs (M2 into heat-set inserts).`
+8. Screw the switch plate onto the standoffs (M2 into heat-set inserts). It covers both pods.`
 
 const report = (g, half) => `# BirdBoard v4.5 wiring guide: ${half} half
 
@@ -231,6 +234,24 @@ Lengths run along the guide from switch to switch, plus the stretch to the MCU a
 ${g.nets.map(n => `| ${n.net} | ${PINS[n.net]} | ${n.pts.length} | ${n.length.toFixed(0)} |`).join('\n')}
 `
 
+// ---------- assembled view ----------
+// Where each case sits when the keyboard is put together, for the viewer (the STLs stay in
+// their print positions): the plate on the standoffs, and the right half (mirrored about
+// x = 0 by the build) moved across so the two inner edges face each other HALF_GAP apart.
+const HALF_GAP = 40
+const placement = (results, U) => {
+  const ext = makerjs.measure.modelExtents(results.outlines.case_outer.yaml)
+  const dx = 2 * ext.high[0] + HALF_GAP
+  const z = { switchplate: U.plate_z }
+  const out = {}
+  for (const name of Object.keys(results.cases)) {
+    if (name.startsWith('_')) continue
+    out[`cases/${name}.stl`] = [0, 0, z[name] || 0]
+    out[`cases/${name}_right.stl`] = [dx, 0, z[name] || 0]
+  }
+  return out
+}
+
 // ---------- main ----------
 const build = async ({ echo = false } = {}) => {
   const log = []
@@ -253,16 +274,14 @@ const build = async ({ echo = false } = {}) => {
       return [p.x + rx, p.y + ry]
     }
     const at = spec => { const p = anchor(spec, 'wiring', P)(U); return [p.x, p.y] }
-    const thumbEdge = { ref: 'thumbfan_home_thumb', shift: ['0.75px', '-0.5py'], affect: 'x' }
-    const fromEdge = (x, y) => at([{ ref: 'matrix_inner_top' }, thumbEdge, { shift: [x, y] }])
     const mountHoles = []
     makerjs.model.walk(results.outlines.mount_holes.yaml, { onPath: w => { if (w.pathContext.type === 'circle') mountHoles.push(makerjs.point.add(w.pathContext.origin, w.offset)) } })
     const chains = makerjs.model.findChains(results.outlines._inside.yaml)
     const outline = makerjs.chain.toKeyPoints(chains.sort((a, b) => b.pathLength - a.pathLength)[0], 0.5)
     const L = {
       P, U, K, keyNames: Object.keys(P), mountHoles, outline,
-      M: fromEdge('mcu_x', 'mcu_y'),
-      L: fromEdge('-usb_w / 2', 'link_y'),
+      M: at([{ ref: 'matrix_outer_top', shift: ['mcu_cx', 'mcu_cy'] }]),
+      L: at([{ ref: 'matrix_inner_top', shift: ['link_cx', 'link_cy'] }]),
     }
     for (const [half, mirror] of [['left', false], ['right', true]]) {
       const g = layout(L, mirror)
@@ -272,6 +291,7 @@ const build = async ({ echo = false } = {}) => {
     }
     const right = mirroredRun(text)
     writeCases(right.cases, '_right', put)
+    put('cases/placement.json', JSON.stringify(placement(results, U), null, 2))
     return { code: 0, clashes: 0, log: log.join('\n') }
   } catch (err) {
     say(String(err && err.stack || err))

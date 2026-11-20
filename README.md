@@ -4,8 +4,9 @@ A split keyboard designed with [Ergogen](https://ergogen.xyz). It's handwired, l
 [Scotto44](https://scottokeebs.com/blogs/keyboards/scotto44): there is no PCB. The Gateron
 low-profile switches clip into a 3D-printed plate that covers just the keys. The 1N4148 diodes
 and the 18 AWG solid copper rows and columns are soldered straight onto the switch pins. Each
-half's RP2040-Zero and USB-C breakout sit in seats on the case floor, under a flat cover beside
-the keys.
+half has two pods at the top of its case. The RP2040-Zero sits in the outer one, and its USB-C
+port is the connection to the computer. A USB-C breakout sits in the inner one, as the link to
+the other half. Both ports come out of the top wall, and the plate covers both pods.
 
 ## Setup
 
@@ -20,8 +21,7 @@ The printable STLs are kept in the repo in `stl/`:
 | File | Part |
 | --- | --- |
 | `keyboard_case.stl`, `keyboard_case_right.stl` | cases, with the module seats and standoffs |
-| `switchplate.stl`, `switchplate_right.stl` | switch plates |
-| `mcu_cover.stl`, `mcu_cover_right.stl` | covers over the electronics strip |
+| `switchplate.stl`, `switchplate_right.stl` | switch plates (they also cover the pods) |
 
 After changing the design (`config.yaml`, `footprints/` or `wiring/`), regenerate them:
 

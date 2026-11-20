@@ -536,6 +536,12 @@ const three = (() => {
   }
   function list() {
     const box = $('stlList'); box.innerHTML = ''
+    if (files.length) {
+      const row = document.createElement('label'); row.className = 'item'
+      row.innerHTML = `<input type="checkbox" ${assembled ? 'checked' : ''}><span class="name" title="Show the parts where they sit in the finished keyboard">Assembled</span>`
+      row.querySelector('input').onchange = e => { assembled = e.target.checked; store('stlAssembled', assembled); place(); fit() }
+      box.appendChild(row)
+    }
     for (const f of files) {
       const row = document.createElement('label'); row.className = 'item'
       row.innerHTML = `<input type="checkbox" ${sel.has(f) ? 'checked' : ''}><span class="swatch box" style="background:${color(f)}"></span><span class="name" title="${f}">${f.replace(/^cases\//, '')}</span>`
@@ -549,16 +555,27 @@ const three = (() => {
   let loading = Promise.resolve()
   // Loads run one at a time so a rebuild during a load can't leave stale meshes behind.
   function load() { return (loading = loading.then(loadNow)) }
+  // Assembled view: each case moved to where it sits in the finished keyboard, from
+  // output/cases/placement.json (written by the build). Off: the STLs' own print positions.
+  let assembled = store('stlAssembled') !== false, placement = {}
+  function place() {
+    for (const [f, m] of Object.entries(meshes)) {
+      const p = (assembled && placement[f]) || [0, 0, 0]
+      m.position.set(p[0], p[1], p[2])
+    }
+  }
   async function loadNow() {
     if (!ctx) return
     for (const m of Object.values(meshes)) { ctx.group.remove(m); m.geometry.dispose() }
     for (const k of Object.keys(meshes)) delete meshes[k]
+    placement = await fetch('/output/cases/placement.json?t=' + Date.now()).then(r => (r.ok ? r.json() : {})).catch(() => ({}))
     await Promise.all(files.map(async f => {
       const geo = await ctx.loader.loadAsync('/output/' + f + '?t=' + Date.now())
       geo.computeVertexNormals()
       const mesh = new T.Mesh(geo, new T.MeshStandardMaterial({ color: color(f), metalness: 0.05, roughness: 0.7 }))
       meshes[f] = mesh; ctx.group.add(mesh)
     }))
+    place()
     show()
     if (first && Object.keys(meshes).length) { first = false; fit() }
   }

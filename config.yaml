@@ -11,61 +11,65 @@ units:
   # 5 mm past the keycaps, so a hole centred 2.5 mm out clears an M2 head (3.8 mm)
   # on the keycap side and keeps 2.5 mm to the board edge.
   mount_pad: 3
-  hole_d: 2.2         # M2 clearance hole (plate and cover)
+  hole_d: 2.2         # M2 clearance hole (plate)
   hole_off: 2.5       # hole centre distance outside the keycap edge
   # v4.5: handwired, as in the Scotto44. There is no PCB or wiring board: the switches clip
-  # into a printed plate that covers just the keys, and the diodes and 18 AWG solid copper
-  # wire are soldered straight onto the switch pins underneath (wiring/build.js draws the
-  # guide). The RP2040-Zero and the USB-C breakout sit in seats on the case floor, under a
-  # flat cover over the electronics strip beside the inner column.
+  # into a printed plate, and the diodes and 18 AWG solid copper wire are soldered straight
+  # onto the switch pins underneath (wiring/build.js draws the guide). Two pods stick out of
+  # the top corners of the key area, each holding a module on the case floor with its USB-C
+  # port out of the top wall: the RP2040-Zero (to the computer) left of the outer column's
+  # top key, and the USB-C breakout (the link to the other half) right of the inner column's.
+  # The plate runs on, solid, over both pods.
   # Case (z = 0 is the bottom of the case). Stack:
   #   floor 1.5 | wiring space 5.5 (switch pins, diodes, wires; the modules on the floor)
-  #   | switch plate 2.5 and strip cover 2.5 side by side (top at 9.5) | wall to 11.
+  #   | switch plate 2.5 (top at 9.5) | wall to 11.
   case_floor: 1.5     # floor thickness
   wire_gap: 5.5       # floor to the plate's underside (standoff height above the floor)
   frame_t: 1.3        # plate's lower (frame) layer: room for the switch housing below the clips
   plate_t: 1.2        # plate thickness the switch clips are made for: 1.20 +/- 0.05
-  plate_z: case_floor + wire_gap                   # underside of the plate and the cover
+  plate_z: case_floor + wire_gap                   # underside of the plate
   case_h: plate_z + frame_t + plate_t + 1.5        # wall height: 1.5 mm above the plate
   case_wall: 2        # wall thickness
   case_clear: 0.5     # gap between the plate edge and the wall
   case_off: case_clear + case_wall
   standoff_r: 2.5     # standoff radius (5 mm)
   insert_r: 1.6       # hole for an M2 heat-set insert (3.2 mm)
-  # Flat cover over the electronics strip, as thick as the plate and beside it; screwed on
-  # through the strip's two mounting holes.
-  cover_boss: 3       # radius of the cover's tab round the hole it shares with the plate
-  cover_gap: 0.3      # gap between the cover and the switch plate
   # Switch plate (Gateron LP 2.0 / KS-33 dimensional drawing)
   switch_cut: 14      # switch body at plate level: 14.00 +/- 0.03
   print_tol: 0.1      # extra clearance added to each cutout for 3D printing
-  # Electronics strip beside the inner column (MCU at the top, USB-C link below it).
-  # Its right edge lines up with the thumb cluster's right-most corner, and it runs down
-  # to meet the thumb cluster. x positions below are measured from that edge (negative
-  # = inwards), y positions from the inner column's top key (matrix_inner_top).
+  # Modules (both component side up, USB-C port at the top edge, pointing out of the top)
   mcu_w: 18.3         # Waveshare RP2040-Zero board
   mcu_h: 23.9
-  mcu_t: 1.0          # its board thickness (component side up, USB-C on top at its top edge)
-  usb_w: 13.8         # 4-pin USB-C breakout: length along the cable direction
+  mcu_t: 1.0          # its board thickness
+  usb_w: 13.8         # 4-pin USB-C breakout: length along the cable direction (up the board)
   usb_h: 12           #   and width
-  link_pcb_t: 1.6     #   and board thickness (receptacle on top, opening towards the other half)
-  usb_gap: 10         # space between the MCU and the breakout
-  mcu_x: -11.5        # RP2040-Zero centre
-  mcu_y: 0.5py - mcu_h / 2                         # top edge on the strip's top edge
-  link_y: 0.5py - mcu_h - usb_gap - usb_h / 2
-  # Seats on the case floor: a low rim round three sides of each module (open where its
-  # USB-C port faces the wall), with a little clearance. Stick the modules down with
+  link_pcb_t: 1.6     #   and board thickness (receptacle on top)
+  # Seats on the case floor: a low rim round three sides of each module (open at the top,
+  # where its port faces the wall), with a little clearance. Stick the modules down with
   # double-sided tape.
   seat_tol: 0.3       # clearance round each module
   seat_rim: 1.2       # rim width
   seat_h: 2           # rim height above the floor
+  # Pods: room round each seat (pod_side on each side and below), top flush with the key
+  # area's top edge, overlapping it by pod_overlap so the outlines merge.
+  pod_side: seat_tol + seat_rim + 0.5
+  pod_overlap: 1
+  # MCU pod, left of the outer column's top key (positions from matrix_outer_top)
+  mcu_pod_w: mcu_w + 2 pod_side
+  mcu_pod_h: mcu_h + pod_side
+  mcu_cx: -0.5px - mount_pad - mcu_pod_w / 2       # module centre
+  mcu_cy: 0.5py - mcu_h / 2
+  # Breakout pod, right of the inner column's top key (positions from matrix_inner_top),
+  # with a mounting hole below the breakout
+  link_pod_w: usb_h + 2 pod_side
+  link_pod_h: usb_w + pod_side + 7
+  link_cx: 0.5px + link_pod_w / 2                  # module centre
+  link_cy: 0.5py - usb_w / 2
   # USB-C port centre heights: each receptacle (~3.2 tall) sits on its board on the floor.
   usb_z_mcu: case_floor + mcu_t + 1.6
   usb_z_link: case_floor + link_pcb_t + 1.6
   usb_notch_w: 13     # wall opening for a USB-C plug's overmould
   usb_notch_down: 3.3 # opening reaches this far below the port centre (open to the top)
-  # Cover screw hole between the MCU and the breakout, near the strip's right edge.
-  strip_hole_x: -2.25
 points:
   zones:
     matrix:
@@ -160,7 +164,7 @@ outlines:
     where: true
     bound: false
     size: [kx-0.5,ky-0.5]
-  # The key area: the switch plate's outline.
+  # The key area.
   board:
     - what: polygon
       operation: stack
@@ -185,9 +189,10 @@ outlines:
         - ref: matrix_inner_bottom
           shift: [0.5px, -0.2py]
         # key is 1.5px wide and rotated 60 degrees, so its corners are at +/-0.75px
-        # right-most corner
+        # right-most corner; pushed out along the key's length by mount_pad, like the
+        # bottom-most one, for the hole past the key's upper end
         - ref: thumbfan_home_thumb
-          shift: [0.75px, -0.5py]
+          shift: [0.75px + mount_pad, -0.5py]
         # bottom-most corner (added); pushed out along the key's length by mount_pad
         # (down and slightly left) so the bottom edge gets the same extra room
         - ref: thumbfan_home_thumb
@@ -208,221 +213,164 @@ outlines:
     where: true
     bound: false
     size: [switch_cut + print_tol, switch_cut + print_tol]
-  # Strip beside the inner column for the MCU and the USB-C link breakout. Its right
-  # edge is vertical through the thumb cluster's right-most corner and runs down to
-  # meet it; the other corners sit inside the key area so it merges with the board.
-  # `thumb_edge` is an anchor step that keeps y but takes x from that corner.
-  mcu_area:
-  - what: polygon
-    fillet: 2
-    points:
-      # top-left, on the board's top edge above the inner key
-      - ref: matrix_inner_top
-        shift: [0, 0.5py]
-      # top-right: same height, x of the thumb corner
-      - - ref: matrix_inner_top
-          shift: [0, 0.5py]
-        - &thumb_edge
-          ref: thumbfan_home_thumb
-          shift: [0.75px, -0.5py]
-          affect: x
-      # the thumb cluster's right-most corner
-      - ref: thumbfan_home_thumb
-        shift: [0.75px, -0.5py]
-      # along the board edge from that corner, then back through the keys
-      - ref: thumbfan_home_thumb
-        shift: [0, -0.5py]
-      - ref: thumbfan_home_thumb
-      - ref: matrix_inner_bottom
+  # Pods for the two modules, merged into the key area at its top corners.
+  pods:
+  - what: rectangle
+    where: matrix_outer_top
+    bound: false
+    adjust:
+      shift: [mcu_cx + pod_overlap / 2, 0.5py - mcu_pod_h / 2]
+    size: [mcu_pod_w + pod_overlap, mcu_pod_h]
+    corner: 2
+  - what: rectangle
+    operation: add
+    where: matrix_inner_top
+    bound: false
+    adjust:
+      shift: [link_cx - pod_overlap / 2, 0.5py - link_pod_h / 2]
+    size: [link_pod_w + pod_overlap, link_pod_h]
+    corner: 2
+  # Everything inside the case walls: the key area and the two pods. Also the plate's outline.
+  _inside:
+    - name: board
+    - operation: add
+      name: pods
   # Reference only (not cut): where the modules sit, to check fit in the viewer.
   modules:
-  # RP2040-Zero, top edge on the strip's top edge, USB-C facing up
+  # RP2040-Zero, top edge on the pod's top edge, USB-C facing up
   - what: rectangle
-    where: matrix_inner_top
+    where: matrix_outer_top
     bound: false
     adjust:
-      - *thumb_edge
-      - shift: [mcu_x, mcu_y]
+      shift: [mcu_cx, mcu_cy]
     size: [mcu_w, mcu_h]
-  # its USB-C receptacle, sticking out about 1.8 mm past the board edge
+  # its USB-C receptacle, sticking out about 1.8 mm past the top edge
   - what: rectangle
-    where: matrix_inner_top
+    where: matrix_outer_top
     bound: false
     adjust:
-      - *thumb_edge
-      - shift: [mcu_x, mcu_y + 11.05]
+      shift: [mcu_cx, mcu_cy + 11.05]
     size: [9, 5.3]
-  # USB-C breakout below the MCU, opening facing +x (towards the other half)
+  # USB-C breakout, opening facing up
   - what: rectangle
     where: matrix_inner_top
     bound: false
     adjust:
-      - *thumb_edge
-      - shift: [-usb_w / 2, link_y]
-    size: [usb_w, usb_h]
-  # Floor seats for the two modules: a rim round each, open on the side its port faces.
+      shift: [link_cx, link_cy]
+    size: [usb_h, usb_w]
+  # Floor seats for the two modules: a rim round each, open at the top (where its port is).
   module_seats:
   - what: rectangle
-    where: matrix_inner_top
+    where: matrix_outer_top
     bound: false
     adjust:
-      - *thumb_edge
-      - shift: [mcu_x, mcu_y]
+      shift: [mcu_cx, mcu_cy]
     size: [mcu_w + 2 seat_tol + 2 seat_rim, mcu_h + 2 seat_tol + 2 seat_rim]
   - what: rectangle
     operation: subtract
-    where: matrix_inner_top
+    where: matrix_outer_top
     bound: false
     adjust:
-      - *thumb_edge
-      - shift: [mcu_x, mcu_y]
+      shift: [mcu_cx, mcu_cy]
     size: [mcu_w + 2 seat_tol, mcu_h + 2 seat_tol]
   - what: rectangle
     operation: subtract
-    where: matrix_inner_top
+    where: matrix_outer_top
     bound: false
     adjust:
-      - *thumb_edge
-      - shift: [mcu_x, mcu_y + mcu_h / 2 + 5]
+      shift: [mcu_cx, mcu_cy + mcu_h / 2 + 5]
     size: [mcu_w + 10, 10]
   - what: rectangle
     operation: add
     where: matrix_inner_top
     bound: false
     adjust:
-      - *thumb_edge
-      - shift: [-usb_w / 2, link_y]
-    size: [usb_w + 2 seat_tol + 2 seat_rim, usb_h + 2 seat_tol + 2 seat_rim]
+      shift: [link_cx, link_cy]
+    size: [usb_h + 2 seat_tol + 2 seat_rim, usb_w + 2 seat_tol + 2 seat_rim]
   - what: rectangle
     operation: subtract
     where: matrix_inner_top
     bound: false
     adjust:
-      - *thumb_edge
-      - shift: [-usb_w / 2, link_y]
-    size: [usb_w + 2 seat_tol, usb_h + 2 seat_tol]
+      shift: [link_cx, link_cy]
+    size: [usb_h + 2 seat_tol, usb_w + 2 seat_tol]
   - what: rectangle
     operation: subtract
     where: matrix_inner_top
     bound: false
     adjust:
-      - *thumb_edge
-      - shift: [5, link_y]
-    size: [10, usb_h + 10]
-  # M2 mounting holes, 2.5 mm outside the keycaps: two on the left edge, two along the
-  # bottom, one in the electronics strip between the MCU and the USB-C breakout and one
-  # beyond the thumb key's outer end.
+      shift: [link_cx, link_cy + usb_w / 2 + 5]
+    size: [usb_h + 10, 10]
+  # M2 mounting holes, 2.5 mm outside the keycaps: two on the left edge, one above the ring
+  # key, three along the bottom and one in the breakout's pod.
   mount_holes:
   - what: circle
     where: matrix_outer_top
     radius: hole_d / 2
-    adjust: &h_left_top
+    adjust:
       shift: [-0.5kx - hole_off, 0]
   - what: circle
     where: mod_outer_thumb
     radius: hole_d / 2
-    adjust: &h_left_bottom
+    adjust:
       shift: [-0.5kx - hole_off, -0.5ky - hole_off]
+  # on the left edge, halfway between the two above (beside the outer column's bottom key)
+  - what: circle
+    where: matrix_outer_bottom
+    radius: hole_d / 2
+    adjust:
+      shift: [-0.5kx - hole_off, 4.15]
   - what: circle
     where: mod_ring_thumb
     radius: hole_d / 2
-    adjust: &h_bottom
+    adjust:
       shift: [0.5kx, -0.5ky - hole_off]
-  - what: circle
-    where: matrix_inner_top
-    radius: hole_d / 2
-    adjust: &h_strip
-      - *thumb_edge
-      - shift: [strip_hole_x, 0.5py - mcu_h - usb_gap / 2]
-  - what: circle
-    where: thumbfan_home_thumb
-    radius: hole_d / 2
-    adjust: &h_thumb
-      - shift: [0.75kx + hole_off, 0]
-      # then 3 mm to the right on the board (drop the key's rotation first)
-      - ref: matrix_inner_top
-        affect: r
-      - shift: [3, 0]
   # above the ring column's top key (the top edge is raised there by mount_pad)
   - what: circle
     where: matrix_ring_top
     radius: hole_d / 2
-    adjust: &h_ring
+    adjust:
       shift: [0, 0.5ky + hole_off]
   # below the middle column's bottom key
   - what: circle
     where: matrix_middle_bottom
     radius: hole_d / 2
-    adjust: &h_middle
+    adjust:
       shift: [0, -0.5ky - hole_off]
   # below the right-most thumb key: past its lower (down-left facing) end
   - what: circle
     where: thumbfan_home_thumb
     radius: hole_d / 2
-    adjust: &h_thumb_low
+    adjust:
       shift: [-0.75kx - hole_off, 0]
-  # The key area grown by cover_gap: the cover stays out of it.
-  # (`expand` applies to everything built so far, so it gets its own outline.)
-  cover_keepout:
-    - name: board
-      expand: cover_gap
-  # The hole beyond the thumb key sits on the line between the cover and the switch plate,
-  # so the cover gets a round tab around it and the plate a matching notch (cover_gap wider).
-  cover_tab:
+  # above the right-most thumb key: past its upper end, mirroring the one below it
   - what: circle
     where: thumbfan_home_thumb
-    radius: cover_boss
-    adjust: *h_thumb
-  cover_tab_clear:
+    radius: hole_d / 2
+    adjust:
+      shift: [0.75kx + hole_off, 0]
+  # in the breakout's pod, below the breakout
   - what: circle
-    where: thumbfan_home_thumb
-    radius: cover_boss + cover_gap
-    adjust: *h_thumb
-  # Electronics cover. Footprint: the strip right of the inner column, minus the keys'
-  # padded areas (so it stays 2 mm clear of the keycaps) and minus the key area plus
-  # cover_gap, so it never overlaps the switch plate.
-  cover_area:
-    - name: mcu_area
-    - operation: intersect
-      what: rectangle
-      where: matrix_inner_top
-      bound: false
-      adjust:
-        shift: [0.5px + 50, -50]
-      size: [100, 200]
-    - operation: subtract
-      name: raw
-    - operation: subtract
-      name: cover_keepout
-    - operation: add
-      name: cover_tab
-  cover:
-    - name: cover_area
-    - operation: subtract
-      name: mount_holes
-  # Top layer of the switch plate: the key area with a switch cutout per key, and the
-  # mounting holes.
+    where: matrix_inner_top
+    radius: hole_d / 2
+    adjust:
+      shift: [link_cx, 0.5py - link_pod_h + 3.5]
+  # Top layer of the switch plate: the key area and the pods, with a switch cutout per key
+  # and the mounting holes.
   plate:
-    - name: board
+    - name: _inside
     - operation: subtract
       name: switch_cutouts
     - operation: subtract
       name: mount_holes
-    - operation: subtract
-      name: cover_tab_clear
-  # Bottom (frame) layer of the switch plate: ribs between the keys (combo) with the
-  # mounting holes (and the notch for the cover's tab).
+  # Bottom (frame) layer of the switch plate: ribs between the keys, solid over the pods.
   frame:
-    - name: combo
+    - name: _inside
+    - operation: subtract
+      name: keys
     - operation: subtract
       name: mount_holes
-    - operation: subtract
-      name: cover_tab_clear
-  # Case outlines: the key area plus the electronics strip, grown outwards.
-  _inside:
-    - name: board
-    - operation: add
-      name: mcu_area
+  # Case outlines: everything inside, grown outwards.
   case_outer:
     - name: _inside
       expand: case_off
@@ -440,29 +388,26 @@ outlines:
   case_inserts:
     - name: mount_holes
       expand: insert_r - hole_d / 2
-  # Wall openings for the two USB-C plugs: the MCU's port on the top edge, the link
-  # breakout's port on the right edge (towards the other half). Each starts at the inside
+  # Wall openings for the two USB-C plugs, both in the top wall. Each starts at the inside
   # of the wall, so the floor inside the case stays whole.
   usb_notch_mcu:
   - what: rectangle
-    where: matrix_inner_top
+    where: matrix_outer_top
     bound: false
     adjust:
-      - *thumb_edge
-      - shift: [mcu_x, 0.5py + case_clear + 7]
+      shift: [mcu_cx, 0.5py + case_clear + 7]
     size: [usb_notch_w, 14]
   usb_notch_link:
   - what: rectangle
     where: matrix_inner_top
     bound: false
     adjust:
-      - *thumb_edge
-      - shift: [case_clear + 7, link_y]
-    size: [14, usb_notch_w]
+      shift: [link_cx, 0.5py + case_clear + 7]
+    size: [usb_notch_w, 14]
 cases:
   # 3D-printable switch plate (z = 0 is its underside), screwed onto the case standoffs.
-  #   - frame: ribs between the keycap-sized openings, frame_t thick; stiffens the plate
-  #     and clears the switch's lower housing
+  #   - frame: ribs between the keycap-sized openings, frame_t thick (solid over the pods);
+  #     stiffens the plate and clears the switch's lower housing
   #   - plate: plate_t thick on top, with 14 mm switch cutouts for the clips
   # Print it upside down (plate layer on the bed) for a flat top surface.
   switchplate:
@@ -476,9 +421,9 @@ cases:
       operation: add
   # Keyboard case (z = 0 is the case bottom): floor with the two module seats, walls with
   # openings for both USB-C plugs, and standoffs with M2 heat-set insert holes under all
-  # mounting holes. The switch plate and the strip cover sit on the standoffs, side by
-  # side, inside the walls. This is the left half; wiring/build.js also writes the right
-  # half's cases (with _right) from a mirrored run.
+  # mounting holes. The switch plate sits on the standoffs inside the walls. This is the
+  # left half; wiring/build.js also writes the right half's cases (with _right) from a
+  # mirrored run.
   keyboard_case:
     - what: outline
       name: case_outer
@@ -509,10 +454,3 @@ cases:
       extrude: case_h
       shift: [0, 0, usb_z_link - usb_notch_down]
       operation: subtract
-  # Flat cover over the electronics strip (z = 0 is its underside), as thick as the
-  # switch plate and level with it. Screws through the two strip holes (between the MCU
-  # and the breakout, and beyond the thumb key).
-  mcu_cover:
-    - what: outline
-      name: cover
-      extrude: frame_t + plate_t
