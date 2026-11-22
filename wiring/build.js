@@ -250,14 +250,13 @@ const placement = (results, U, caps) => {
     out[`cases/${name}.stl`] = [0, 0, z[name] || 0]
     out[`cases/${name}_right.stl`] = [dx, 0, z[name] || 0]
   }
-  // the keycaps (top down, as printed) and their holder, in a row in front of the keyboard
+  // the keycaps and stems (as printed) and their holder, in a row in front of the keyboard
   const front = ext.low[1] - 30
-  out['cases/keycap_1u.stl'] = [ext.low[0] + 20, front, 0]
-  out['cases/keycap_1_5u.stl'] = [ext.low[0] + 50, front, 0]
-  out['cases/keycap_1u_side.stl'] = [ext.low[0] + 20, front - 30, 0]
-  out['cases/keycap_1_5u_side.stl'] = [ext.low[0] + 50, front - 30, 0]
-  out['cases/keycap_1u_side_homing.stl'] = [ext.low[0] + 80, front - 30, 0]
-  out['cases/keycap_fit_test.stl'] = [ext.low[0] + 110, front, 0]
+  out['cases/keycap_1u_side_shell.stl'] = [ext.low[0] + 20, front, 0]
+  out['cases/keycap_1_5u_side_shell.stl'] = [ext.low[0] + 50, front, 0]
+  out['cases/keycap_1u_side_homing_shell.stl'] = [ext.low[0] + 80, front, 0]
+  out['cases/keycap_1u_stem.stl'] = [ext.low[0] + 20, front - 30, 0]
+  out['cases/keycap_1_5u_stem.stl'] = [ext.low[0] + 50, front - 30, 0]
   out['cases/keycap_holder.stl'] = [ext.low[0] + 160, front + 15, 0]
   out['cases/keyboard_case_art.stl'] = [0, 0, 0]
   out['cases/keyboard_case_art_right.stl'] = [dx, 0, 0]

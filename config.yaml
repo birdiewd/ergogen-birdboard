@@ -78,35 +78,37 @@ units:
   usb_notch_down: 3.3 # opening reaches this far below the port centre (open to the top)
   # Moose head inlaid in the case's bottom face (art/moose.js), as its own body
   art_depth: 0.6      # 3 layers at 0.2 mm
-  # Keycaps (art/keycaps.js): low profile, flat topped (for the UV printed legends), for the
-  # KS-33's MX-style cross stem. The skirt ends level with the bottom of the stem post, and
-  # the post rides on the switch's slider, so the skirt can't reach the housing or the plate
-  # at bottom-out. Print them top down, on the bed, for a smooth flat top.
+  # Keycaps (art/keycaps.js): low profile, for the KS-33's MX-style cross stem, in two parts:
+  # a shell (keycap_*_side_shell) and a stem insert (keycap_*_stem) glued inside it. The skirt
+  # ends level with the bottom of the stem post, and the post rides on the switch's slider, so
+  # the skirt can't reach the housing or the plate at bottom-out.
   cap_pitch: 19       # key spacing; a cap is this wide per unit, less cap_gap
   cap_gap: 1          # between neighbouring caps
   cap_draft: 0.9      # the top is this much smaller than the bottom on every side
-  cap_top_t: 1.4      # top thickness
-  cap_skirt: 3.3      # skirt height below the top, the same as the stem post's length
+  cap_top_t: 1.2      # shell top thickness, in the middle of the dish
+  cap_skirt: 3.3      # skirt height below the top, the same as the stem's length
   cap_wall: 1.2       # skirt thickness
-  cap_r_bottom: 1.6   # corner radius at the skirt's bottom edge
-  cap_r_top: 1.2      # corner radius of the flat top
+  cap_r_bottom: 1.6   # corner chamfer (45 degrees) across, at the skirt's bottom edge
+  cap_r_top: 1.2      #   and at the top
   cap_post_d: 5.4     # stem post: fits in the switch's 5.7 mm stem well
   cap_cross: 4.0      # the switch's cross: arm length
   cap_cross_w: 1.1    #   and arm width
-  cap_stem_tol: 0.2   # socket clearance on each dimension of the cross (fit test notch 4 fit best)
+  cap_stem_tol: 0.2   # socket clearance on each dimension of the cross (found with a fit test)
   cap_socket: 3.0     # socket depth, from the post's bottom
-  # The _side caps: printed lying on their left side, with a cylindrical dish in the top that
-  # curves front to back (each print layer then cuts the whole curve, so it comes out smooth).
-  # The dish is cap_dish deep in the middle; those caps are that much taller at the edges, so
-  # the top stays cap_top_t thick.
+  # The shells print lying on their left side, with a cylindrical dish in the top that curves
+  # front to back (each print layer then cuts the whole curve, so it comes out smooth). The
+  # dish is cap_dish deep in the middle; the caps are that much taller at the edges, so the
+  # top stays cap_top_t thick.
   cap_dish: 0.6
-  # their corners are chamfered (45 degrees, cap_r_bottom / cap_r_top across) rather than
-  # rounded. keycap_1u_side_homing (for F and J) has a homing bar on top: a rounded bar
+  # keycap_1u_side_homing_shell (for F and J) has a homing bar on top: a rounded bar
   # cap_homing_len long, standing cap_homing_h proud of the dish, cap_homing_in from the front
   cap_homing_len: 5
   cap_homing_h: 0.4
   cap_homing_r: 0.6
   cap_homing_in: 2.5
+  # The stem insert: a post on a plate that pushes up into the skirt against the top, glued.
+  cap_insert_t: 0.8       # plate thickness
+  cap_insert_clear: 0.1   # plate clearance in the skirt, all round
   # Holder for UV printing the legends on the eufyMake E1: one half's caps at a time, top up
   holder_pitch: 23    # slot spacing per unit
   holder_cols: 5      # 1u slots per row

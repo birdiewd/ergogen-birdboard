@@ -51,39 +51,44 @@ The previews, seen from above with the keycaps shaded, are `output/art/text_left
 
 ## Keycaps and legends
 
-The keycaps are our own: low profile, flat topped, for the KS-33's MX-style cross stem. Their
+The keycaps are our own: low profile, dished, for the KS-33's MX-style cross stem. Their
 legends are UV printed on a eufyMake E1. Everything is generated from [config.yaml](config.yaml)
 (the `cap_*` and `holder_*` settings) and the keymap plan, [keymap/legends.json](keymap/legends.json).
 
+Each cap is two parts: a shell, and a stem insert glued inside it.
+
 | File | Part |
 | --- | --- |
-| `stl/keycap_1u.stl` | 1u cap, 18 × 18 mm, 4.7 mm tall (print 46) |
-| `stl/keycap_1_5u.stl` | 1.5u cap for the inner thumb key (print 2) |
-| `stl/keycap_1u_side.stl`, `stl/keycap_1_5u_side.stl` | the same caps with a dished top and chamfered corners, printed on their side |
-| `stl/keycap_1u_side_homing.stl` | the 1u side cap with a homing bar, for F and J (print 2) |
-| `stl/keycap_fit_test.stl` | four stem posts, socket clearance 0.05 to 0.2 mm (1 to 4 notches) |
+| `stl/keycap_1u_side_shell.stl` | 1u shell, 18 × 18 mm (print 44) |
+| `stl/keycap_1u_side_homing_shell.stl` | 1u shell with a homing bar, for F and J (print 2) |
+| `stl/keycap_1_5u_side_shell.stl` | 1.5u shell for the inner thumb key (print 2) |
+| `stl/keycap_1u_stem.stl`, `stl/keycap_1_5u_stem.stl` | stem inserts, one per shell (print 46 and 2) |
 | `stl/keycap_holder.stl` | holds one half's 24 caps, top up, on the E1's bed |
 
-The caps come out top down, so the flat top prints on the bed and comes out smooth.
+**Shells.** The top has a cylindrical dish, `cap_dish` (0.6 mm) deep in the middle, curving
+front to back. It's `cap_top_t` (1.2 mm) thick in the middle of the dish, and 0.6 mm thicker at
+the front and back edges. The corners are chamfered at 45°. The shells print lying on their left
+side, flat on the bed. Each print layer then cuts through the whole curve, so it prints as
+smooth perimeters rather than steps. A shell has no stem post: a post joined to the underside of
+the top would leave marks on the face, where the layers crossing it print differently.
 
-The `_side` caps are the dished alternative. Their top has a cylindrical dish, `cap_dish`
-(0.6 mm) deep in the middle, curving front to back. They come out lying on their left side,
-flat on the bed. Each print layer then cuts through the whole curve, so it prints as smooth
-perimeters rather than steps, and the stem is printed along its arms, which makes it
-stronger. They're 0.6 mm taller at the edges than the flat caps, so the top keeps its full
-thickness in the middle. Their corners are chamfered at 45° rather than rounded. They fit the
-same holder.
+The homing shell's bar is a rounded bar 5 mm long, standing 0.4 mm proud of the dish, 2.5 mm in
+from the front edge (the `cap_homing_*` settings). In print orientation it runs straight up the
+cap's face, so it needs no support.
 
-`keycap_1u_side_homing.stl` adds a homing bar for F and J: a rounded bar 5 mm long, standing
-0.4 mm proud of the dish, 2.5 mm in from the front edge (the `cap_homing_*` settings). In print
-orientation it runs straight up the cap's face, so it needs no support. The skirt ends
-level with the bottom of the stem post, which rides on the switch's slider, so the cap can't
-reach the plate at bottom-out.
+**Stems.** A stem insert is the post on a plate, `cap_insert_t` (0.8 mm) thick, cut to the inside
+of the skirt less `cap_insert_clear` (0.1 mm) all round. It prints plate down, so the cross socket
+is printed flat and the plate's glue face comes out flat. Put a little CA glue on the plate and
+push it up into the skirt until it meets the top. The plate fills the skirt, so the post ends up
+centred. The 1.5u shell takes the 1.5u stem.
 
-**Fit:** print the fit test first, and push each post onto a switch. Set `cap_stem_tol` to the
-clearance that grips without forcing (1 notch = 0.05 mm, 2 = 0.1, 3 = 0.15, 4 = 0.2), then
-export again. On our printer, 4 notches fit best, so `cap_stem_tol` is 0.2 mm. If 0.2 is still
-tight on another printer, the fit test's range would need to go wider.
+Assembled, the top is 2 mm thick in the middle of the dish and 1.5 mm over the cross socket.
+The post's end is level with the bottom of the skirt. The post rides on the switch's slider, so
+the skirt can't reach the plate at bottom-out.
+
+**Fit:** the cross socket's clearance is `cap_stem_tol`. It's 0.2 mm, the best fit from an
+earlier fit test of 0.05 to 0.2 mm. If the stems grip too tightly or too loosely on another
+printer, change it and export again.
 
 ### Planning the legends
 
