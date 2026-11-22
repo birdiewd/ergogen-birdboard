@@ -1,0 +1,295 @@
+{
+  "style": {
+    "capColor": "#2b2b2e",
+    "font": "C:/Windows/Fonts/segoeuib.ttf",
+    "symbolFont": "C:/Windows/Fonts/seguisym.ttf",
+    "shift": {
+      "size": 3,
+      "color": "#b9b4aa"
+    },
+    "base": {
+      "size": 3,
+      "color": "#f4f1ea"
+    },
+    "side": {
+      "size": 3,
+      "inset": 1.4
+    },
+    "symbol": {
+      "scale": 1.4,
+      "weight": 0,
+      "stretch": {
+        "⌃": 1.5
+      }
+    },
+    "icons": {
+      "scale": 1.3
+    }
+  },
+  "layers": [
+    {
+      "id": "lower",
+      "name": "Lower",
+      "color": "#4aa3ff",
+      "side": "bottom-left"
+    },
+    {
+      "id": "raise",
+      "name": "Raise",
+      "color": "#ff7a45",
+      "side": "top-right"
+    }
+  ],
+  "keys": {
+    "left": {
+      "matrix_outer_top": {
+        "base": "↹",
+        "lower": "m2",
+        "raise": ""
+      },
+      "matrix_pinky_top": {
+        "base": "Q",
+        "lower": "1",
+        "raise": "!"
+      },
+      "matrix_ring_top": {
+        "base": "W",
+        "lower": "2",
+        "raise": "@"
+      },
+      "matrix_middle_top": {
+        "base": "E",
+        "lower": "3",
+        "raise": "#"
+      },
+      "matrix_index_top": {
+        "base": "R",
+        "lower": "4",
+        "raise": "$"
+      },
+      "matrix_inner_top": {
+        "base": "T",
+        "lower": "5",
+        "raise": "%"
+      },
+      "matrix_outer_home": {
+        "base": "⌥",
+        "lower": "",
+        "raise": ""
+      },
+      "matrix_pinky_home": {
+        "base": "A",
+        "lower": "f1",
+        "raise": ""
+      },
+      "matrix_ring_home": {
+        "base": "S",
+        "lower": "f2",
+        "raise": ""
+      },
+      "matrix_middle_home": {
+        "base": "D",
+        "lower": "f3",
+        "raise": ""
+      },
+      "matrix_index_home": {
+        "base": "F",
+        "lower": "f4",
+        "raise": ""
+      },
+      "matrix_inner_home": {
+        "base": "G",
+        "lower": "f5",
+        "raise": ""
+      },
+      "matrix_outer_bottom": {
+        "base": "⌃",
+        "lower": "",
+        "raise": ""
+      },
+      "matrix_pinky_bottom": {
+        "base": "Z",
+        "lower": "f6",
+        "raise": ""
+      },
+      "matrix_ring_bottom": {
+        "base": "X",
+        "lower": "f7",
+        "raise": ":volume-xmark:"
+      },
+      "matrix_middle_bottom": {
+        "base": "C",
+        "lower": "f8",
+        "raise": ":volume-low:"
+      },
+      "matrix_index_bottom": {
+        "base": "V",
+        "lower": "f9",
+        "raise": ":volume-high:"
+      },
+      "matrix_inner_bottom": {
+        "base": "B",
+        "lower": "f10",
+        "raise": ""
+      },
+      "mod_outer_thumb": {
+        "base": "⌘",
+        "lower": "",
+        "raise": ""
+      },
+      "mod_pinky_thumb": {
+        "base": "",
+        "lower": "f11",
+        "raise": ""
+      },
+      "mod_ring_thumb": {
+        "base": "",
+        "lower": "f12",
+        "raise": ""
+      },
+      "thumbfan_outer_thumb": {
+        "base": "⏯",
+        "lower": "",
+        "raise": ""
+      },
+      "thumbfan_fn_thumb": {
+        "base": ":angles-down:",
+        "lower": "",
+        "raise": ""
+      },
+      "thumbfan_home_thumb": {
+        "base": "⏎",
+        "lower": "",
+        "raise": "",
+        "shift": ""
+      }
+    },
+    "right": {
+      "matrix_outer_top": {
+        "base": ":backward-step:",
+        "lower": "",
+        "raise": ""
+      },
+      "matrix_pinky_top": {
+        "base": "P",
+        "lower": "0",
+        "raise": ")"
+      },
+      "matrix_ring_top": {
+        "base": "O",
+        "lower": "9",
+        "raise": "("
+      },
+      "matrix_middle_top": {
+        "base": "I",
+        "lower": "8",
+        "raise": "*"
+      },
+      "matrix_index_top": {
+        "base": "U",
+        "lower": "7",
+        "raise": "&"
+      },
+      "matrix_inner_top": {
+        "base": "Y",
+        "lower": "6",
+        "raise": "^"
+      },
+      "matrix_outer_home": {
+        "base": "'",
+        "lower": "",
+        "raise": "",
+        "shift": "\""
+      },
+      "matrix_pinky_home": {
+        "base": ";",
+        "lower": "",
+        "raise": "]",
+        "shift": ":"
+      },
+      "matrix_ring_home": {
+        "base": "L",
+        "lower": "",
+        "raise": "["
+      },
+      "matrix_middle_home": {
+        "base": "K",
+        "lower": "",
+        "raise": ""
+      },
+      "matrix_index_home": {
+        "base": "J",
+        "lower": "",
+        "raise": "+"
+      },
+      "matrix_inner_home": {
+        "base": "H",
+        "lower": "",
+        "raise": "_"
+      },
+      "matrix_outer_bottom": {
+        "base": "/",
+        "lower": "",
+        "raise": "",
+        "shift": "?"
+      },
+      "matrix_pinky_bottom": {
+        "base": ":arrow-up:",
+        "lower": "",
+        "raise": "}"
+      },
+      "matrix_ring_bottom": {
+        "base": ".",
+        "lower": "",
+        "raise": "{",
+        "shift": ">"
+      },
+      "matrix_middle_bottom": {
+        "base": ",",
+        "lower": "",
+        "raise": "",
+        "shift": "<"
+      },
+      "matrix_index_bottom": {
+        "base": "M",
+        "lower": "",
+        "raise": "="
+      },
+      "matrix_inner_bottom": {
+        "base": "N",
+        "lower": "",
+        "raise": "-"
+      },
+      "mod_outer_thumb": {
+        "base": ":arrow-right:",
+        "lower": "",
+        "raise": "m1"
+      },
+      "mod_pinky_thumb": {
+        "base": ":arrow-down:",
+        "lower": "",
+        "raise": ""
+      },
+      "mod_ring_thumb": {
+        "base": ":arrow-left:",
+        "lower": "",
+        "raise": ""
+      },
+      "thumbfan_outer_thumb": {
+        "base": ":arrow-right-to-bracket:",
+        "lower": "",
+        "raise": "m3"
+      },
+      "thumbfan_fn_thumb": {
+        "base": ":angles-up:",
+        "lower": "",
+        "raise": ""
+      },
+      "thumbfan_home_thumb": {
+        "base": "␣",
+        "lower": "",
+        "raise": ""
+      }
+    }
+  }
+}

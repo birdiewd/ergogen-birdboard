@@ -36,6 +36,13 @@ const main = async () => {
     if (!ok) console.error(r.log)
     return ok
   }))
+  // the legend print files for the UV printer, and their previews, into keymap/print/
+  const PRINT = path.join(ROOT, 'keymap', 'print'), KM = path.join(ROOT, 'output', 'keymap')
+  fs.mkdirSync(PRINT, { recursive: true })
+  for (const f of fs.readdirSync(KM).filter(f => f.endsWith('.svg'))) {
+    fs.copyFileSync(path.join(KM, f), path.join(PRINT, f))
+    console.log(`ok   keymap/print/${f}`)
+  }
   return results.every(Boolean) ? 0 : 1
 }
 

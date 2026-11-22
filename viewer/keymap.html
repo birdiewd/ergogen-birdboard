@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Keymap planner</title>
+<style>
+  :root { --bg: #16181c; --panel: #1f2228; --line: #2c3038; --text: #d8dce3; --muted: #8a909b; --ok: #3fb950; --warn: #d29922; --err: #f85149; --accent: #58a6ff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, sans-serif; }
+  body { display: grid; grid-template-columns: 1fr 300px; grid-template-rows: auto 1fr; height: 100vh; }
+  header { grid-column: 1 / 3; display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 14px; margin: 0; font-weight: 600; }
+  header a { color: var(--muted); text-decoration: none; }
+  header .spacer { flex: 1; }
+  .seg { display: flex; gap: 2px; background: #15171b; padding: 2px; border-radius: 8px; }
+  .seg button { border: 0; background: transparent; color: var(--muted); padding: 4px 10px; border-radius: 6px; }
+  .seg button.active { background: #2b3038; color: var(--text); }
+  button { background: #2b3038; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; }
+  button:hover { background: #343a44; }
+  #status { color: var(--muted); min-width: 90px; text-align: right; }
+  #status.err { color: var(--err); }
+  main { position: relative; overflow: hidden; }
+  #board { width: 100%; height: 100%; display: block; }
+  .key { cursor: pointer; }
+  .key .sel { fill: none; stroke: var(--accent); stroke-width: 0.8; display: none; }
+  .key.selected .sel { display: block; }
+  .dim { opacity: 0.12; }
+  aside { background: var(--panel); border-left: 1px solid var(--line); overflow: auto; padding: 12px; }
+  aside h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 8px; }
+  aside h2:first-child { margin-top: 0; }
+  .field { display: grid; grid-template-columns: 70px 1fr; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .field label { color: var(--muted); }
+  .field input[type=text], .field input[type=number] { width: 100%; background: #15171b; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; font: 15px/1.2 "Segoe UI", "Segoe UI Symbol", sans-serif; font-weight: 700; }
+  .field input[type=number] { font: 13px system-ui, sans-serif; }
+  .field input:focus { outline: none; border-color: var(--accent); }
+  .field select { background: #15171b; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px; font: 13px system-ui, sans-serif; }
+  .field input[type=color] { width: 36px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; }
+  .row { display: flex; gap: 6px; align-items: center; }
+  .keyname { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .hint { color: var(--muted); font-size: 12px; line-height: 1.5; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .chips { max-height: 180px; overflow: auto; }
+  .chips button { width: 32px; height: 30px; padding: 0; font-size: 15px; line-height: 30px; }
+  #iconSearch { width: 100%; background: #15171b; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; font: 13px system-ui, sans-serif; }
+  #iconSearch:focus { outline: none; border-color: var(--accent); }
+  .links a { display: block; color: var(--accent); margin: 3px 0; text-decoration: none; }
+  /* narrow screens: the keyboard on top, the panel under it */
+  @media (max-width: 820px) {
+    body { grid-template-columns: 1fr; grid-template-rows: auto 45vh 1fr; }
+    header { grid-column: 1; flex-wrap: wrap; }
+    aside { border-left: 0; border-top: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Keymap planner</h1>
+  <a href="/">← viewer</a>
+  <div class="seg" id="view">
+    <button data-view="all" class="active">All layers</button>
+    <button data-view="shift">Shift</button>
+    <button data-view="base">Base</button>
+  </div>
+  <div class="spacer"></div>
+  <span id="status">loading…</span>
+</header>
+<main><svg id="board"></svg></main>
+<aside>
+  <h2>Key</h2>
+  <div class="keyname" id="keyName">Click a key</div>
+  <div id="keyFields"></div>
+  <div class="hint">Tab / Shift+Tab or Enter move between keys. Changes save on their own.</div>
+  <h2>Icons (Font Awesome Free)</h2>
+  <input type="search" id="iconSearch" placeholder="Search icons: volume, arrow, play…" autocomplete="off">
+  <div class="chips" id="chips"></div>
+  <div class="hint" id="iconHint">Click an icon to put it in the legend you're editing. In a legend it's written as its name between colons, like :volume-high:.</div>
+
+  <h2>Layers</h2>
+  <div id="layerFields"></div>
+
+  <h2>Style</h2>
+  <div class="field"><label>Cap</label><div class="row"><input type="color" id="capColor"></div></div>
+  <div class="field"><label>Shift</label><div class="row"><input type="color" id="shiftColor"><input type="number" id="shiftSize" step="0.1" min="1" max="6" title="cap height, mm"></div></div>
+  <div class="field"><label>Base</label><div class="row"><input type="color" id="baseColor"><input type="number" id="baseSize" step="0.1" min="1" max="10" title="cap height, mm"></div></div>
+  <div class="field"><label>Layers</label><div class="row"><input type="number" id="sideSize" step="0.1" min="1" max="6" title="cap height, mm"><input type="number" id="sideInset" step="0.1" min="0" max="5" title="distance from the top's edge, mm"></div></div>
+  <div class="hint">Sizes are cap heights in mm; the second Layers number is the distance from the cap top's edge. A shift legend sits above the base legend, which moves down to make room.</div>
+
+  <h2>Print files (eufyMake E1)</h2>
+  <div class="links">
+    <a href="/output/keymap/preview_left.svg" target="_blank">Left half on the holder (preview)</a>
+    <a href="/output/keymap/preview_right.svg" target="_blank">Right half on the holder (preview)</a>
+    <a href="/output/keymap/print_left.svg" target="_blank">Left half: print file</a>
+    <a href="/output/keymap/print_right.svg" target="_blank">Right half: print file</a>
+  </div>
+  <div class="hint">The print files are true size and exactly the holder's outline: line the drawing's edges up with the holder in eufyMake Studio. They update a moment after each change.</div>
+</aside>
+<script src="/art/legends.js"></script>
+<script>
+const $ = id => document.getElementById(id)
+const NS = 'http://www.w3.org/2000/svg'
+const el = (tag, attrs = {}, parent) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); if (parent) parent.appendChild(e); return e }
+// icons offered before anything is searched for
+const COMMON_ICONS = ['arrow-up', 'arrow-down', 'arrow-left', 'arrow-right', 'angles-up', 'angles-down', 'angles-left', 'angles-right',
+  'caret-up', 'caret-down', 'delete-left', 'arrow-turn-down', 'arrow-right-to-bracket', 'arrow-up-long', 'house', 'magnifying-glass',
+  'play', 'pause', 'stop', 'backward-step', 'forward-step', 'backward', 'forward', 'volume-high', 'volume-low', 'volume-off', 'volume-xmark',
+  'sun', 'moon', 'lightbulb', 'keyboard', 'computer-mouse', 'bluetooth', 'wifi', 'lock', 'power-off', 'camera', 'gear', 'copy', 'paste', 'scissors', 'rotate-left', 'rotate-right']
+const FA_FAMILY = { solid: 'FA Solid', regular: 'FA Regular', brands: 'FA Brands' }
+const FA_WEIGHT = { solid: 900, regular: 400, brands: 400 }
+let icons = { scale: 1.3, list: [], codes: {} }
+
+let layout, km, mtime, selected = null, view = 'all'
+
+// legend widths and cap heights, in mm, measured with the same fonts as the print. As in the
+// print, characters the text font lacks are symbols, set in the symbol font, larger
+// (style.symbol.scale), centred on the cap height and drawn bolder (style.symbol.weight).
+const TEXT_FONT = '"Segoe UI"', SYM_FONT = '"Segoe UI Symbol"'
+const ctx = document.createElement('canvas').getContext('2d')
+const capRatioOf = f => { ctx.font = `700 100px ${f}`; return ctx.measureText('H').actualBoundingBoxAscent / 100 }
+let capText = 0.7, capSym = 0.7
+const symStyle = () => ({ scale: 1.4, weight: 0.07, stretch: {}, ...(km.style.symbol || {}) })
+const isText = ch => {
+  const c = ch.codePointAt(0), r = layout.textFont
+  if (!r || !r.length) return c < 0x2000
+  let lo = 0, hi = r.length - 1
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (c < r[m][0]) hi = m - 1; else if (c > r[m][1]) lo = m + 1; else return true }
+  return false
+}
+// an icon's style: the one asked for if it has it, else solid, regular, brands in that order
+const iconStyle = (name, style) => {
+  const info = icons.codes[name]
+  if (!info) return null
+  return style && info.s.includes(style) ? style : ['solid', 'regular', 'brands'].find(s => info.s.includes(s))
+}
+// a legend as runs: [{ text, sym, font, em, w, dy }] (dy: a symbol's baseline shift)
+const runsOf = (text, size) => {
+  const runs = []
+  for (const p of Legends.pieces(text)) {
+    if (p.icon) {
+      // a Font Awesome icon: its em square is icons.scale cap heights, centred like a symbol
+      const st = iconStyle(p.icon, p.style)
+      if (st) runs.push({ text: String.fromCodePoint(parseInt(icons.codes[p.icon].u, 16)), sym: true, icon: st })
+      else runs.push({ text: '?', sym: false, missing: true })
+      continue
+    }
+    for (const ch of [...p.text]) {
+      const c = ch.codePointAt(0)
+      const sym = (layout.symbolBlocks || []).some(([a, b]) => c >= a && c <= b) || !isText(ch), last = runs[runs.length - 1]
+      if (!sym && last && !last.sym && !last.missing) last.text += ch
+      else runs.push({ text: ch, sym })
+    }
+  }
+  for (const r of runs) {
+    r.font = r.icon ? `"${FA_FAMILY[r.icon]}"` : r.sym ? SYM_FONT : TEXT_FONT
+    r.weight = r.icon ? FA_WEIGHT[r.icon] : 700
+    r.em = r.icon ? size * icons.scale : r.sym ? size * symStyle().scale / capSym : size / capText
+    ctx.font = `${r.weight} ${r.em}px ${r.font}`
+    const m = ctx.measureText(r.text)
+    r.s = r.sym && !r.icon ? symStyle().stretch[r.text] || 1 : 1   // widened symbols (style.symbol.stretch)
+    r.w = m.width * r.s
+    // centre a symbol's ink halfway up the cap height
+    r.dy = r.sym ? (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2 - size / 2 : 0
+  }
+  return runs
+}
+const measure = (text, size) => runsOf(text, size).reduce((s, r) => s + r.w, 0)
+function drawLegend(g, l) {
+  const runs = runsOf(l.text, l.size), w = runs.reduce((s, r) => s + r.w, 0)
+  let x = l.anchor === 'start' ? l.x : l.anchor === 'middle' ? l.x - w / 2 : l.x - w
+  const wt = symStyle().weight
+  const out = []
+  for (const r of runs) {
+    const t = el('text', { x, y: l.y + r.dy, 'font-size': r.em, 'font-family': r.font, 'font-weight': r.weight, fill: r.missing ? '#f85149' : l.color }, g)
+    if (r.missing) t.appendChild(el('title')).textContent = 'no such Font Awesome icon'
+    if (r.s !== 1) { t.setAttribute('x', 0); t.setAttribute('y', 0); t.setAttribute('transform', `translate(${x} ${l.y + r.dy}) scale(${r.s} 1)`) }
+    if (r.sym && wt > 0) { t.setAttribute('stroke', l.color); t.setAttribute('stroke-width', 2 * wt); t.setAttribute('stroke-linejoin', 'round') }
+    t.textContent = r.text
+    out.push(t); x += r.w
+  }
+  return out
+}
+
+const keyOf = k => (km.keys[k.half] && km.keys[k.half][k.id]) || {}
+const nice = id => id.replace(/^matrix_/, '').replace(/_thumb$/, ' (thumb row)').replace(/_/g, ' ')
+
+// ---------- drawing ----------
+function draw() {
+  const svg = $('board'); svg.textContent = ''
+  const xs = layout.keys.map(k => k.x), ys = layout.keys.map(k => -k.y)
+  const pad = 16
+  svg.setAttribute('viewBox', `${Math.min(...xs) - pad} ${Math.min(...ys) - pad} ${Math.max(...xs) - Math.min(...xs) + 2 * pad} ${Math.max(...ys) - Math.min(...ys) + 2 * pad}`)
+  for (const k of layout.keys) {
+    const cap = layout.caps[k.units]
+    const g = el('g', { class: 'key', transform: `translate(${k.x} ${-k.y}) rotate(${-k.r})` }, svg)
+    g.dataset.key = k.half + '/' + k.id
+    el('rect', { x: -cap.w / 2, y: -cap.d / 2, width: cap.w, height: cap.d, rx: 1.6, fill: shade(km.style.capColor, -18) }, g)
+    el('rect', { x: -cap.top.w / 2, y: -cap.top.h / 2, width: cap.top.w, height: cap.top.h, rx: 1.2, fill: km.style.capColor }, g)
+    for (const l of Legends.place(keyOf(k), cap.top, km.style, km.layers, measure)) {
+      for (const t of drawLegend(g, l)) if (view !== 'all' && l.layer !== view) t.classList.add('dim')
+    }
+    el('rect', { class: 'sel', x: -cap.w / 2 - 0.8, y: -cap.d / 2 - 0.8, width: cap.w + 1.6, height: cap.d + 1.6, rx: 2.2 }, g)
+    if (selected && selected.half === k.half && selected.id === k.id) g.classList.add('selected')
+    g.addEventListener('click', () => select(k))
+  }
+}
+const shade = (hex, d) => '#' + [1, 3, 5].map(i => Math.max(0, Math.min(255, parseInt(hex.slice(i, i + 2), 16) + d)).toString(16).padStart(2, '0')).join('')
+
+// ---------- key editing ----------
+function select(k, focus = 'base') {
+  selected = k
+  $('keyName').textContent = `${k.half === 'left' ? 'Left' : 'Right'}: ${nice(k.id)}${k.units !== 1 ? ` (${k.units}u)` : ''}`
+  const box = $('keyFields'); box.textContent = ''
+  const fields = [{ id: 'shift', name: 'Shift', color: km.style.shift.color }, { id: 'base', name: 'Base', color: km.style.base.color }, ...km.layers]
+  for (const f of fields) {
+    const row = document.createElement('div'); row.className = 'field'
+    const lab = document.createElement('label'); lab.textContent = f.name; lab.style.color = f.id === 'base' ? '' : f.color
+    const inp = document.createElement('input'); inp.type = 'text'; inp.value = keyOf(k)[f.id] || ''; inp.dataset.layer = f.id
+    inp.addEventListener('input', () => { setLegend(k, f.id, inp.value) })
+    inp.addEventListener('focus', () => { lastInput = inp })
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); step(e.shiftKey ? -1 : 1, f.id) }
+      if (e.key === 'Tab' && f === fields[e.shiftKey ? 0 : fields.length - 1]) { e.preventDefault(); step(e.shiftKey ? -1 : 1, e.shiftKey ? fields[fields.length - 1].id : 'base') }
+    })
+    row.append(lab, inp); box.appendChild(row)
+  }
+  draw()
+  const f = box.querySelector(`input[data-layer="${focus}"]`); if (f) { f.focus(); f.select() }
+}
+let lastInput = null
+function step(d, focus) {
+  const i = layout.keys.findIndex(k => k.half === selected.half && k.id === selected.id)
+  select(layout.keys[(i + d + layout.keys.length) % layout.keys.length], focus)
+}
+function setLegend(k, layer, value) {
+  km.keys[k.half] = km.keys[k.half] || {}
+  km.keys[k.half][k.id] = { ...(km.keys[k.half][k.id] || {}), [layer]: value }
+  draw(); save()
+}
+// ---------- icon picker ----------
+// inserts text at the cursor of the legend field last edited
+function insert(s) {
+  if (!lastInput || !selected) return
+  const { selectionStart: a, selectionEnd: z, value } = lastInput
+  lastInput.value = value.slice(0, a) + s + value.slice(z)
+  lastInput.setSelectionRange(a + s.length, a + s.length)
+  lastInput.dispatchEvent(new Event('input'))
+  lastInput.focus()
+}
+function showIcons() {
+  const q = $('iconSearch').value.trim().toLowerCase()
+  const words = q.split(/\s+/).filter(Boolean)
+  const found = !q ? COMMON_ICONS.map(n => icons.byName[n]).filter(Boolean)
+    : icons.list.filter(i => words.every(w => i.n.includes(w) || i.l.toLowerCase().includes(w) || i.t.toLowerCase().includes(w)))
+        .sort((a, b) => (b.n.startsWith(words[0]) - a.n.startsWith(words[0])) || a.n.length - b.n.length)
+  const box = $('chips'); box.textContent = ''
+  for (const i of found.slice(0, 120)) {
+    const st = iconStyle(i.n)
+    const b = document.createElement('button')
+    b.textContent = String.fromCodePoint(parseInt(i.u, 16))
+    b.style.fontFamily = `"${FA_FAMILY[st]}"`; b.style.fontWeight = FA_WEIGHT[st]
+    b.title = `${i.l}  :${i.n}:`
+    b.addEventListener('mousedown', e => e.preventDefault())
+    b.addEventListener('click', () => insert(`:${i.n}:`))
+    box.appendChild(b)
+  }
+  $('iconHint').textContent = q && !found.length ? 'No icons match.' : found.length > 120 ? `${found.length} icons: showing 120, search for more.` : `Click an icon to put it in the legend you're editing. In a legend it's written as its name between colons, like :volume-high:.`
+}
+$('iconSearch').addEventListener('input', showIcons)
+
+// ---------- layers and style ----------
+function styleFields() {
+  const box = $('layerFields'); box.textContent = ''
+  for (const layer of km.layers) {
+    // colour | name | where on the cap
+    const row = document.createElement('div'); row.className = 'field'
+    const col = document.createElement('input'); col.type = 'color'; col.value = layer.color
+    const wrap = document.createElement('div'); wrap.className = 'row'
+    const name = document.createElement('input'); name.type = 'text'; name.value = layer.name; name.style.font = '13px system-ui, sans-serif'
+    const pos = document.createElement('select'); pos.title = 'where this layer goes on the cap'
+    for (const p of Legends.POSITIONS) { const o = document.createElement('option'); o.value = p; o.textContent = p.replace('-', ' '); pos.appendChild(o) }
+    pos.value = Legends.POSITIONS.includes(layer.side) ? layer.side : 'left'
+    col.addEventListener('input', () => { layer.color = col.value; refresh() })
+    name.addEventListener('input', () => { layer.name = name.value; refresh() })
+    pos.addEventListener('change', () => { layer.side = pos.value; draw(); save() })
+    wrap.append(name, pos); row.append(col, wrap); box.appendChild(row)
+  }
+  const seg = $('view'); seg.querySelectorAll('[data-view]:not([data-view=all]):not([data-view=base]):not([data-view=shift])').forEach(b => b.remove())
+  for (const layer of km.layers) { const b = document.createElement('button'); b.dataset.view = layer.id; b.textContent = layer.name; seg.appendChild(b) }
+  seg.querySelectorAll('button').forEach(b => { b.classList.toggle('active', b.dataset.view === view); b.onclick = () => { view = b.dataset.view; styleFields(); draw() } })
+  $('capColor').value = km.style.capColor
+  $('shiftColor').value = km.style.shift.color
+  $('shiftSize').value = km.style.shift.size
+  $('baseColor').value = km.style.base.color
+  $('baseSize').value = km.style.base.size
+  $('sideSize').value = km.style.side.size
+  $('sideInset').value = km.style.side.inset
+}
+// recolour the Shift label when its colour changes
+function refreshKey() { const lab = document.querySelector('#keyFields input[data-layer=shift]'); if (lab) lab.previousSibling.style.color = km.style.shift.color }
+function refresh() { draw(); if (selected) { const k = selected; const f = document.activeElement; select(k, f && f.dataset ? f.dataset.layer || 'base' : 'base'); if (f && !f.dataset.layer) f.focus() } save() }
+$('capColor').addEventListener('input', e => { km.style.capColor = e.target.value; draw(); save() })
+$('baseColor').addEventListener('input', e => { km.style.base.color = e.target.value; draw(); save() })
+$('shiftColor').addEventListener('input', e => { km.style.shift.color = e.target.value; draw(); refreshKey(); save() })
+for (const [id, set] of [['shiftSize', v => (km.style.shift.size = v)], ['baseSize', v => (km.style.base.size = v)], ['sideSize', v => (km.style.side.size = v)], ['sideInset', v => (km.style.side.inset = v)]]) {
+  $(id).addEventListener('input', e => { const v = parseFloat(e.target.value); if (v > 0 || (id === 'sideInset' && v >= 0)) { set(v); draw(); save() } })
+}
+
+// ---------- load and save ----------
+let saveTimer = null
+function save() {
+  $('status').className = ''; $('status').textContent = 'unsaved'
+  clearTimeout(saveTimer)
+  saveTimer = setTimeout(async () => {
+    $('status').textContent = 'saving…'
+    const r = await fetch('/api/keymap', { method: 'PUT', body: JSON.stringify({ keymap: km, baseMtime: mtime }) })
+    const j = await r.json()
+    if (r.ok) { mtime = j.mtime; $('status').textContent = 'saved' }
+    else if (r.status === 409) { $('status').className = 'err'; $('status').textContent = 'changed on disk: reload' }
+    else { $('status').className = 'err'; $('status').textContent = 'not saved: ' + (j.error || r.status) }
+  }, 500)
+}
+;(async () => {
+  try {
+    const [l, k] = await Promise.all([fetch('/output/keymap/layout.json').then(r => { if (!r.ok) throw new Error('no layout yet: is the build done?'); return r.json() }), fetch('/api/keymap').then(r => r.json())])
+    layout = l; km = k.keymap; mtime = k.mtime
+    km.style.shift = km.style.shift || { size: km.style.side.size, color: km.style.base.color }
+    // Font Awesome: its fonts (served from keymap/fonts/fontawesome) and its icon list
+    const ic = await fetch('/output/keymap/icons.json').then(r => (r.ok ? r.json() : { icons: [], styles: [] })).catch(() => ({ icons: [], styles: [] }))
+    icons = { scale: ic.scale || 1.3, list: ic.icons, codes: Object.fromEntries(ic.icons.map(i => [i.n, i])), byName: Object.fromEntries(ic.icons.map(i => [i.n, i])) }
+    const files = { solid: 'fa-solid-900.ttf', regular: 'fa-regular-400.ttf', brands: 'fa-brands-400.ttf' }
+    await Promise.all((ic.styles || []).map(async s => {
+      try { const f = new FontFace(FA_FAMILY[s], `url(/fonts/fontawesome/${files[s]})`, { weight: String(FA_WEIGHT[s]) }); document.fonts.add(await f.load()) } catch (e) { console.warn('Font Awesome', s, e) }
+    }))
+    await document.fonts.ready
+    showIcons()
+    capText = capRatioOf(TEXT_FONT); capSym = capRatioOf(SYM_FONT)
+    styleFields(); draw()
+    $('status').textContent = 'saved'
+  } catch (e) { $('status').className = 'err'; $('status').textContent = String(e.message || e) }
+})()
+</script>
+</body>
+</html>

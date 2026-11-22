@@ -78,6 +78,30 @@ units:
   usb_notch_down: 3.3 # opening reaches this far below the port centre (open to the top)
   # Moose head inlaid in the case's bottom face (art/moose.js), as its own body
   art_depth: 0.6      # 3 layers at 0.2 mm
+  # Keycaps (art/keycaps.js): low profile, flat topped (for the UV printed legends), for the
+  # KS-33's MX-style cross stem. The skirt ends level with the bottom of the stem post, and
+  # the post rides on the switch's slider, so the skirt can't reach the housing or the plate
+  # at bottom-out. Print them top down, on the bed, for a smooth flat top.
+  cap_pitch: 19       # key spacing; a cap is this wide per unit, less cap_gap
+  cap_gap: 1          # between neighbouring caps
+  cap_draft: 0.9      # the top is this much smaller than the bottom on every side
+  cap_top_t: 1.4      # top thickness
+  cap_skirt: 3.3      # skirt height below the top, the same as the stem post's length
+  cap_wall: 1.2       # skirt thickness
+  cap_r_bottom: 1.6   # corner radius at the skirt's bottom edge
+  cap_r_top: 1.2      # corner radius of the flat top
+  cap_post_d: 5.4     # stem post: fits in the switch's 5.7 mm stem well
+  cap_cross: 4.0      # the switch's cross: arm length
+  cap_cross_w: 1.1    #   and arm width
+  cap_stem_tol: 0.15  # socket clearance on each dimension of the cross (see the fit test)
+  cap_socket: 3.0     # socket depth, from the post's bottom
+  # Holder for UV printing the legends on the eufyMake E1: one half's caps at a time, top up
+  holder_pitch: 23    # slot spacing per unit
+  holder_cols: 5      # 1u slots per row
+  holder_clear: 0.25  # pocket clearance round each cap's bottom edge
+  holder_pocket: 2.4  # pocket depth (the cap sits on the pocket floor by its skirt)
+  holder_floor: 2     # under the pockets
+  holder_margin: 6    # round the slots
 points:
   zones:
     matrix:

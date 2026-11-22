@@ -240,7 +240,7 @@ ${g.nets.map(n => `| ${n.net} | ${PINS[n.net]} | ${n.pts.length} | ${n.length.to
 // their print positions): the plate on the standoffs, and the right half (mirrored about
 // x = 0 by the build) moved across so the two inner edges face each other HALF_GAP apart.
 const HALF_GAP = 40
-const placement = (results, U) => {
+const placement = (results, U, caps) => {
   const ext = makerjs.measure.modelExtents(results.outlines.case_outer.yaml)
   const dx = 2 * ext.high[0] + HALF_GAP
   const z = { switchplate: U.plate_z }
@@ -250,6 +250,12 @@ const placement = (results, U) => {
     out[`cases/${name}.stl`] = [0, 0, z[name] || 0]
     out[`cases/${name}_right.stl`] = [dx, 0, z[name] || 0]
   }
+  // the keycaps (top down, as printed) and their holder, in a row in front of the keyboard
+  const front = ext.low[1] - 30
+  out['cases/keycap_1u.stl'] = [ext.low[0] + 20, front, 0]
+  out['cases/keycap_1_5u.stl'] = [ext.low[0] + 50, front, 0]
+  out['cases/keycap_fit_test.stl'] = [ext.low[0] + 110, front, 0]
+  out['cases/keycap_holder.stl'] = [ext.low[0] + 160, front + 15, 0]
   out['cases/keyboard_case_art.stl'] = [0, 0, 0]
   out['cases/keyboard_case_art_right.stl'] = [dx, 0, 0]
   out['cases/switchplate_text.stl'] = [0, 0, U.plate_z]
@@ -344,7 +350,10 @@ const build = async ({ echo = false } = {}) => {
         if (k) { say(`text${suffix} warning: hidden under a keycap at (${p[0].toFixed(1)}, ${p[1].toFixed(1)})`); break }
       }
     }
-    put('cases/placement.json', JSON.stringify(placement(results, U), null, 2))
+    // keycaps, the keymap planner's layout, the legend holder and the UV print files
+    const ext = makerjs.measure.modelExtents(results.outlines.case_outer.yaml)
+    const caps = require('../art/keycaps').build({ results, right, U, put, say, dx: 2 * ext.high[0] + HALF_GAP })
+    put('cases/placement.json', JSON.stringify(placement(results, U, caps), null, 2))
     return { code: 0, clashes: 0, log: log.join('\n') }
   } catch (err) {
     say(String(err && err.stack || err))

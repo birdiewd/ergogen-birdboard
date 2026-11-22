@@ -49,6 +49,74 @@ first layers. Load `switchplate.stl` and `switchplate_text.stl` together as one 
 The previews, seen from above with the keycaps shaded, are `output/art/text_left.svg` and
 `text_right.svg`.
 
+## Keycaps and legends
+
+The keycaps are our own: low profile, flat topped, for the KS-33's MX-style cross stem. Their
+legends are UV printed on a eufyMake E1. Everything is generated from [config.yaml](config.yaml)
+(the `cap_*` and `holder_*` settings) and the keymap plan, [keymap/legends.json](keymap/legends.json).
+
+| File | Part |
+| --- | --- |
+| `stl/keycap_1u.stl` | 1u cap, 18 × 18 mm, 4.7 mm tall (print 46) |
+| `stl/keycap_1_5u.stl` | 1.5u cap for the inner thumb key (print 2) |
+| `stl/keycap_fit_test.stl` | four stem posts, socket clearance 0.05 to 0.2 mm (1 to 4 notches) |
+| `stl/keycap_holder.stl` | holds one half's 24 caps, top up, on the E1's bed |
+
+The caps come out top down, so the flat top prints on the bed and comes out smooth. The skirt ends
+level with the bottom of the stem post, which rides on the switch's slider, so the cap can't
+reach the plate at bottom-out.
+
+**Fit:** print the fit test first, and push each post onto a switch. Set `cap_stem_tol` to the
+clearance that grips without forcing (1 notch = 0.05 mm, 2 = 0.1, 3 = 0.15, 4 = 0.2), then
+export again.
+
+### Planning the legends
+
+Run `npm run view` and open http://localhost:4600/keymap (or **Keymap ↗** in the viewer):
+- **Keys:** both halves are shown as they're laid out. Click a key and type its legends: the
+  base legend sits in the middle, and each layer's legend sits in its own place (Lower in the
+  bottom-left corner, Raise in the top-right), smaller and in the layer's colour. A shift
+  legend, if a key has one, sits centred along the top, and the base legend moves down to make
+  room. Legends slide clear of each other, and shrink only when there isn't room. Tab, Shift+Tab and Enter move
+  between keys.
+- **Icons:** the icon panel searches Font Awesome Free's 1,895 icons by name and search terms.
+  Click one to put it in the legend you're editing. In a legend, an icon is written as its
+  name between colons, `:volume-high:`. Solid style is the default; `:regular/keyboard:` and
+  `:brands/apple:` pick the others. Unicode symbols (⌘ ⌥ ⏎ and the like) still work too.
+- **Layers and style:** each layer's name, colour and place on the cap (either side, or any
+  corner), the cap colour, and legend sizes. The buttons at
+  the top show one layer at a time.
+- Changes save to `keymap/legends.json` on their own.
+
+The legends are set in Segoe UI Bold, with Segoe UI Symbol for symbols. These are read from
+Windows' fonts folder at build time and written into the print files as outlines, so the printer
+never substitutes a font. Other TrueType fonts can be set in the plan's `style`. Symbol fonts
+draw arrows and icons small and light, so symbols are drawn larger and bolder than the font has
+them, centred on the letters' height: `style.symbol.scale` (1.4 times) and
+`style.symbol.weight` (fattened by 0.07 mm all round).
+
+Icons come from [Font Awesome Free](https://fontawesome.com) 6.7.2, whose fonts and icon list
+are kept in [keymap/fonts/fontawesome/](keymap/fonts/fontawesome/). Its icons are licensed
+under CC BY 4.0 and its fonts under the SIL OFL 1.1; see the
+[licence](keymap/fonts/fontawesome/LICENSE.txt). (Version 6 is used because version 7 ships
+only compressed web fonts.) An icon's size is set by `style.icons.scale`: its em square is
+that many cap heights (1.3).
+
+### Printing the legends on the E1
+
+`npm run stl` writes the print files to `keymap/print/`:
+- `print_left.svg`, `print_right.svg`: one half's legends each, at true size. The drawing is
+  exactly the holder's outline, 127 × 127 mm.
+- `preview_left.svg`, `preview_right.svg`: the same on the holder, with each slot's key named.
+
+1. Print the holder and the caps, then put one half's caps in the holder, top up. The 1.5u
+   cap goes in the wide slot, and the cut-off corner goes top left.
+2. In eufyMake Studio, import that half's print file. Line its edges up with the holder in
+   the camera view, and size it to 127 × 127 mm if it isn't already.
+3. Use a white underlay if the caps are a dark colour, so the coloured legends stay bright.
+4. Print, then swap in the other half's caps and do the same with its print file. The
+   preview shows which key each slot's cap belongs to.
+
 ## Wiring guide
 
 `npm run build` also draws a wiring guide for each half: `output/wiring/wiring_left.svg` and

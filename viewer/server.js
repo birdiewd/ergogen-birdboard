@@ -207,6 +207,8 @@ const schedule = rel => {
 fs.watch(ROOT, (_, name) => { if (name === 'config.yaml') schedule('config.yaml') })
 fs.watch(path.join(ROOT, 'wiring'), (_, name) => { if (name && name.endsWith('.js')) schedule() })
 fs.watch(path.join(ROOT, 'art'), (_, name) => { if (name && name.endsWith('.js')) schedule() })
+fs.mkdirSync(path.join(ROOT, 'keymap'), { recursive: true })
+fs.watch(path.join(ROOT, 'keymap'), (_, name) => { if (name === 'legends.json') schedule() })
 fs.mkdirSync(FP_DIR, { recursive: true })
 fs.watch(FP_DIR, { recursive: true }, (_, name) => {
   if (name && name.toLowerCase().endsWith('.js')) schedule('footprints/' + name.replace(/\\/g, '/'))
@@ -224,7 +226,28 @@ const sendJson = (res, code, obj) => {
   res.end(JSON.stringify(obj))
 }
 
+// The keymap plan (keymap/legends.json), read and written by the planner at /keymap. Saving
+// it rebuilds, which regenerates the legend print files.
+const KEYMAP = path.join(ROOT, 'keymap', 'legends.json')
+const handleKeymapApi = async (req, res) => {
+  if (req.method === 'GET') {
+    if (!fs.existsSync(KEYMAP)) return sendJson(res, 404, { error: 'not found' })
+    return sendJson(res, 200, { keymap: JSON.parse(fs.readFileSync(KEYMAP, 'utf8')), mtime: mtimeOf(KEYMAP) })
+  }
+  if (req.method === 'PUT') {
+    const { keymap, baseMtime } = JSON.parse(await readBody(req))
+    const current = mtimeOf(KEYMAP)
+    if (current !== null && baseMtime != null && Math.abs(current - baseMtime) > 1) return sendJson(res, 409, { error: 'changed on disk', mtime: current })
+    if (!keymap || typeof keymap !== 'object' || !keymap.keys || !keymap.layers || !keymap.style) return sendJson(res, 400, { error: 'not a keymap' })
+    fs.mkdirSync(path.dirname(KEYMAP), { recursive: true })
+    fs.writeFileSync(KEYMAP, JSON.stringify(keymap, null, 2) + '\n', 'utf8')
+    return sendJson(res, 200, { mtime: mtimeOf(KEYMAP) })
+  }
+  sendJson(res, 405, { error: 'method not allowed' })
+}
+
 const handleSourceApi = async (req, res, url, query) => {
+  if (url === '/api/keymap') return handleKeymapApi(req, res)
   if (url === '/api/sources' && req.method === 'GET') return sendJson(res, 200, { files: listSources() })
   const rel = query.get('path')
   const abs = editablePath(rel)
@@ -288,6 +311,10 @@ http.createServer((req, res) => {
   const kc = url.match(/^\/kicanvas\/[^/]+\/(.+)$/)
   if (kc) return serveUnder(res, OUTPUT, kc[1])
   if (url === '/' || url === '/index.html') return sendFile(res, path.join(__dirname, 'index.html'))
+  if (url === '/keymap' || url === '/keymap.html') return sendFile(res, path.join(__dirname, 'keymap.html'))
+  if (url === '/art/legends.js') return sendFile(res, path.join(ROOT, 'art', 'legends.js'))
+  // the Font Awesome fonts, for the keymap planner
+  if (url.startsWith('/fonts/fontawesome/')) return serveUnder(res, path.join(ROOT, 'keymap', 'fonts', 'fontawesome'), url.slice('/fonts/fontawesome/'.length))
   res.writeHead(404); res.end('not found')
 }).listen(PORT, () => {
   console.log(`Ergogen viewer on http://localhost:${PORT}`)
