@@ -59,10 +59,24 @@ legends are UV printed on a eufyMake E1. Everything is generated from [config.ya
 | --- | --- |
 | `stl/keycap_1u.stl` | 1u cap, 18 × 18 mm, 4.7 mm tall (print 46) |
 | `stl/keycap_1_5u.stl` | 1.5u cap for the inner thumb key (print 2) |
+| `stl/keycap_1u_side.stl`, `stl/keycap_1_5u_side.stl` | the same caps with a dished top and chamfered corners, printed on their side |
+| `stl/keycap_1u_side_homing.stl` | the 1u side cap with a homing bar, for F and J (print 2) |
 | `stl/keycap_fit_test.stl` | four stem posts, socket clearance 0.05 to 0.2 mm (1 to 4 notches) |
 | `stl/keycap_holder.stl` | holds one half's 24 caps, top up, on the E1's bed |
 
-The caps come out top down, so the flat top prints on the bed and comes out smooth. The skirt ends
+The caps come out top down, so the flat top prints on the bed and comes out smooth.
+
+The `_side` caps are the dished alternative. Their top has a cylindrical dish, `cap_dish`
+(0.6 mm) deep in the middle, curving front to back. They come out lying on their left side,
+flat on the bed. Each print layer then cuts through the whole curve, so it prints as smooth
+perimeters rather than steps, and the stem is printed along its arms, which makes it
+stronger. They're 0.6 mm taller at the edges than the flat caps, so the top keeps its full
+thickness in the middle. Their corners are chamfered at 45° rather than rounded. They fit the
+same holder.
+
+`keycap_1u_side_homing.stl` adds a homing bar for F and J: a rounded bar 5 mm long, standing
+0.4 mm proud of the dish, 2.5 mm in from the front edge (the `cap_homing_*` settings). In print
+orientation it runs straight up the cap's face, so it needs no support. The skirt ends
 level with the bottom of the stem post, which rides on the switch's slider, so the cap can't
 reach the plate at bottom-out.
 

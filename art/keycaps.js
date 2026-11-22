@@ -56,16 +56,32 @@ function loft(a, za, b, zb) {
 }
 `
 
-// One cap, upright (the skirt's bottom at z = 0, the top at z = H), then turned top down
-// for printing. tol: socket clearance.
-const capSource = (U, cap, tol, name = 'cap') => {
-  const H = U.cap_top_t + U.cap_skirt
+// One cap, upright (the skirt's bottom at z = 0, the top at z = H), then turned for printing:
+// top down, or with side: true lying on its left side with a cylindrical dish cap_dish deep
+// in its top, curving front to back, and chamfered (45 degree) corners rather than rounded
+// ones. homing: a homing bar near the front of the top (side caps). tol: socket clearance.
+const capSource = (U, cap, tol, name = 'cap', { side = false, homing = false } = {}) => {
+  // corners: rounded (8 points each), or for the side caps chamfered (a single flat)
+  const corner = side ? 1 : 8
+  const dish = side ? U.cap_dish : 0
+  const H = U.cap_top_t + U.cap_skirt + dish
+  // the dish: a cylinder along x through the top's front and back edges, dish below the top
+  // in the middle
+  const c = cap.top.h, R = (c * c / 4 + dish * dish) / (2 * dish || 1)
+  // lying on its left side: that face leans in by cap_draft over H, so the cap turns by a
+  // right angle plus that lean to sit flat on it
+  const lean = Math.atan2(U.cap_draft, H) * 180 / Math.PI
   // the outside tapers by cap_draft from the bottom to the top; the skirt's inside follows it
   // cap_wall in, from just below the bottom up to the underside of the top
   const at = z => U.cap_draft * z / H
-  const outer = [rrect(cap.w, cap.d, U.cap_r_bottom), rrect(cap.top.w, cap.top.h, U.cap_r_top)]
+  const outer = [rrect(cap.w, cap.d, U.cap_r_bottom, corner), rrect(cap.top.w, cap.top.h, U.cap_r_top, corner)]
   const z0 = -0.5, z1 = U.cap_skirt
-  const inner = [z0, z1].map(z => rrect(cap.w - 2 * at(z) - 2 * U.cap_wall, cap.d - 2 * at(z) - 2 * U.cap_wall, Math.max(0.4, U.cap_r_bottom - U.cap_wall)))
+  const inner = [z0, z1].map(z => rrect(cap.w - 2 * at(z) - 2 * U.cap_wall, cap.d - 2 * at(z) - 2 * U.cap_wall, Math.max(0.4, U.cap_r_bottom - U.cap_wall), corner))
+  // homing bar: a rounded bar along x, cap_homing_len long, standing cap_homing_h proud of the
+  // dished top, cap_homing_in from the front edge (front is -y, towards you)
+  const zc = H - dish + R, surface = y => zc - Math.sqrt(R * R - y * y)
+  const hy = -cap.top.h / 2 + U.cap_homing_in, hr = U.cap_homing_r
+  const hz = surface(hy) + U.cap_homing_h - hr
   const cl = U.cap_cross + tol, cw = U.cap_cross_w + tol
   return `
 function ${name}() {
@@ -74,8 +90,13 @@ function ${name}() {
   const post = CSG.cylinder({ start: [0, 0, 0], end: [0, 0, ${r3(U.cap_skirt + 0.3)}], radius: ${U.cap_post_d / 2}, resolution: 48 });
   const socket = CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cl / 2)}, ${r3(cw / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] })
     .union(CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cw / 2)}, ${r3(cl / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] }));
-  // top down for printing: the flat top on the bed
-  return body.union(post).subtract(socket).rotateX(180).translate([0, 0, ${r3(H)}]);
+  let cap = body.union(post).subtract(socket);
+${side ? `  cap = cap.subtract(CSG.cylinder({ start: [${r3(-cap.w)}, 0, ${r3(zc)}], end: [${r3(cap.w)}, 0, ${r3(zc)}], radius: ${r3(R)}, resolution: 1024 }));
+${homing ? `  cap = cap.union(CSG.roundedCylinder({ start: [${r3(-U.cap_homing_len / 2 + hr)}, ${r3(hy)}, ${r3(hz)}], end: [${r3(U.cap_homing_len / 2 - hr)}, ${r3(hy)}, ${r3(hz)}], radius: ${hr}, resolution: 32 }));\n` : ''}  // on its left side, flat on the bed, centred
+  cap = cap.rotateY(${r3(-90 - lean)});
+  const b = cap.getBounds();
+  return cap.translate([-(b[0].x + b[1].x) / 2, -(b[0].y + b[1].y) / 2, -b[0].z]);` : `  // top down for printing: the flat top on the bed
+  return cap.rotateX(180).translate([0, 0, ${r3(H)}]);`}
 }
 `
 }
@@ -231,6 +252,8 @@ const build = ({ results, right, U, put, say, dx }) => {
   for (const units of [1, 1.5]) {
     const cap = capOf(U, units)
     put(`cases/keycap_${String(units).replace('.', '_')}u.jscad`, LIB + capSource(U, cap, U.cap_stem_tol) + 'function main() { return cap(); }\n')
+    put(`cases/keycap_${String(units).replace('.', '_')}u_side.jscad`, LIB + capSource(U, cap, U.cap_stem_tol, 'cap', { side: true }) + 'function main() { return cap(); }\n')
+    if (units === 1) put('cases/keycap_1u_side_homing.jscad', LIB + capSource(U, cap, U.cap_stem_tol, 'cap', { side: true, homing: true }) + 'function main() { return cap(); }\n')
   }
   put('cases/keycap_fit_test.jscad', fitTestSource(U))
 

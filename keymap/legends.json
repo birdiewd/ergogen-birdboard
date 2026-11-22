@@ -43,7 +43,7 @@
   "keys": {
     "left": {
       "matrix_outer_top": {
-        "base": "↹",
+        "base": ":arrow-right-to-bracket:",
         "lower": "m2",
         "raise": ""
       },
@@ -73,8 +73,8 @@
         "raise": "%"
       },
       "matrix_outer_home": {
-        "base": "⌥",
-        "lower": "",
+        "base": ":circle:",
+        "lower": "m3",
         "raise": ""
       },
       "matrix_pinky_home": {
@@ -103,8 +103,8 @@
         "raise": ""
       },
       "matrix_outer_bottom": {
-        "base": "⌃",
-        "lower": "",
+        "base": ":square:",
+        "lower": "m4",
         "raise": ""
       },
       "matrix_pinky_bottom": {
@@ -120,12 +120,12 @@
       "matrix_middle_bottom": {
         "base": "C",
         "lower": "f8",
-        "raise": ":volume-low:"
+        "raise": ":volume-off:"
       },
       "matrix_index_bottom": {
         "base": "V",
         "lower": "f9",
-        "raise": ":volume-high:"
+        "raise": ":volume-low:"
       },
       "matrix_inner_bottom": {
         "base": "B",
@@ -133,8 +133,8 @@
         "raise": ""
       },
       "mod_outer_thumb": {
-        "base": "⌘",
-        "lower": "",
+        "base": ":star:",
+        "lower": "m5",
         "raise": ""
       },
       "mod_pinky_thumb": {
@@ -148,7 +148,7 @@
         "raise": ""
       },
       "thumbfan_outer_thumb": {
-        "base": "⏯",
+        "base": ":pause:",
         "lower": "",
         "raise": ""
       },
@@ -158,7 +158,7 @@
         "raise": ""
       },
       "thumbfan_home_thumb": {
-        "base": "⏎",
+        "base": "moose",
         "lower": "",
         "raise": "",
         "shift": ""
@@ -166,8 +166,8 @@
     },
     "right": {
       "matrix_outer_top": {
-        "base": ":backward-step:",
-        "lower": "",
+        "base": ":left-long:",
+        "lower": ":right-long:",
         "raise": ""
       },
       "matrix_pinky_top": {
@@ -235,7 +235,7 @@
       },
       "matrix_pinky_bottom": {
         "base": ":arrow-up:",
-        "lower": "",
+        "lower": "m6",
         "raise": "}"
       },
       "matrix_ring_bottom": {
@@ -262,23 +262,23 @@
       },
       "mod_outer_thumb": {
         "base": ":arrow-right:",
-        "lower": "",
-        "raise": "m1"
+        "lower": "m9",
+        "raise": ""
       },
       "mod_pinky_thumb": {
         "base": ":arrow-down:",
-        "lower": "",
+        "lower": "m8",
         "raise": ""
       },
       "mod_ring_thumb": {
         "base": ":arrow-left:",
-        "lower": "",
+        "lower": "m7",
         "raise": ""
       },
       "thumbfan_outer_thumb": {
-        "base": ":arrow-right-to-bracket:",
+        "base": ":power-off:",
         "lower": "",
-        "raise": "m3"
+        "raise": "m1"
       },
       "thumbfan_fn_thumb": {
         "base": ":angles-up:",
@@ -286,7 +286,7 @@
         "raise": ""
       },
       "thumbfan_home_thumb": {
-        "base": "␣",
+        "base": "moose",
         "lower": "",
         "raise": ""
       }

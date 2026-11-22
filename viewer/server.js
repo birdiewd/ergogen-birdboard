@@ -75,14 +75,25 @@ const broadcast = () => {
 }
 
 // ---------- build pipeline ----------
-const convertCases = async () => {
+// A build run outside the viewer (npm run build, npm run stl) rewrites output/ too, and can
+// delete a case file while it's being converted here. When files vanish like that, wait for
+// the other build to finish and convert what's there then, rather than reporting an error.
+const convertCases = async (attempt = 1) => {
   const jscads = listFiles(path.join(OUTPUT, 'cases'), '.jscad')
   const logs = []
+  let vanished = false
   await Promise.all(jscads.map(async rel => {
     const src = path.join(OUTPUT, 'cases', rel)
+    if (!fs.existsSync(src)) { vanished = true; return }
     const { code, log } = await run(process.execPath, [OPENJSCAD, src, '-of', 'stla', '-o', src.replace(/\.jscad$/i, '.stl')])
+    if (!fs.existsSync(src) || /ENOENT/.test(log)) { vanished = true; return }
     if (code !== 0 || /error/i.test(log)) logs.push(`${rel}:\n${log}`)
   }))
+  if (vanished) {
+    if (attempt >= 3) return 'output/ kept changing during the STL conversion (another build was running): press Rebuild.'
+    await new Promise(r => setTimeout(r, 3000))
+    return convertCases(attempt + 1)
+  }
   return logs.join('\n\n')
 }
 

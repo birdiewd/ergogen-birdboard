@@ -95,6 +95,18 @@ units:
   cap_cross_w: 1.1    #   and arm width
   cap_stem_tol: 0.15  # socket clearance on each dimension of the cross (see the fit test)
   cap_socket: 3.0     # socket depth, from the post's bottom
+  # The _side caps: printed lying on their left side, with a cylindrical dish in the top that
+  # curves front to back (each print layer then cuts the whole curve, so it comes out smooth).
+  # The dish is cap_dish deep in the middle; those caps are that much taller at the edges, so
+  # the top stays cap_top_t thick.
+  cap_dish: 0.6
+  # their corners are chamfered (45 degrees, cap_r_bottom / cap_r_top across) rather than
+  # rounded. keycap_1u_side_homing (for F and J) has a homing bar on top: a rounded bar
+  # cap_homing_len long, standing cap_homing_h proud of the dish, cap_homing_in from the front
+  cap_homing_len: 5
+  cap_homing_h: 0.4
+  cap_homing_r: 0.6
+  cap_homing_in: 2.5
   # Holder for UV printing the legends on the eufyMake E1: one half's caps at a time, top up
   holder_pitch: 23    # slot spacing per unit
   holder_cols: 5      # 1u slots per row
