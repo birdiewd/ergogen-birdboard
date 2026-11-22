@@ -58,7 +58,8 @@ module.exports = ({ at, head }) => {
     { ellipse: E(200.7, -85.8, 1.9, 2.3) },
     // brows
     { stroke: P([[166, -79.5], [173, -77.7], [181, -79.5]]), w: W },
-    { stroke: P([[194, -77.8], [199, -76.7], [203, -78.8]]), w: 1.3 },    // nostrils, clear of the insert hole by the thumb key
+    { stroke: P([[194, -77.8], [199, -76.7], [203, -78.8]]), w: 1.3 },
+    // nostrils
     { ellipse: E(210.5, -131, 2.8, 1.9, -45) },
     { ellipse: E(219, -124.5, 2.1, 1.5, -55) },
     // mouth: a smile along the bottom of the muzzle

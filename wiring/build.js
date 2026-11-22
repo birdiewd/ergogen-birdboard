@@ -301,14 +301,24 @@ const build = async ({ echo = false } = {}) => {
     const caseOutline = makerjs.chain.toKeyPoints(caseChains.sort((a, b) => b.pathLength - a.pathLength)[0], 0.5)
     const o = P.matrix_outer_top
     const headChains = makerjs.model.findChains(results.outlines._head.yaml)
-    // the head line bends round any insert hole it would otherwise run over
-    const head = Inlay.skirt(makerjs.chain.toKeyPoints(headChains.sort((a, b) => b.pathLength - a.pathLength)[0], 0.5), mountHoles, U.insert_r + 0.4 + 0.8 + 0.3)
+    // (the insert holes are blind, from the floor up, so nothing on the underside has to keep
+    // clear of them)
+    const head = makerjs.chain.toKeyPoints(headChains.sort((a, b) => b.pathLength - a.pathLength)[0], 0.5)
     const art = require('../art/moose')({ at: (x, y) => [o.x + x - 100, o.y + y + 62], head })
+    // The case's bottom, rebuilt in 0.1 mm slices up to the top of the chamfer or the art,
+    // whichever is higher: the floor's outline in each slice (inset by what the 45 degree
+    // chamfer takes at the slice's middle), minus the art in the slices the art fills
+    const dzs = 0.1, hi = Math.max(U.case_chamfer, U.art_depth)
+    const slicesAt = mirror => Array.from({ length: Math.round(hi / dzs) }, (_, i) => {
+      const z0 = i * dzs, z1 = (i + 1) * dzs, d = U.case_chamfer - (z0 + z1) / 2
+      return { z0, z1, footprint: d > 0 ? Inlay.polyExpr(Inlay.inset(caseOutline, d).map(p => (mirror ? [-p[0], p[1]] : p))) : 'case_outer_2d()' }
+    })
     for (const [suffix, mirror, base] of [['', false, results.cases.keyboard_case.jscad], ['_right', true, right.cases.keyboard_case.jscad || right.cases.keyboard_case]]) {
-      const inlay = Inlay.build({ art, holes: mountHoles, holeR: U.insert_r + 0.4, depth: U.art_depth, outline: caseOutline, mirror })
-      put(`cases/keyboard_case${suffix}.jscad`, inlay.caseWith(base))
+      // the art never reaches the chamfer
+      const inlay = Inlay.build({ art, holes: [], depth: U.art_depth, outline: caseOutline, mirror, edge: U.case_chamfer })
+      put(`cases/keyboard_case${suffix}.jscad`, inlay.caseWith(Inlay.with2d(base, 'case_outer'), slicesAt(mirror)))
       put(`cases/keyboard_case_art${suffix}.jscad`, inlay.art)
-      put(`art/moose${suffix || '_left'}.svg`, Inlay.preview(inlay.flat, caseOutline.map(p => (mirror ? [-p[0], p[1]] : p)), mountHoles.map(p => (mirror ? [-p[0], p[1]] : p))))
+      put(`art/moose${suffix || '_left'}.svg`, Inlay.preview(inlay.flat, caseOutline.map(p => (mirror ? [-p[0], p[1]] : p)), []))
       for (const w of inlay.warnings) say(`art${suffix} warning: ${w}`)
     }
     // "moose" on the plate's top face, below the thumb cluster: the word runs parallel to the
@@ -323,7 +333,9 @@ const build = async ({ echo = false } = {}) => {
       const fx = p => (mirror ? [-p[0], p[1]] : p)
       const text = require('../art/text')({ centre: fx(textCentre), angle: mirror ? -textAngle : textAngle })
       const inlay = Inlay.build({ art: text, holes: mountHoles.map(fx), holeR: U.hole_d / 2 + 0.4, depth: U.art_depth, outline: outline.map(fx), top: U.frame_t + U.plate_t })
-      put(`cases/switchplate${suffix}.jscad`, inlay.caseWith(base))
+      // the plate's top layer, from the text's depth up, rebuilt from the plate outline
+      const top = U.frame_t + U.plate_t
+      put(`cases/switchplate${suffix}.jscad`, inlay.caseWith(Inlay.with2d(base, 'plate'), [{ z0: top - U.art_depth, z1: top, footprint: 'plate_2d()' }]))
       put(`cases/switchplate_text${suffix}.jscad`, inlay.art)
       put(`art/text${suffix || '_left'}.svg`, Inlay.preview(inlay.flat, outline.map(fx), mountHoles.map(fx), { case: '#7a5536', art: '#f2ead8' }, { fromTop: true, extra: keycaps.map(k => k.map(fx)) }))
       for (const w of inlay.warnings) say(`text${suffix} warning: ${w}`)

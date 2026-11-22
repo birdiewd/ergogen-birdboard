@@ -8,11 +8,16 @@ units:
   px: kx + 4
   py: ky + 4
   # Extra board on the left and bottom edges for M2 mounting holes. With it the edge is
-  # 5 mm past the keycaps, so a hole centred 2.5 mm out clears an M2 head (3.8 mm)
-  # on the keycap side and keeps 2.5 mm to the board edge.
+  # 5 mm past the keycaps. The holes sit close to the keys: 1.9 mm past the key outline
+  # (2.15 mm past the keycap edge) still clears an M2 head (3.8 mm), and leaves 3.1 mm to
+  # the board edge, so the moose's head line on the underside runs past without bending
+  # round them.
   mount_pad: 3
   hole_d: 2.2         # M2 clearance hole (plate)
-  hole_off: 2.5       # hole centre distance outside the keycap edge
+  hole_off: 1.9       # hole centre distance outside the key outline
+  # the two holes at the ends of the inner thumb key sit closer still: the board's corner
+  # there is sharper, and the head line needs 3 mm from the upper one
+  thumb_hole_off: 1.5
   # v4.5: handwired, as in the Scotto44. There is no PCB or wiring board: the switches clip
   # into a printed plate, and the diodes and 18 AWG solid copper wire are soldered straight
   # onto the switch pins underneath (wiring/build.js draws the guide). Two pods stick out of
@@ -32,8 +37,9 @@ units:
   case_wall: 2        # wall thickness
   case_clear: 0.5     # gap between the plate edge and the wall
   case_off: case_clear + case_wall
+  case_chamfer: 0.8   # 45 degree chamfer round the case's bottom edge (wiring/build.js)
   standoff_r: 2.5     # standoff radius (5 mm)
-  insert_r: 1.6       # hole for an M2 heat-set insert (3.2 mm)
+  insert_r: 1.6       # hole for an M2 heat-set insert (3.2 mm), blind: from the floor up
   # Switch plate (Gateron LP 2.0 / KS-33 dimensional drawing)
   switch_cut: 14      # switch body at plate level: 14.00 +/- 0.03
   print_tol: 0.1      # extra clearance added to each cutout for 3D printing
@@ -237,10 +243,10 @@ outlines:
     - name: board
     - operation: add
       name: pods
-  # The moose's head line on the underside (art/moose.js): the key area grown by 1 mm.
+  # The moose's head line on the underside (art/moose.js): along the key area's edge, 2.5 mm
+  # inside the case edge, so it stays clear of the bottom chamfer.
   _head:
     - name: board
-      expand: 1
   # Reference only (not cut): where the modules sit, to check fit in the viewer.
   modules:
   # RP2040-Zero, top edge on the pod's top edge, USB-C facing up
@@ -348,13 +354,13 @@ outlines:
     where: thumbfan_home_thumb
     radius: hole_d / 2
     adjust:
-      shift: [-0.75kx - hole_off, 0]
+      shift: [-0.75kx - thumb_hole_off, 0]
   # above the right-most thumb key: past its upper end, mirroring the one below it
   - what: circle
     where: thumbfan_home_thumb
     radius: hole_d / 2
     adjust:
-      shift: [0.75kx + hole_off, 0]
+      shift: [0.75kx + thumb_hole_off, 0]
   # in the breakout's pod, below the breakout
   - what: circle
     where: matrix_inner_top
@@ -446,9 +452,11 @@ cases:
       name: module_seats
       extrude: case_floor + seat_h
       operation: add
+    # blind: the insert holes start on top of the floor, so the underside stays whole
     - what: outline
       name: case_inserts
-      extrude: case_h
+      extrude: case_h - case_floor
+      shift: [0, 0, case_floor]
       operation: subtract
     - what: outline
       name: usb_notch_mcu

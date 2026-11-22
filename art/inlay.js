@@ -73,19 +73,129 @@ const flatten = shapes => {
   return { polys, lines }
 }
 
-// JSCAD (v1) CAG expression for the flattened art
-const cagOf = ({ polys, lines }) => {
-  const parts = polys.map(p => `CAG.fromPoints(${JSON.stringify(ccw(p).map(q => q.map(r4)))})`)
-  for (const { pts, w } of lines) {
-    for (let i = 1; i < pts.length; i++) {
-      const a = pts[i - 1], b = pts[i], d = G.sub(b, a), l = G.len(d)
-      if (l < 1e-6) continue
-      const n = [-d[1] / l * w / 2, d[0] / l * w / 2]
-      parts.push(`CAG.fromPoints(${JSON.stringify(ccw([G.add(a, n), G.add(b, n), G.sub(b, n), G.sub(a, n)]).map(q => q.map(r4)))})`)
-    }
-    for (const p of pts) parts.push(`CAG.circle({ center: [${r4(p[0])}, ${r4(p[1])}], radius: ${w / 2}, resolution: 12 })`)
+// ---- stroke outlines ----
+// Each line becomes one clean outline polygon (a ring for a closed line), not a pile of
+// segment rectangles and joint circles: JSCAD's booleans go wrong on hundreds of overlapping
+// slivers with nearly coinciding corners, and then the case and the art overlap.
+
+// points every `step` mm along a polyline (closed when its last point repeats its first)
+const resample = (pts, step) => {
+  const out = [pts[0]]
+  let carry = 0
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i], l = G.dist(a, b)
+    let t = step - carry
+    while (t <= l) { out.push(G.add(a, G.mul(G.sub(b, a), t / l))); t += step }
+    carry = l - (t - step)
   }
-  return `unionAll([${parts.join(',\n    ')}])`
+  const last = pts[pts.length - 1]
+  if (G.dist(out[out.length - 1], last) > step * 0.3) out.push(last)
+  else out[out.length - 1] = last
+  return out
+}
+
+// the polyline moved sideways by d (to its left when d > 0), along each point's normal
+const side = (pts, d, closed) => {
+  const n = pts.length
+  return pts.map((p, i) => {
+    const a = closed ? pts[(i - 1 + n) % n] : pts[Math.max(0, i - 1)]
+    const b = closed ? pts[(i + 1) % n] : pts[Math.min(n - 1, i + 1)]
+    const t = G.sub(b, a), l = G.len(t) || 1
+    return G.add(p, G.mul([-t[1] / l, t[0] / l], d))
+  })
+}
+
+// cuts out the small loops an offset line makes where it folds inside a tight bend
+const unloop = (pts, closed, window = 60) => {
+  let out = pts.slice()
+  for (let i = 0; i < out.length; i++) {
+    const n = out.length
+    const lastJ = closed ? Math.min(n - 1, i + window) : Math.min(n - 2, i + window)
+    for (let j = i + 2; j <= lastJ; j++) {
+      if (closed && (j + 1) % n === i) continue
+      const X = G.segInter(out[i], out[(i + 1) % n], out[j], out[(j + 1) % n])
+      if (X) { out = [...out.slice(0, i + 1), X, ...out.slice(j + 1)]; break }
+    }
+  }
+  return out
+}
+
+const area = pts => { let a = 0; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) a += (pts[j][0] - pts[i][0]) * (pts[j][1] + pts[i][1]); return a / 2 }
+
+// whether a closed polygon crosses itself (for the checks)
+const selfCrossing = pts => {
+  const n = pts.length
+  for (let i = 0; i < n; i++) for (let j = i + 2; j < n; j++) {
+    if ((j + 1) % n === i) continue
+    if (G.segInter(pts[i], pts[(i + 1) % n], pts[j], pts[(j + 1) % n])) return pts[i]
+  }
+  return null
+}
+
+// a line of width w -> { outer, hole } outlines
+const strokeOutline = (pts, w) => {
+  const r = w / 2
+  const closed = pts.length > 2 && G.dist(pts[0], pts[pts.length - 1]) < 1e-6
+  let P = resample(pts, 0.2)
+  if (closed) {
+    P = P.slice(0, -1)
+    const a = unloop(side(P, r, true), true), b = unloop(side(P, -r, true), true)
+    return Math.abs(area(a)) > Math.abs(area(b)) ? { outer: a, hole: b } : { outer: b, hole: a }
+  }
+  const L = unloop(side(P, r, false), false), R = unloop(side(P, -r, false), false)
+  const cap = (c, from) => Array.from({ length: 9 }, (_, k) => G.add(c, G.rot([r, 0], from - 180 * (k + 1) / 10)))
+  const ang = v => Math.atan2(v[1], v[0]) * 180 / Math.PI
+  const n = P.length
+  const nEnd = G.sub(L[L.length - 1], P[n - 1]), nStart = G.sub(R[0], P[0])
+  const outer = [...L, ...cap(P[n - 1], ang(nEnd)), ...R.slice().reverse(), ...cap(P[0], ang(nStart))]
+  return { outer: unloop(outer, true) }
+}
+
+// Douglas-Peucker on a closed outline, then no two points closer than `gap`: straight runs
+// keep only their ends, curves keep what they need to stay within tol
+const simplify = (pts, tol = 0.01, gap = 0.03) => {
+  // open run q[a..b]: the points to keep, without q[b]
+  const dp = (q, a, b) => {
+    let k = -1, dmax = tol
+    for (let i = a + 1; i < b; i++) { const d = G.pointSeg(q[i], q[a], q[b]); if (d > dmax) { dmax = d; k = i } }
+    return k < 0 ? [q[a]] : [...dp(q, a, k), ...dp(q, k, b)]
+  }
+  // split the loop at the point farthest from the first, so both halves are open runs
+  let far = 0
+  pts.forEach((p, i) => { if (G.dist(p, pts[0]) > G.dist(pts[far], pts[0])) far = i })
+  const first = pts.slice(0, far + 1), second = [...pts.slice(far), pts[0]]
+  const out = [...dp(first, 0, first.length - 1), ...dp(second, 0, second.length - 1)]
+  return out.filter((p, i) => i === 0 || G.dist(p, out[i - 1]) >= gap)
+}
+
+// splits an open line wherever it has turned more than maxTurn degrees since the last split,
+// so no piece can come round onto itself (the pieces overlap at the split points)
+const splitTurns = (pts, maxTurn = 150) => {
+  const P = resample(pts, 0.2), pieces = []
+  let start = 0, turn = 0
+  for (let i = 1; i < P.length - 1; i++) {
+    const a = G.sub(P[i], P[i - 1]), b = G.sub(P[i + 1], P[i])
+    turn += Math.abs(Math.atan2(G.cross(a, b), G.dot(a, b))) * 180 / Math.PI
+    if (turn > maxTurn) { pieces.push(P.slice(start, i + 1)); start = i; turn = 0 }
+  }
+  pieces.push(P.slice(start))
+  return pieces.filter(p => p.length > 1)
+}
+
+// JSCAD (v1) CAG expression for the flattened art, and any outline that crosses itself
+const cagOf = ({ polys, lines }) => {
+  const poly = p => `CAG.fromPoints(${JSON.stringify(ccw(simplify(p)).map(q => q.map(r4)))})`
+  const parts = polys.map(poly)
+  const crossings = []
+  for (const { pts, w } of lines) {
+    const closed = pts.length > 2 && G.dist(pts[0], pts[pts.length - 1]) < 1e-6
+    for (const piece of closed ? [pts] : splitTurns(pts)) {
+      const { outer, hole } = strokeOutline(piece, w)
+      for (const o of [outer, hole]) { const x = o && selfCrossing(simplify(o)); if (x) crossings.push(x) }
+      parts.push(hole ? `${poly(outer)}.subtract(${poly(hole)})` : poly(outer))
+    }
+  }
+  return { expr: `unionAll([${parts.join(',\n    ')}])`, crossings }
 }
 
 // Every point the art reaches (for the checks)
@@ -101,13 +211,13 @@ const mirrorShape = s => {
   return s
 }
 
-// art: shapes; holes: insert hole centres; outline: the part's outer edge; mirror: right half.
+// art: shapes; holes: centres of holes through the face, which the art keeps clear of (by\n// holeR); outline: the part's outer edge; mirror: right half.
 // The art goes into the part's bottom face, or with `top` (that face's height) into its top.
 const build = ({ art, holes, holeR, depth, outline, edge = 0.5, mirror = false, top = null }) => {
   const fx = p => (mirror ? [-p[0], p[1]] : p)
   const flat = flatten(mirror ? art.map(mirrorShape) : art)
 
-  // checks: the art stays `edge` inside the floor and clear of the insert holes
+  // checks: the art stays `edge` inside the face and clear of the holes
   const warnings = []
   const outlineP = outline.map(fx), holesP = holes.map(fx)
   const pts = extentPoints(flat)
@@ -119,7 +229,9 @@ const build = ({ art, holes, holeR, depth, outline, edge = 0.5, mirror = false, 
     const p = pts.find(q => G.dist(q, h) < holeR)
     if (p) warnings.push(`art cut by the insert hole at (${h[0].toFixed(1)}, ${h[1].toFixed(1)}), near (${p[0].toFixed(1)}, ${p[1].toFixed(1)})`)
   }
-  const holeCuts = `unionAll([${holesP.map(h => `CAG.circle({ center: [${r4(h[0])}, ${r4(h[1])}], radius: ${holeR}, resolution: 24 })`).join(', ')}])`
+  const holeCuts = holesP.length ? `.subtract(unionAll([${holesP.map(h => `CAG.circle({ center: [${r4(h[0])}, ${r4(h[1])}], radius: ${holeR}, resolution: 24 })`).join(', ')}]))` : ''
+  const cag = cagOf(flat)
+  for (const x of cag.crossings) warnings.push(`a line's outline crosses itself near (${x[0].toFixed(1)}, ${x[1].toFixed(1)})`)
 
   const lib = `
 function unionAll(parts) {
@@ -130,19 +242,44 @@ function unionAll(parts) {
   }
   return parts[0];
 }
-function art2d() { return ${cagOf(flat)}.subtract(${holeCuts}); }
+function art2d() { return ${cag.expr}${holeCuts}; }
 `
   const extrude = (z0, z1) => `art2d().extrude({ offset: [0, 0, ${r4(z1 - z0)}] }).translate([0, 0, ${r4(z0)}])`
   const [z0, z1] = top === null ? [0, depth] : [top - depth, top]
   return {
     warnings,
-    // the part, with the art cut into its face
-    caseWith: base => base.replace(/function main\(\)\s*\{\s*return (\w+)\(\);\s*\}/, 'function case_base() { return $1(); }') + lib + `
+    // The part with the art cut into its face. Subtracting the art in 3D leaves stray faces
+    // and uncut patches (the art is hundreds of small overlapping pieces), so the layers the
+    // art sits in are rebuilt from 2D instead: the part's outline there minus the art, extruded.
+    // Only one flat slice through the part stays a 3D operation.
+    //   slices: [{ z0, z1, footprint }] bottom up (or top down) covering the art's depth and
+    //           anything else that has to be rebuilt (the chamfer); footprint is a JSCAD
+    //           expression for the part's 2D outline in that slice; the art is taken out of
+    //           every slice inside the art's depth
+    caseWith: (base, slices) => {
+      const lo = Math.min(...slices.map(s => s.z0)), hi = Math.max(...slices.map(s => s.z1))
+      const keep = top === null
+        ? `whole().intersect(CSG.cube({ corner1: [-1000, -1000, ${r4(hi)}], corner2: [1000, 1000, 1000] }))`
+        : `whole().intersect(CSG.cube({ corner1: [-1000, -1000, -1000], corner2: [1000, 1000, ${r4(lo)}] }))`
+      // Slices that only touch leave both faces of the join behind inside the solid (which
+      // slicers read as overlapping shells), so each slice reaches EPS into the solid next to
+      // it, where it lies wholly inside: on the bottom face upwards (the slice above is never
+      // narrower), on the top face downwards (the plate below has no art taken out).
+      const EPS = 0.02
+      const layers = slices.map(s => {
+        const inArt = s.z0 >= z0 - 1e-6 && s.z1 <= z1 + 1e-6
+        const [a, b] = top === null ? [s.z0, s.z1 + EPS] : [s.z0 - EPS, s.z1]
+        return `(${s.footprint})${inArt ? '.subtract(art2d())' : ''}.extrude({ offset: [0, 0, ${r4(b - a)}] }).translate([0, 0, ${r4(a)}])`
+      })
+      return base.replace(/function main\(\)\s*\{\s*return (\w+)\(\);\s*\}/, 'function whole() { return $1(); }') + lib + `
 function main() {
-  return case_base().subtract(${top === null ? extrude(-1, depth) : extrude(top - depth, top + 1)});
+  return unionAll([
+    ${[keep, ...layers].join(',\n    ')}
+  ]).fixTJunctions();
 }
-`,
-    art: lib + `\nfunction main() { return ${extrude(z0, z1)}; }\n`,
+`
+    },
+    art: lib + `\nfunction main() { return ${extrude(z0, z1)}.fixTJunctions(); }\n`,
     flat,
   }
 }
@@ -164,21 +301,29 @@ const preview = ({ polys, lines }, outline, holes, colours = { case: '#7a5536', 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${r4(W)} ${r4(H)}" width="${r4(W * 5)}" height="${r4(H * 5)}"><rect width="100%" height="100%" fill="#fff"/>\n${s.join('\n')}\n</svg>`
 }
 
-// A closed line's points, every step mm, with any that come within r of a hole pushed out
-// to r, so the line bends round the hole
-const skirt = (pts, holes, r, step = 0.5) => {
-  const dense = []
-  for (let i = 0; i < pts.length; i++) {
-    const a = pts[i], b = pts[(i + 1) % pts.length], n = Math.max(1, Math.ceil(G.dist(a, b) / step))
-    for (let k = 0; k < n; k++) dense.push(G.add(a, G.mul(G.sub(b, a), k / n)))
-  }
-  return dense.map(p => {
-    for (const h of holes) {
-      const d = G.dist(p, h)
-      if (d < r) return G.add(h, G.mul(G.sub(p, h), r / Math.max(d, 1e-6)))
-    }
-    return p
+
+// Ergogen's case JSCAD has a function per outline that returns it extruded. This adds a 2D
+// twin, `<name>_2d()`, to the source: the same body without the final extrude.
+const with2d = (src, name) => {
+  const m = src.match(new RegExp(`function ${name}_extrude_\\w+_outline_fn\\(\\)\\s*\\{([\\s\\S]*?)\\.extrude\\(\\{ offset: \\[0, 0, [\\d.]+\\] \\}\\);\\s*\\}`))
+  if (!m) throw new Error(`no ${name} outline in the case source`)
+  return src + `\nfunction ${name}_2d() {${m[1]};\n}\n`
+}
+
+// JSCAD expression for a closed outline (points) as a 2D shape
+const polyExpr = pts => `CAG.fromPoints(${JSON.stringify(ccw(pts).map(q => q.map(r4)))})`
+
+// A closed outline moved inwards by d: each corner along its bisector, mitred (fine for
+// small d on an outline with no part narrower than 2d)
+const inset = (pts, d) => {
+  const P = ccw(pts).filter((p, i, a) => G.dist(p, a[(i + 1) % a.length]) > 1e-6), m = P.length
+  return P.map((B, i) => {
+    const A = P[(i - 1 + m) % m], C = P[(i + 1) % m]
+    const e1 = G.sub(B, A), e2 = G.sub(C, B)
+    const n1 = G.mul([-e1[1], e1[0]], 1 / G.len(e1)), n2 = G.mul([-e2[1], e2[0]], 1 / G.len(e2))   // inward (left) normals
+    const bis = G.add(n1, n2), c = G.dot(bis, n1)
+    return c < 1e-6 ? G.add(B, G.mul(n1, d)) : G.add(B, G.mul(bis, d / c))
   })
 }
 
-module.exports = { build, preview, skirt }
+module.exports = { build, preview, polyExpr, inset, with2d }

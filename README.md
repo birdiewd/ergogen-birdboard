@@ -20,7 +20,7 @@ The printable STLs are kept in the repo in `stl/`:
 
 | File | Part |
 | --- | --- |
-| `keyboard_case.stl`, `keyboard_case_right.stl` | cases, with the module seats and standoffs |
+| `keyboard_case.stl`, `keyboard_case_right.stl` | cases, with the module seats and standoffs, and a 0.8 mm chamfer round the bottom edge |
 | `switchplate.stl`, `switchplate_right.stl` | switch plates (they also cover the pods) |
 | `keyboard_case_art.stl`, `keyboard_case_art_right.stl` | the moose on the case's underside, in a second colour |
 | `switchplate_text.stl`, `switchplate_text_right.stl` | "moose" on the plate's top, in a second colour |
