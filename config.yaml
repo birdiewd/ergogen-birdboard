@@ -93,7 +93,7 @@ units:
   cap_post_d: 5.4     # stem post: fits in the switch's 5.7 mm stem well
   cap_cross: 4.0      # the switch's cross: arm length
   cap_cross_w: 1.1    #   and arm width
-  cap_stem_tol: 0.15  # socket clearance on each dimension of the cross (see the fit test)
+  cap_stem_tol: 0.2   # socket clearance on each dimension of the cross (fit test notch 4 fit best)
   cap_socket: 3.0     # socket depth, from the post's bottom
   # The _side caps: printed lying on their left side, with a cylindrical dish in the top that
   # curves front to back (each print layer then cuts the whole curve, so it comes out smooth).

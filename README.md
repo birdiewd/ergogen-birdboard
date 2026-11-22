@@ -82,7 +82,8 @@ reach the plate at bottom-out.
 
 **Fit:** print the fit test first, and push each post onto a switch. Set `cap_stem_tol` to the
 clearance that grips without forcing (1 notch = 0.05 mm, 2 = 0.1, 3 = 0.15, 4 = 0.2), then
-export again.
+export again. On our printer, 4 notches fit best, so `cap_stem_tol` is 0.2 mm. If 0.2 is still
+tight on another printer, the fit test's range would need to go wider.
 
 ### Planning the legends
 
