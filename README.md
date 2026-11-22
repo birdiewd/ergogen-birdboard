@@ -63,6 +63,7 @@ Each cap is two parts: a shell, and a stem insert glued inside it.
 | `stl/keycap_1u_side_homing_shell.stl` | 1u shell with a homing bar, for F and J (print 2) |
 | `stl/keycap_1_5u_side_shell.stl` | 1.5u shell for the inner thumb key (print 2) |
 | `stl/keycap_1u_stem.stl`, `stl/keycap_1_5u_stem.stl` | stem inserts, one per shell (print 46 and 2) |
+| `stl/keycap_1u.stl`, `stl/keycap_1_5u.stl` | one-piece flat caps, printed top down (an alternative to the two-part caps) |
 | `stl/keycap_holder.stl` | holds one half's 24 caps, top up, on the E1's bed |
 
 **Shells.** The top has a cylindrical dish, `cap_dish` (0.6 mm) deep in the middle. On the 1u
@@ -88,6 +89,10 @@ centred. The 1.5u shell takes the 1.5u stem.
 Assembled, the top is 2 mm thick in the middle of the dish and 1.5 mm over the cross socket.
 The post's end is level with the bottom of the skirt. The post rides on the switch's slider, so
 the skirt can't reach the plate at bottom-out.
+
+**Flat caps.** `keycap_1u.stl` and `keycap_1_5u.stl` are one piece: a flat, undished top
+`cap_top_t` thick with rounded corners, and the stem post joined under it. They print top down,
+so the top comes out bed-smooth, and need no gluing.
 
 **Fit:** the cross socket's clearance is `cap_stem_tol`. It's 0.2 mm, the best fit from an
 earlier fit test of 0.05 to 0.2 mm. If the stems grip too tightly or too loosely on another

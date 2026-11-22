@@ -2,6 +2,8 @@
 //   output/keymap/layout.json          every key on both halves, for the keymap planner
 //   output/cases/keycap_*_side_shell.jscad  low-profile dished caps, printed on their side
 //   output/cases/keycap_*_stem.jscad        and their stem inserts, glued in
+//   output/cases/keycap_1u.jscad       one-piece flat caps, printed top down
+//   output/cases/keycap_1_5u.jscad
 //   output/cases/keycap_holder.jscad   holds one half's caps, top up, on the eufyMake E1's bed
 //   output/keymap/print_left.svg       the legends for one half, true size, laid out on the
 //   output/keymap/print_right.svg        holder: the drawing's edges are the holder's edges
@@ -116,6 +118,29 @@ function stem() {
     .union(CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cw / 2)}, ${r3(cl / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] }));
   // plate down for printing
   return plate.union(post).subtract(socket).rotateX(180).translate([0, 0, ${r3(z1)}]);
+}
+`
+}
+
+// A one-piece flat cap: upright (the skirt's bottom at z = 0, the top at z = H), with rounded
+// corners, a flat top cap_top_t thick and the stem post joined to it, then turned top down for
+// printing, the flat top on the bed. tol: the socket's clearance.
+const flatSource = (U, cap, tol) => {
+  const H = U.cap_top_t + U.cap_skirt
+  const at = z => U.cap_draft * z / H
+  const outer = [rrect(cap.w, cap.d, U.cap_r_bottom), rrect(cap.top.w, cap.top.h, U.cap_r_top)]
+  const z0 = -0.5, z1 = U.cap_skirt
+  const inner = [z0, z1].map(z => rrect(cap.w - 2 * at(z) - 2 * U.cap_wall, cap.d - 2 * at(z) - 2 * U.cap_wall, Math.max(0.4, U.cap_r_bottom - U.cap_wall)))
+  const cl = U.cap_cross + tol, cw = U.cap_cross_w + tol
+  return `
+function cap() {
+  const body = loft(${JSON.stringify(outer[0])}, 0, ${JSON.stringify(outer[1])}, ${r3(H)})
+    .subtract(loft(${JSON.stringify(inner[0])}, ${z0}, ${JSON.stringify(inner[1])}, ${r3(z1)}));
+  const post = CSG.cylinder({ start: [0, 0, 0], end: [0, 0, ${r3(U.cap_skirt + 0.3)}], radius: ${U.cap_post_d / 2}, resolution: 48 });
+  const socket = CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cl / 2)}, ${r3(cw / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] })
+    .union(CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cw / 2)}, ${r3(cl / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] }));
+  // top down for printing: the flat top on the bed
+  return body.union(post).subtract(socket).rotateX(180).translate([0, 0, ${r3(H)}]);
 }
 `
 }
@@ -260,6 +285,8 @@ const build = ({ results, right, U, put, say, dx }) => {
     put(`cases/keycap_${u}u_side_shell.jscad`, LIB + capSource(U, cap, { across: units > 1 }) + 'function main() { return cap(); }\n')
     if (units === 1) put('cases/keycap_1u_side_homing_shell.jscad', LIB + capSource(U, cap, { homing: true }) + 'function main() { return cap(); }\n')
     put(`cases/keycap_${u}u_stem.jscad`, LIB + stemSource(U, cap, U.cap_stem_tol) + 'function main() { return stem(); }\n')
+    // one-piece flat caps, printed top down
+    put(`cases/keycap_${u}u.jscad`, LIB + flatSource(U, cap, U.cap_stem_tol) + 'function main() { return cap(); }\n')
   }
 
   // holder: the same for both halves (each has 23 1u caps and one 1.5u)
