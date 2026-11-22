@@ -169,7 +169,7 @@
       "matrix_outer_top": {
         "base": ":left-long:",
         "lower": ":right-long:",
-        "raise": ""
+        "raise": "~"
       },
       "matrix_pinky_top": {
         "base": "P",
@@ -199,7 +199,7 @@
       "matrix_outer_home": {
         "base": "'",
         "lower": "",
-        "raise": "",
+        "raise": "`",
         "shift": "\""
       },
       "matrix_pinky_home": {
@@ -210,28 +210,28 @@
       },
       "matrix_ring_home": {
         "base": "L",
-        "lower": "",
+        "lower": ":hand-point-down:",
         "raise": "["
       },
       "matrix_middle_home": {
         "base": "K",
-        "lower": "",
+        "lower": ":hand-point-up:",
         "raise": ""
       },
       "matrix_index_home": {
         "base": "J",
-        "lower": "",
+        "lower": ":hand-point-right:",
         "raise": "+"
       },
       "matrix_inner_home": {
         "base": "H",
-        "lower": "",
+        "lower": ":hand-point-left:",
         "raise": "_"
       },
       "matrix_outer_bottom": {
         "base": "/",
-        "lower": "",
-        "raise": "",
+        "lower": "\\",
+        "raise": "|",
         "shift": "?"
       },
       "matrix_pinky_bottom": {

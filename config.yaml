@@ -95,8 +95,9 @@ units:
   cap_cross_w: 1.1    #   and arm width
   cap_stem_tol: 0.2   # socket clearance on each dimension of the cross (found with a fit test)
   cap_socket: 3.0     # socket depth, from the post's bottom
-  # The shells print lying on their left side, with a cylindrical dish in the top that curves
-  # front to back (each print layer then cuts the whole curve, so it comes out smooth). The
+  # The shells print lying on their side, with a cylindrical dish in the top: the 1u caps' dish
+  # curves front to back and they lie on their left side; the 1.5u's curves end to end and it
+  # lies on its front face (each print layer then holds the whole curve, so it comes out smooth). The
   # dish is cap_dish deep in the middle; the caps are that much taller at the edges, so the
   # top stays cap_top_t thick.
   cap_dish: 0.6
@@ -108,7 +109,9 @@ units:
   cap_homing_in: 2.5
   # The stem insert: a post on a plate that pushes up into the skirt against the top, glued.
   cap_insert_t: 0.8       # plate thickness
-  cap_insert_clear: 0.1   # plate clearance in the skirt, all round
+  # plate clearance in the skirt, all round. Negative: printed, the plates came out about
+  # 0.5 mm loose each way at +0.1, so they're now cut 0.15 mm larger than the skirt's inside
+  cap_insert_clear: -0.15
   # Holder for UV printing the legends on the eufyMake E1: one half's caps at a time, top up
   holder_pitch: 23    # slot spacing per unit
   holder_cols: 5      # 1u slots per row

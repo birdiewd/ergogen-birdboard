@@ -59,17 +59,19 @@ function loft(a, za, b, zb) {
 // dish cap_dish deep in its top, curving front to back, and chamfered (45 degree) corners;
 // then turned to lie on its left side for printing. It has no stem post: that's a separate
 // insert (stemSource), so nothing joins the underside of the top and marks the face.
-// homing: a homing bar near the front of the top.
-const capSource = (U, cap, { homing = false } = {}) => {
+// homing: a homing bar near the front of the top. across: the dish curves end to end instead
+// (along the cap's width), and the cap lies on its front face, so each print layer still
+// holds the whole curve.
+const capSource = (U, cap, { homing = false, across = false } = {}) => {
   // corners: chamfered (a single flat each)
   const corner = 1
   const dish = U.cap_dish
   const H = U.cap_top_t + U.cap_skirt + dish
-  // the dish: a cylinder along x through the top's front and back edges, dish below the top
-  // in the middle
-  const c = cap.top.h, R = (c * c / 4 + dish * dish) / (2 * dish)
-  // lying on its left side: that face leans in by cap_draft over H, so the cap turns by a
-  // right angle plus that lean to sit flat on it
+  // the dish: a cylinder through the top's front and back edges (along x), or its ends (along
+  // y), dish below the top in the middle
+  const c = across ? cap.top.w : cap.top.h, R = (c * c / 4 + dish * dish) / (2 * dish)
+  // lying on its side: that face leans in by cap_draft over H, so the cap turns by a right
+  // angle plus that lean to sit flat on it
   const lean = Math.atan2(U.cap_draft, H) * 180 / Math.PI
   // the outside tapers by cap_draft from the bottom to the top; the skirt's inside follows it
   // cap_wall in, from just below the bottom up to the underside of the top
@@ -86,9 +88,11 @@ const capSource = (U, cap, { homing = false } = {}) => {
 function cap() {
   let cap = loft(${JSON.stringify(outer[0])}, 0, ${JSON.stringify(outer[1])}, ${r3(H)})
     .subtract(loft(${JSON.stringify(inner[0])}, ${z0}, ${JSON.stringify(inner[1])}, ${r3(z1)}))
-    .subtract(CSG.cylinder({ start: [${r3(-cap.w)}, 0, ${r3(zc)}], end: [${r3(cap.w)}, 0, ${r3(zc)}], radius: ${r3(R)}, resolution: 1024 }));
-${homing ? `  cap = cap.union(CSG.roundedCylinder({ start: [${r3(-U.cap_homing_len / 2 + hr)}, ${r3(hy)}, ${r3(hz)}], end: [${r3(U.cap_homing_len / 2 - hr)}, ${r3(hy)}, ${r3(hz)}], radius: ${hr}, resolution: 32 }));\n` : ''}  // on its left side, flat on the bed, centred
-  cap = cap.rotateY(${r3(-90 - lean)});
+    .subtract(CSG.cylinder(${across
+      ? `{ start: [0, ${r3(-cap.d)}, ${r3(zc)}], end: [0, ${r3(cap.d)}, ${r3(zc)}]`
+      : `{ start: [${r3(-cap.w)}, 0, ${r3(zc)}], end: [${r3(cap.w)}, 0, ${r3(zc)}]`}, radius: ${r3(R)}, resolution: 1024 }));
+${homing && !across ? `  cap = cap.union(CSG.roundedCylinder({ start: [${r3(-U.cap_homing_len / 2 + hr)}, ${r3(hy)}, ${r3(hz)}], end: [${r3(U.cap_homing_len / 2 - hr)}, ${r3(hy)}, ${r3(hz)}], radius: ${hr}, resolution: 32 }));\n` : ''}  // on its ${across ? 'front face' : 'left side'}, flat on the bed, centred
+  cap = cap.${across ? `rotateX(${r3(90 + lean)})` : `rotateY(${r3(-90 - lean)})`};
   const b = cap.getBounds();
   return cap.translate([-(b[0].x + b[1].x) / 2, -(b[0].y + b[1].y) / 2, -b[0].z]);
 }
@@ -252,7 +256,8 @@ const build = ({ results, right, U, put, say, dx }) => {
     const cap = capOf(U, units)
     // two-part caps: the shell and its stem insert
     const u = String(units).replace('.', '_')
-    put(`cases/keycap_${u}u_side_shell.jscad`, LIB + capSource(U, cap) + 'function main() { return cap(); }\n')
+    // the 1.5u's dish curves end to end, along its length
+    put(`cases/keycap_${u}u_side_shell.jscad`, LIB + capSource(U, cap, { across: units > 1 }) + 'function main() { return cap(); }\n')
     if (units === 1) put('cases/keycap_1u_side_homing_shell.jscad', LIB + capSource(U, cap, { homing: true }) + 'function main() { return cap(); }\n')
     put(`cases/keycap_${u}u_stem.jscad`, LIB + stemSource(U, cap, U.cap_stem_tol) + 'function main() { return stem(); }\n')
   }

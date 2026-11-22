@@ -65,11 +65,12 @@ Each cap is two parts: a shell, and a stem insert glued inside it.
 | `stl/keycap_1u_stem.stl`, `stl/keycap_1_5u_stem.stl` | stem inserts, one per shell (print 46 and 2) |
 | `stl/keycap_holder.stl` | holds one half's 24 caps, top up, on the E1's bed |
 
-**Shells.** The top has a cylindrical dish, `cap_dish` (0.6 mm) deep in the middle, curving
-front to back. It's `cap_top_t` (1.2 mm) thick in the middle of the dish, and 0.6 mm thicker at
-the front and back edges. The corners are chamfered at 45°. The shells print lying on their left
-side, flat on the bed. Each print layer then cuts through the whole curve, so it prints as
-smooth perimeters rather than steps. A shell has no stem post: a post joined to the underside of
+**Shells.** The top has a cylindrical dish, `cap_dish` (0.6 mm) deep in the middle. On the 1u
+caps it curves front to back; on the 1.5u it curves end to end, along its length. The top is
+`cap_top_t` (1.2 mm) thick in the middle of the dish, and 0.6 mm thicker at the edges the dish
+rises to. The corners are chamfered at 45°. The 1u shells print lying on their left side, and
+the 1.5u on its front face, flat on the bed. Each print layer then holds the whole curve, so
+it prints as smooth perimeters rather than steps. A shell has no stem post: a post joined to the underside of
 the top would leave marks on the face, where the layers crossing it print differently.
 
 The homing shell's bar is a rounded bar 5 mm long, standing 0.4 mm proud of the dish, 2.5 mm in
@@ -77,7 +78,9 @@ from the front edge (the `cap_homing_*` settings). In print orientation it runs 
 cap's face, so it needs no support.
 
 **Stems.** A stem insert is the post on a plate, `cap_insert_t` (0.8 mm) thick, cut to the inside
-of the skirt less `cap_insert_clear` (0.1 mm) all round. It prints plate down, so the cross socket
+of the skirt plus 0.15 mm all round (`cap_insert_clear` is -0.15). At 0.1 mm clearance the
+printed plates were about 0.5 mm loose each way, so they're cut larger than drawn to make up
+for it. It prints plate down, so the cross socket
 is printed flat and the plate's glue face comes out flat. Put a little CA glue on the plate and
 push it up into the skirt until it meets the top. The plate fills the skirt, so the post ends up
 centred. The 1.5u shell takes the 1.5u stem.
