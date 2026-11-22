@@ -4,8 +4,8 @@
 //
 // The base legend sits in the middle. Each layer's legend sits at its position, smaller and in
 // the layer's colour: "left" or "right" (the middle of that edge), or a corner: "top-left",
-// "top-right", "bottom-left", "bottom-right". A shift legend sits centred along the top, and
-// the base legend moves down into the space below it. The shift and base legends stay
+// "top-right", "bottom-left", "bottom-right". A shift legend sits centred along the top; the
+// base legend stays in the middle either way. The shift and base legends stay
 // centred if they can, slide clear of a layer legend if they must, and shrink only when there
 // isn't room.
 //
@@ -70,23 +70,20 @@
     // shift: centred along the top, clear of any top-corner legends
     const shift = (legends && legends.shift) || ''
     const sh = style.shift || { size: sideSize, color: style.base.color }
-    let top0 = -H
     if (shift) {
       const { size, w, x } = centred(shift, sh.size, ...room('top-left', 'top-right'), measure)
       const y = -H + size
       out.push({ text: shift, x, y, size, color: sh.color, anchor: 'middle', layer: 'shift' })
       boxes.push({ x0: x - w / 2, x1: x + w / 2, y0: y - size, y1: y })
-      top0 = y + GAP
     }
 
-    // base: centred (below the shift legend, if any), clear of the edge legends; smaller if
-    // it would still run into a corner legend
+    // base: centred on the cap whether or not there's a shift legend, clear of the edge
+    // legends; smaller if it would still run into the shift or a corner legend
     const base = (legends && legends.base) || ''
     if (base) {
-      const mid = shift ? (top0 + H) / 2 : 0
+      const mid = 0
       const [L, R] = room('left', 'right')
-      let size = shift ? Math.max(style.base.size * MIN, Math.min(style.base.size, 2 * (H - mid))) : style.base.size
-      let c = centred(base, size, L, R, measure)
+      let c = centred(base, style.base.size, L, R, measure)
       const boxOf = c => ({ x0: c.x - c.w / 2, x1: c.x + c.w / 2, y0: mid - c.size / 2, y1: mid + c.size / 2 })
       while (boxes.some(b => overlaps(boxOf(c), b)) && c.size > style.base.size * MIN + 1e-6) {
         c = centred(base, Math.max(style.base.size * MIN, c.size * 0.95), L, R, measure)
