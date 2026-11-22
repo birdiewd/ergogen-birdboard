@@ -5,7 +5,8 @@
 // The base legend sits in the middle. Each layer's legend sits at its position, smaller and in
 // the layer's colour: "left" or "right" (the middle of that edge), or a corner: "top-left",
 // "top-right", "bottom-left", "bottom-right". A shift legend sits centred along the top; the
-// base legend stays in the middle either way. The shift and base legends stay
+// base legend stays in the middle either way. A key's baseColor, a layer's id, draws its base
+// legend in that layer's colour (for the key that switches to the layer). The shift and base legends stay
 // centred if they can, slide clear of a layer legend if they must, and shrink only when there
 // isn't room.
 //
@@ -88,7 +89,10 @@
       while (boxes.some(b => overlaps(boxOf(c), b)) && c.size > style.base.size * MIN + 1e-6) {
         c = centred(base, Math.max(style.base.size * MIN, c.size * 0.95), L, R, measure)
       }
-      out.push({ text: base, x: c.x, y: mid + c.size / 2, size: c.size, color: style.base.color, anchor: 'middle', layer: 'base' })
+      // a key can colour its base legend as a layer (baseColor: the layer's id), e.g. the key
+      // that switches to that layer
+      const tint = legends.baseColor && layers.find(l => l.id === legends.baseColor)
+      out.push({ text: base, x: c.x, y: mid + c.size / 2, size: c.size, color: tint ? tint.color : style.base.color, anchor: 'middle', layer: 'base' })
     }
     return out
   }

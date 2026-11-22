@@ -9,7 +9,7 @@
     },
     "base": {
       "size": 3,
-      "color": "#4d4d4d"
+      "color": "#383838"
     },
     "side": {
       "size": 3,
@@ -155,7 +155,8 @@
       "thumbfan_fn_thumb": {
         "base": ":angles-down:",
         "lower": "",
-        "raise": ""
+        "raise": "",
+        "baseColor": "lower"
       },
       "thumbfan_home_thumb": {
         "base": "moose",
@@ -283,7 +284,8 @@
       "thumbfan_fn_thumb": {
         "base": ":angles-up:",
         "lower": "",
-        "raise": ""
+        "raise": "",
+        "baseColor": "raise"
       },
       "thumbfan_home_thumb": {
         "base": "moose",

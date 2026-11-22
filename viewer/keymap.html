@@ -220,7 +220,16 @@ function select(k, focus = 'base') {
       if (e.key === 'Enter') { e.preventDefault(); step(e.shiftKey ? -1 : 1, f.id) }
       if (e.key === 'Tab' && f === fields[e.shiftKey ? 0 : fields.length - 1]) { e.preventDefault(); step(e.shiftKey ? -1 : 1, e.shiftKey ? fields[fields.length - 1].id : 'base') }
     })
-    row.append(lab, inp); box.appendChild(row)
+    if (f.id !== 'base') { row.append(lab, inp); box.appendChild(row); continue }
+    // the base legend's colour: the usual one, or a layer's (for the key that switches to it)
+    const tint = document.createElement('select'); tint.title = "the base legend's colour"; tint.style.maxWidth = '84px'
+    for (const [v, name] of [['', 'Base colour'], ...km.layers.map(l => [l.id, l.name])]) { const o = document.createElement('option'); o.value = v; o.textContent = name; tint.appendChild(o) }
+    const tintOf = () => km.layers.find(l => l.id === keyOf(k).baseColor)
+    tint.value = tintOf() ? keyOf(k).baseColor : ''
+    lab.style.color = tintOf() ? tintOf().color : ''
+    tint.addEventListener('change', () => { setLegend(k, 'baseColor', tint.value || undefined); lab.style.color = tintOf() ? tintOf().color : '' })
+    const wrap = document.createElement('div'); wrap.className = 'row'
+    wrap.append(inp, tint); row.append(lab, wrap); box.appendChild(row)
   }
   draw()
   const f = box.querySelector(`input[data-layer="${focus}"]`); if (f) { f.focus(); f.select() }

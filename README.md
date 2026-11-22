@@ -97,7 +97,8 @@ Run `npm run view` and open http://localhost:4600/keymap (or **Keymap ↗** in t
   base legend sits in the middle, and each layer's legend sits in its own place (Lower in the
   bottom-left corner, Raise in the top-right), smaller and in the layer's colour. A shift
   legend, if a key has one, sits centred along the top, and the base legend stays in the
-  middle. Legends slide clear of each other, and shrink only when there isn't room. Tab, Shift+Tab and Enter move
+  middle. The menu beside the base legend can draw it in a layer's colour instead, for the
+  key that switches to that layer (the middle thumb keys are Lower and Raise). Legends slide clear of each other, and shrink only when there isn't room. Tab, Shift+Tab and Enter move
   between keys.
 - **Icons:** the icon panel searches Font Awesome Free's 1,895 icons by name and search terms.
   Click one to put it in the legend you're editing. In a legend, an icon is written as its
