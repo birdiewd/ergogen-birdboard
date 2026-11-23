@@ -101,12 +101,16 @@ units:
   # dish is cap_dish deep in the middle; the caps are that much taller at the edges, so the
   # top stays cap_top_t thick.
   cap_dish: 0.6
+  # the one-piece flat caps (printed top down): the face's edge is chamfered this much, at 45°
+  cap_face_chamfer: 0.4
   # keycap_1u_side_homing_shell (for F and J) has a homing bar on top: a rounded bar
   # cap_homing_len long, standing cap_homing_h proud of the dish, cap_homing_in from the front
   cap_homing_len: 5
   cap_homing_h: 0.4
   cap_homing_r: 0.6
   cap_homing_in: 2.5
+  # keycap_1u_homing (flat, face down) has the bar cut into its face as a groove this deep
+  cap_homing_depth: 0.4
   # The stem insert: a post on a plate that pushes up into the skirt against the top, glued.
   cap_insert_t: 0.8       # plate thickness
   # plate clearance in the skirt, all round. Negative: printed, the plates came out about

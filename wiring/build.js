@@ -259,6 +259,7 @@ const placement = (results, U, caps) => {
   out['cases/keycap_1_5u_stem.stl'] = [ext.low[0] + 50, front - 30, 0]
   out['cases/keycap_1u.stl'] = [ext.low[0] + 20, front - 60, 0]
   out['cases/keycap_1_5u.stl'] = [ext.low[0] + 50, front - 60, 0]
+  out['cases/keycap_1u_homing.stl'] = [ext.low[0] + 80, front - 60, 0]
   out['cases/keycap_holder.stl'] = [ext.low[0] + 160, front + 15, 0]
   out['cases/keyboard_case_art.stl'] = [0, 0, 0]
   out['cases/keyboard_case_art_right.stl'] = [dx, 0, 0]

@@ -4,6 +4,7 @@
 //   output/cases/keycap_*_stem.jscad        and their stem inserts, glued in
 //   output/cases/keycap_1u.jscad       one-piece flat caps, printed top down
 //   output/cases/keycap_1_5u.jscad
+//   output/cases/keycap_1u_homing.jscad  with a homing groove in its face
 //   output/cases/keycap_holder.jscad   holds one half's caps, top up, on the eufyMake E1's bed
 //   output/keymap/print_left.svg       the legends for one half, true size, laid out on the
 //   output/keymap/print_right.svg        holder: the drawing's edges are the holder's edges
@@ -125,22 +126,49 @@ function stem() {
 // A one-piece flat cap: upright (the skirt's bottom at z = 0, the top at z = H), with rounded
 // corners, a flat top cap_top_t thick and the stem post joined to it, then turned top down for
 // printing, the flat top on the bed. tol: the socket's clearance.
-const flatSource = (U, cap, tol) => {
+// The face's edge is chamfered cap_face_chamfer at 45 degrees. homing: a groove in the face,
+// the homing bar's shape cut in rather than standing proud: cap_homing_len long, rounded,
+// cap_homing_depth deep, cap_homing_in from the front edge. Face down, it's a void in the first
+// layers, roofed by a short bridge.
+const flatSource = (U, cap, tol, { homing = false } = {}) => {
   const H = U.cap_top_t + U.cap_skirt
   const at = z => U.cap_draft * z / H
-  const outer = [rrect(cap.w, cap.d, U.cap_r_bottom), rrect(cap.top.w, cap.top.h, U.cap_r_top)]
+  // the outside: the drafted sides up to the chamfer, then the chamfer in to the face
+  const ch = U.cap_face_chamfer, zc = H - ch
+  const rAt = z => U.cap_r_bottom + (U.cap_r_top - U.cap_r_bottom) * z / H
+  const rings = [
+    [rrect(cap.w, cap.d, U.cap_r_bottom), 0],
+    [rrect(cap.w - 2 * at(zc), cap.d - 2 * at(zc), rAt(zc)), zc],
+    [rrect(cap.w - 2 * at(zc) - 2 * ch, cap.d - 2 * at(zc) - 2 * ch, rAt(zc) - ch), H],
+  ]
   const z0 = -0.5, z1 = U.cap_skirt
   const inner = [z0, z1].map(z => rrect(cap.w - 2 * at(z) - 2 * U.cap_wall, cap.d - 2 * at(z) - 2 * U.cap_wall, Math.max(0.4, U.cap_r_bottom - U.cap_wall)))
   const cl = U.cap_cross + tol, cw = U.cap_cross_w + tol
+  const hr = U.cap_homing_r, hy = -cap.top.h / 2 + U.cap_homing_in, hz = H + hr - U.cap_homing_depth
   return `
 function cap() {
-  const body = loft(${JSON.stringify(outer[0])}, 0, ${JSON.stringify(outer[1])}, ${r3(H)})
+  // a solid through outlines with the same number of points (counter-clockwise), each at its height
+  const rings = ${JSON.stringify(rings.map(([p, z]) => [p, r3(z)]))};
+  const V = (p, z) => new CSG.Vertex(new CSG.Vector3D(p[0], p[1], z));
+  const polys = [
+    new CSG.Polygon(rings[0][0].slice().reverse().map(p => V(p, rings[0][1]))),
+    new CSG.Polygon(rings[rings.length - 1][0].map(p => V(p, rings[rings.length - 1][1]))),
+  ];
+  for (let k = 0; k + 1 < rings.length; k++) {
+    const [a, za] = rings[k], [b, zb] = rings[k + 1];
+    for (let i = 0; i < a.length; i++) {
+      const j = (i + 1) % a.length;
+      polys.push(new CSG.Polygon([V(a[i], za), V(a[j], za), V(b[j], zb), V(b[i], zb)]));
+    }
+  }
+  const body = CSG.fromPolygons(polys)
     .subtract(loft(${JSON.stringify(inner[0])}, ${z0}, ${JSON.stringify(inner[1])}, ${r3(z1)}));
   const post = CSG.cylinder({ start: [0, 0, 0], end: [0, 0, ${r3(U.cap_skirt + 0.3)}], radius: ${U.cap_post_d / 2}, resolution: 48 });
   const socket = CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cl / 2)}, ${r3(cw / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] })
     .union(CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cw / 2)}, ${r3(cl / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] }));
-  // top down for printing: the flat top on the bed
-  return body.union(post).subtract(socket).rotateX(180).translate([0, 0, ${r3(H)}]);
+  let cap = body.union(post).subtract(socket);
+${homing ? `  cap = cap.subtract(CSG.roundedCylinder({ start: [${r3(-U.cap_homing_len / 2 + hr)}, ${r3(hy)}, ${r3(hz)}], end: [${r3(U.cap_homing_len / 2 - hr)}, ${r3(hy)}, ${r3(hz)}], radius: ${hr}, resolution: 32 }));\n` : ''}  // top down for printing: the flat top on the bed
+  return cap.rotateX(180).translate([0, 0, ${r3(H)}]);
 }
 `
 }
@@ -287,6 +315,7 @@ const build = ({ results, right, U, put, say, dx }) => {
     put(`cases/keycap_${u}u_stem.jscad`, LIB + stemSource(U, cap, U.cap_stem_tol) + 'function main() { return stem(); }\n')
     // one-piece flat caps, printed top down
     put(`cases/keycap_${u}u.jscad`, LIB + flatSource(U, cap, U.cap_stem_tol) + 'function main() { return cap(); }\n')
+    if (units === 1) put('cases/keycap_1u_homing.jscad', LIB + flatSource(U, cap, U.cap_stem_tol, { homing: true }) + 'function main() { return cap(); }\n')
   }
 
   // holder: the same for both halves (each has 23 1u caps and one 1.5u)

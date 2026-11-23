@@ -64,6 +64,7 @@ Each cap is two parts: a shell, and a stem insert glued inside it.
 | `stl/keycap_1_5u_side_shell.stl` | 1.5u shell for the inner thumb key (print 2) |
 | `stl/keycap_1u_stem.stl`, `stl/keycap_1_5u_stem.stl` | stem inserts, one per shell (print 46 and 2) |
 | `stl/keycap_1u.stl`, `stl/keycap_1_5u.stl` | one-piece flat caps, printed top down (an alternative to the two-part caps) |
+| `stl/keycap_1u_homing.stl` | flat cap with a homing groove, for F and J |
 | `stl/keycap_holder.stl` | holds one half's 24 caps, top up, on the E1's bed |
 
 **Shells.** The top has a cylindrical dish, `cap_dish` (0.6 mm) deep in the middle. On the 1u
@@ -91,7 +92,10 @@ The post's end is level with the bottom of the skirt. The post rides on the swit
 the skirt can't reach the plate at bottom-out.
 
 **Flat caps.** `keycap_1u.stl` and `keycap_1_5u.stl` are one piece: a flat, undished top
-`cap_top_t` thick with rounded corners, and the stem post joined under it. They print top down,
+`cap_top_t` thick with rounded corners, and the stem post joined under it. The face's edge is
+chamfered 0.4 mm at 45° (`cap_face_chamfer`). The homing cap has the homing bar's shape cut
+into its face instead: a rounded groove 5 mm long, `cap_homing_depth` (0.4 mm) deep and 2.5 mm
+from the front edge. Face down, it's a void in the first layers with a short bridge over it. They print top down,
 so the top comes out bed-smooth, and need no gluing.
 
 **Fit:** the cross socket's clearance is `cap_stem_tol`. It's 0.2 mm, the best fit from an
