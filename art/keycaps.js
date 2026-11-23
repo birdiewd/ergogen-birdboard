@@ -1,8 +1,6 @@
 // Keycaps, the keymap and the UV print files for their legends:
 //   output/keymap/layout.json          every key on both halves, for the keymap planner
-//   output/cases/keycap_*_side_shell.jscad  low-profile dished caps, printed on their side
-//   output/cases/keycap_*_stem.jscad        and their stem inserts, glued in
-//   output/cases/keycap_1u.jscad       one-piece flat caps, printed top down
+//   output/cases/keycap_1u.jscad       low-profile flat caps, one piece, printed top down
 //   output/cases/keycap_1_5u.jscad
 //   output/cases/keycap_1u_homing.jscad  with a homing groove in its face
 //   output/cases/keycap_holder.jscad   holds one half's caps, top up, on the eufyMake E1's bed
@@ -58,77 +56,11 @@ function loft(a, za, b, zb) {
 }
 `
 
-// One cap's shell, upright (the skirt's bottom at z = 0, the top at z = H), with a cylindrical
-// dish cap_dish deep in its top, curving front to back, and chamfered (45 degree) corners;
-// then turned to lie on its left side for printing. It has no stem post: that's a separate
-// insert (stemSource), so nothing joins the underside of the top and marks the face.
-// homing: a homing bar near the front of the top. across: the dish curves end to end instead
-// (along the cap's width), and the cap lies on its front face, so each print layer still
-// holds the whole curve.
-const capSource = (U, cap, { homing = false, across = false } = {}) => {
-  // corners: chamfered (a single flat each)
-  const corner = 1
-  const dish = U.cap_dish
-  const H = U.cap_top_t + U.cap_skirt + dish
-  // the dish: a cylinder through the top's front and back edges (along x), or its ends (along
-  // y), dish below the top in the middle
-  const c = across ? cap.top.w : cap.top.h, R = (c * c / 4 + dish * dish) / (2 * dish)
-  // lying on its side: that face leans in by cap_draft over H, so the cap turns by a right
-  // angle plus that lean to sit flat on it
-  const lean = Math.atan2(U.cap_draft, H) * 180 / Math.PI
-  // the outside tapers by cap_draft from the bottom to the top; the skirt's inside follows it
-  // cap_wall in, from just below the bottom up to the underside of the top
-  const at = z => U.cap_draft * z / H
-  const outer = [rrect(cap.w, cap.d, U.cap_r_bottom, corner), rrect(cap.top.w, cap.top.h, U.cap_r_top, corner)]
-  const z0 = -0.5, z1 = U.cap_skirt
-  const inner = [z0, z1].map(z => rrect(cap.w - 2 * at(z) - 2 * U.cap_wall, cap.d - 2 * at(z) - 2 * U.cap_wall, Math.max(0.4, U.cap_r_bottom - U.cap_wall), corner))
-  // homing bar: a rounded bar along x, cap_homing_len long, standing cap_homing_h proud of the
-  // dished top, cap_homing_in from the front edge (front is -y, towards you)
-  const zc = H - dish + R, surface = y => zc - Math.sqrt(R * R - y * y)
-  const hy = -cap.top.h / 2 + U.cap_homing_in, hr = U.cap_homing_r
-  const hz = surface(hy) + U.cap_homing_h - hr
-  return `
-function cap() {
-  let cap = loft(${JSON.stringify(outer[0])}, 0, ${JSON.stringify(outer[1])}, ${r3(H)})
-    .subtract(loft(${JSON.stringify(inner[0])}, ${z0}, ${JSON.stringify(inner[1])}, ${r3(z1)}))
-    .subtract(CSG.cylinder(${across
-      ? `{ start: [0, ${r3(-cap.d)}, ${r3(zc)}], end: [0, ${r3(cap.d)}, ${r3(zc)}]`
-      : `{ start: [${r3(-cap.w)}, 0, ${r3(zc)}], end: [${r3(cap.w)}, 0, ${r3(zc)}]`}, radius: ${r3(R)}, resolution: 1024 }));
-${homing && !across ? `  cap = cap.union(CSG.roundedCylinder({ start: [${r3(-U.cap_homing_len / 2 + hr)}, ${r3(hy)}, ${r3(hz)}], end: [${r3(U.cap_homing_len / 2 - hr)}, ${r3(hy)}, ${r3(hz)}], radius: ${hr}, resolution: 32 }));\n` : ''}  // on its ${across ? 'front face' : 'left side'}, flat on the bed, centred
-  cap = cap.${across ? `rotateX(${r3(90 + lean)})` : `rotateY(${r3(-90 - lean)})`};
-  const b = cap.getBounds();
-  return cap.translate([-(b[0].x + b[1].x) / 2, -(b[0].y + b[1].y) / 2, -b[0].z]);
-}
-`
-}
-
-// The stem insert for a two-part side cap: the post on a plate cap_insert_t thick, the shape of
-// the skirt's inside just under the top, less cap_insert_clear all round. It pushes up into the
-// shell until the plate meets the top's underside, which puts the post's end level with the
-// skirt's bottom. Printed plate down: the plate's glue face on the bed.
-const stemSource = (U, cap, tol) => {
-  const H = U.cap_top_t + U.cap_skirt + U.cap_dish, z1 = U.cap_skirt, t = U.cap_insert_t
-  const inset = U.cap_draft * z1 / H + U.cap_wall + U.cap_insert_clear
-  const plate = rrect(cap.w - 2 * inset, cap.d - 2 * inset, Math.max(0.4, U.cap_r_bottom - U.cap_wall), 1)
-  const cl = U.cap_cross + tol, cw = U.cap_cross_w + tol
-  return `
-function stem() {
-  const plate = loft(${JSON.stringify(plate)}, ${r3(z1 - t)}, ${JSON.stringify(plate)}, ${r3(z1)});
-  const post = CSG.cylinder({ start: [0, 0, 0], end: [0, 0, ${r3(z1 - t + 0.1)}], radius: ${U.cap_post_d / 2}, resolution: 48 });
-  const socket = CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cl / 2)}, ${r3(cw / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] })
-    .union(CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cw / 2)}, ${r3(cl / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] }));
-  // plate down for printing
-  return plate.union(post).subtract(socket).rotateX(180).translate([0, 0, ${r3(z1)}]);
-}
-`
-}
-
 // A one-piece flat cap: upright (the skirt's bottom at z = 0, the top at z = H), with rounded
 // corners, a flat top cap_top_t thick and the stem post joined to it, then turned top down for
 // printing, the flat top on the bed. tol: the socket's clearance.
-// The face's edge is chamfered cap_face_chamfer at 45 degrees. homing: a groove in the face,
-// the homing bar's shape cut in rather than standing proud: cap_homing_len long, rounded,
-// cap_homing_depth deep, cap_homing_in from the front edge. Face down, it's a void in the first
+// The face's edge is chamfered cap_face_chamfer at 45 degrees. homing: a rounded groove in the
+// face, cap_homing_len long, cap_homing_depth deep, cap_homing_in from the front edge. Face down, it's a void in the first
 // layers, roofed by a short bridge.
 const flatSource = (U, cap, tol, { homing = false } = {}) => {
   const H = U.cap_top_t + U.cap_skirt
@@ -307,13 +239,7 @@ const build = ({ results, right, U, put, say, dx }) => {
   // keycaps
   for (const units of [1, 1.5]) {
     const cap = capOf(U, units)
-    // two-part caps: the shell and its stem insert
     const u = String(units).replace('.', '_')
-    // the 1.5u's dish curves end to end, along its length
-    put(`cases/keycap_${u}u_side_shell.jscad`, LIB + capSource(U, cap, { across: units > 1 }) + 'function main() { return cap(); }\n')
-    if (units === 1) put('cases/keycap_1u_side_homing_shell.jscad', LIB + capSource(U, cap, { homing: true }) + 'function main() { return cap(); }\n')
-    put(`cases/keycap_${u}u_stem.jscad`, LIB + stemSource(U, cap, U.cap_stem_tol) + 'function main() { return stem(); }\n')
-    // one-piece flat caps, printed top down
     put(`cases/keycap_${u}u.jscad`, LIB + flatSource(U, cap, U.cap_stem_tol) + 'function main() { return cap(); }\n')
     if (units === 1) put('cases/keycap_1u_homing.jscad', LIB + flatSource(U, cap, U.cap_stem_tol, { homing: true }) + 'function main() { return cap(); }\n')
   }

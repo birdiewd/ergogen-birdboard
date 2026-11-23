@@ -30,13 +30,13 @@
     {
       "id": "lower",
       "name": "Lower",
-      "color": "#c8953c",
+      "color": "#f3a977",
       "side": "bottom-left"
     },
     {
       "id": "raise",
       "name": "Raise",
-      "color": "#ffb866",
+      "color": "#44d5cb",
       "side": "top-right"
     }
   ],
@@ -156,8 +156,7 @@
         "base": ":angles-down:",
         "lower": "",
         "raise": "",
-        "capColor": "lower",
-        "baseColor": "raise"
+        "capColor": "lower"
       },
       "thumbfan_home_thumb": {
         "base": "moose",
@@ -287,8 +286,7 @@
         "base": ":angles-up:",
         "lower": "",
         "raise": "",
-        "capColor": "raise",
-        "baseColor": "lower"
+        "capColor": "raise"
       },
       "thumbfan_home_thumb": {
         "base": "moose",

@@ -18,7 +18,7 @@ units:
   # the two holes at the ends of the inner thumb key sit closer still: the board's corner
   # there is sharper, and the head line needs 3 mm from the upper one
   thumb_hole_off: 1.5
-  # v4.5: handwired, as in the Scotto44. There is no PCB or wiring board: the switches clip
+  # v4.6: handwired, as in the Scotto44. There is no PCB or wiring board: the switches clip
   # into a printed plate, and the diodes and 18 AWG solid copper wire are soldered straight
   # onto the switch pins underneath (wiring/build.js draws the guide). Two pods stick out of
   # the top corners of the key area, each holding a module on the case floor with its USB-C
@@ -42,7 +42,8 @@ units:
   insert_r: 1.6       # hole for an M2 heat-set insert (3.2 mm), blind: from the floor up
   # Switch plate (Gateron LP 2.0 / KS-33 dimensional drawing)
   switch_cut: 14      # switch body at plate level: 14.00 +/- 0.03
-  print_tol: 0.1      # extra clearance added to each cutout for 3D printing
+  print_tol: 0        # extra clearance added to each switch cutout for 3D printing (at 0.1 the
+                      # printed holes were 0.1 mm loose each way)
   # Modules (both component side up, USB-C port at the top edge, pointing out of the top)
   mcu_w: 18.3         # Waveshare RP2040-Zero board
   mcu_h: 23.9
@@ -76,44 +77,30 @@ units:
   usb_z_link: case_floor + link_pcb_t + 1.6
   usb_notch_w: 13     # wall opening for a USB-C plug's overmould
   usb_notch_down: 3.3 # opening reaches this far below the port centre (open to the top)
-  # Keycaps (art/keycaps.js): low profile, for the KS-33's MX-style cross stem, in two parts:
-  # a shell (keycap_*_side_shell) and a stem insert (keycap_*_stem) glued inside it. The skirt
-  # ends level with the bottom of the stem post, and the post rides on the switch's slider, so
-  # the skirt can't reach the housing or the plate at bottom-out.
+  # Keycaps (art/keycaps.js): low profile, for the KS-33's MX-style cross stem, one piece,
+  # printed top down with the flat face on the bed. The skirt ends level with the bottom of the
+  # stem post, and the post rides on the switch's slider, so the skirt can't reach the housing
+  # or the plate at bottom-out.
   cap_pitch: 19       # key spacing; a cap is this wide per unit, less cap_gap
   cap_gap: 1          # between neighbouring caps
   cap_draft: 0.9      # the top is this much smaller than the bottom on every side
-  cap_top_t: 1.2      # shell top thickness, in the middle of the dish
+  cap_top_t: 1.2      # top thickness
   cap_skirt: 3.3      # skirt height below the top, the same as the stem's length
   cap_wall: 1.2       # skirt thickness
-  cap_r_bottom: 1.6   # corner chamfer (45 degrees) across, at the skirt's bottom edge
+  cap_r_bottom: 1.6   # corner radius at the skirt's bottom edge
   cap_r_top: 1.2      #   and at the top
   cap_post_d: 5.4     # stem post: fits in the switch's 5.7 mm stem well
   cap_cross: 4.0      # the switch's cross: arm length
   cap_cross_w: 1.1    #   and arm width
   cap_stem_tol: 0.2   # socket clearance on each dimension of the cross (found with a fit test)
   cap_socket: 3.0     # socket depth, from the post's bottom
-  # The shells print lying on their side, with a cylindrical dish in the top: the 1u caps' dish
-  # curves front to back and they lie on their left side; the 1.5u's curves end to end and it
-  # lies on its front face (each print layer then holds the whole curve, so it comes out smooth). The
-  # dish is cap_dish deep in the middle; the caps are that much taller at the edges, so the
-  # top stays cap_top_t thick.
-  cap_dish: 0.6
-  # the one-piece flat caps (printed top down): the face's edge is chamfered this much, at 45°
-  cap_face_chamfer: 0.4
-  # keycap_1u_side_homing_shell (for F and J) has a homing bar on top: a rounded bar
-  # cap_homing_len long, standing cap_homing_h proud of the dish, cap_homing_in from the front
+  cap_face_chamfer: 0.4   # the face's edge is chamfered this much, at 45 degrees
+  # keycap_1u_homing (for F and J) has a homing groove cut into its face: a rounded bar
+  # cap_homing_len long, cap_homing_r round, cap_homing_depth deep, cap_homing_in from the front
   cap_homing_len: 5
-  cap_homing_h: 0.4
   cap_homing_r: 0.6
   cap_homing_in: 2.5
-  # keycap_1u_homing (flat, face down) has the bar cut into its face as a groove this deep
   cap_homing_depth: 0.4
-  # The stem insert: a post on a plate that pushes up into the skirt against the top, glued.
-  cap_insert_t: 0.8       # plate thickness
-  # plate clearance in the skirt, all round. Negative: printed, the plates came out about
-  # 0.5 mm loose each way at +0.1, so they're now cut 0.15 mm larger than the skirt's inside
-  cap_insert_clear: -0.15
   # Holder for UV printing the legends on the eufyMake E1: one half's caps at a time, top up
   holder_pitch: 23    # slot spacing per unit
   holder_cols: 5      # 1u slots per row

@@ -1,4 +1,4 @@
-# birdboard v4.5
+# birdboard v4.6
 
 A split keyboard designed with [Ergogen](https://ergogen.xyz). The art on the case and plate,
 and the keycap legends, are UV printed. It's handwired, like the
@@ -60,52 +60,26 @@ and `moose_right.svg` (seen from below), and `output/art/text_left.svg` and `tex
 
 ## Keycaps and legends
 
-The keycaps are our own: low profile, dished, for the KS-33's MX-style cross stem. Their
+The keycaps are our own: low profile, flat, for the KS-33's MX-style cross stem. Their
 legends are UV printed on a eufyMake E1. Everything is generated from [config.yaml](config.yaml)
 (the `cap_*` and `holder_*` settings) and the keymap plan, [keymap/legends.json](keymap/legends.json).
 
-Each cap is two parts: a shell, and a stem insert glued inside it.
-
 | File | Part |
 | --- | --- |
-| `stl/keycap_1u_side_shell.stl` | 1u shell, 18 × 18 mm (print 44) |
-| `stl/keycap_1u_side_homing_shell.stl` | 1u shell with a homing bar, for F and J (print 2) |
-| `stl/keycap_1_5u_side_shell.stl` | 1.5u shell for the inner thumb key (print 2) |
-| `stl/keycap_1u_stem.stl`, `stl/keycap_1_5u_stem.stl` | stem inserts, one per shell (print 46 and 2) |
-| `stl/keycap_1u.stl`, `stl/keycap_1_5u.stl` | one-piece flat caps, printed top down (an alternative to the two-part caps) |
-| `stl/keycap_1u_homing.stl` | flat cap with a homing groove, for F and J |
+| `stl/keycap_1u.stl` | 1u cap, 18 × 18 mm (print 44) |
+| `stl/keycap_1u_homing.stl` | 1u cap with a homing groove, for F and J (print 2) |
+| `stl/keycap_1_5u.stl` | 1.5u cap for the inner thumb key, 27.5 × 18 mm (print 2) |
 | `stl/keycap_holder.stl` | holds one half's 24 caps, top up, on the E1's bed |
 
-**Shells.** The top has a cylindrical dish, `cap_dish` (0.6 mm) deep in the middle. On the 1u
-caps it curves front to back; on the 1.5u it curves end to end, along its length. The top is
-`cap_top_t` (1.2 mm) thick in the middle of the dish, and 0.6 mm thicker at the edges the dish
-rises to. The corners are chamfered at 45°. The 1u shells print lying on their left side, and
-the 1.5u on its front face, flat on the bed. Each print layer then holds the whole curve, so
-it prints as smooth perimeters rather than steps. A shell has no stem post: a post joined to the underside of
-the top would leave marks on the face, where the layers crossing it print differently.
+Each cap is one piece: a flat top `cap_top_t` (1.2 mm) thick with rounded corners, and the stem
+post joined under it, 4.5 mm tall in all. The face's edge is chamfered 0.4 mm at 45°
+(`cap_face_chamfer`). They print top down, so the face comes out bed-smooth. The post's end is
+level with the bottom of the skirt. The post rides on the switch's slider, so the skirt can't
+reach the plate at bottom-out.
 
-The homing shell's bar is a rounded bar 5 mm long, standing 0.4 mm proud of the dish, 2.5 mm in
-from the front edge (the `cap_homing_*` settings). In print orientation it runs straight up the
-cap's face, so it needs no support.
-
-**Stems.** A stem insert is the post on a plate, `cap_insert_t` (0.8 mm) thick, cut to the inside
-of the skirt plus 0.15 mm all round (`cap_insert_clear` is -0.15). At 0.1 mm clearance the
-printed plates were about 0.5 mm loose each way, so they're cut larger than drawn to make up
-for it. It prints plate down, so the cross socket
-is printed flat and the plate's glue face comes out flat. Put a little CA glue on the plate and
-push it up into the skirt until it meets the top. The plate fills the skirt, so the post ends up
-centred. The 1.5u shell takes the 1.5u stem.
-
-Assembled, the top is 2 mm thick in the middle of the dish and 1.5 mm over the cross socket.
-The post's end is level with the bottom of the skirt. The post rides on the switch's slider, so
-the skirt can't reach the plate at bottom-out.
-
-**Flat caps.** `keycap_1u.stl` and `keycap_1_5u.stl` are one piece: a flat, undished top
-`cap_top_t` thick with rounded corners, and the stem post joined under it. The face's edge is
-chamfered 0.4 mm at 45° (`cap_face_chamfer`). The homing cap has the homing bar's shape cut
-into its face instead: a rounded groove 5 mm long, `cap_homing_depth` (0.4 mm) deep and 2.5 mm
-from the front edge. Face down, it's a void in the first layers with a short bridge over it. They print top down,
-so the top comes out bed-smooth, and need no gluing.
+The homing cap has a rounded groove cut into its face, 5 mm long, `cap_homing_depth` (0.4 mm)
+deep and 2.5 mm from the front edge (the `cap_homing_*` settings). Face down, it's a void in
+the first layers with a short bridge over it.
 
 **Fit:** the cross socket's clearance is `cap_stem_tol`. It's 0.2 mm, the best fit from an
 earlier fit test of 0.05 to 0.2 mm. If the stems grip too tightly or too loosely on another
