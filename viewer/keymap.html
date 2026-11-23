@@ -192,8 +192,9 @@ function draw() {
     const cap = layout.caps[k.units]
     const g = el('g', { class: 'key', transform: `translate(${k.x} ${-k.y}) rotate(${-k.r})` }, svg)
     g.dataset.key = k.half + '/' + k.id
+    // the skirt is the cap's colour; the top may be a layer's (printed on)
     el('rect', { x: -cap.w / 2, y: -cap.d / 2, width: cap.w, height: cap.d, rx: 1.6, fill: shade(km.style.capColor, -18) }, g)
-    el('rect', { x: -cap.top.w / 2, y: -cap.top.h / 2, width: cap.top.w, height: cap.top.h, rx: 1.2, fill: km.style.capColor }, g)
+    el('rect', { x: -cap.top.w / 2, y: -cap.top.h / 2, width: cap.top.w, height: cap.top.h, rx: 1.2, fill: Legends.capFill(keyOf(k), km.style, km.layers).color }, g)
     for (const l of Legends.place(keyOf(k), cap.top, km.style, km.layers, measure)) {
       for (const t of drawLegend(g, l)) if (view !== 'all' && l.layer !== view) t.classList.add('dim')
     }
@@ -223,17 +224,31 @@ function select(k, focus = 'base') {
     if (f.id !== 'base') { row.append(lab, inp); box.appendChild(row); continue }
     // the base legend's colour: the usual one, or a layer's (for the key that switches to it)
     const tint = document.createElement('select'); tint.title = "the base legend's colour"; tint.style.maxWidth = '84px'
-    for (const [v, name] of [['', 'Base colour'], ...km.layers.map(l => [l.id, l.name])]) { const o = document.createElement('option'); o.value = v; o.textContent = name; tint.appendChild(o) }
-    const tintOf = () => km.layers.find(l => l.id === keyOf(k).baseColor)
+    for (const [v, name] of [['', 'Base colour'], ...colourChoices()]) { const o = document.createElement('option'); o.value = v; o.textContent = name; tint.appendChild(o) }
+    const tintOf = () => Legends.colorOf(keyOf(k).baseColor, km.style, km.layers)
     tint.value = tintOf() ? keyOf(k).baseColor : ''
-    lab.style.color = tintOf() ? tintOf().color : ''
-    tint.addEventListener('change', () => { setLegend(k, 'baseColor', tint.value || undefined); lab.style.color = tintOf() ? tintOf().color : '' })
+    lab.style.color = tintOf() || ''
+    tint.addEventListener('change', () => { setLegend(k, 'baseColor', tint.value || undefined); lab.style.color = tintOf() || '' })
     const wrap = document.createElement('div'); wrap.className = 'row'
     wrap.append(inp, tint); row.append(lab, wrap); box.appendChild(row)
+  }
+  // the key's top: the cap colour, or filled with a layer's colour
+  {
+    const row = document.createElement('div'); row.className = 'field'
+    const lab = document.createElement('label'); lab.textContent = 'Top'
+    const sel = document.createElement('select'); sel.title = "the colour printed over the key's top"
+    for (const [v, name] of [['', 'Cap colour'], ...colourChoices()]) { const o = document.createElement('option'); o.value = v; o.textContent = name; sel.appendChild(o) }
+    const fillOf = () => Legends.colorOf(keyOf(k).capColor, km.style, km.layers)
+    sel.value = fillOf() ? keyOf(k).capColor : ''
+    lab.style.color = fillOf() || ''
+    sel.addEventListener('change', () => { setLegend(k, 'capColor', sel.value || undefined); lab.style.color = fillOf() || '' })
+    row.append(lab, sel); box.appendChild(row)
   }
   draw()
   const f = box.querySelector(`input[data-layer="${focus}"]`); if (f) { f.focus(); f.select() }
 }
+// the colours a key's base legend or top can take besides its own: the shift colour, or a layer's
+const colourChoices = () => [['shift', 'Shift'], ...km.layers.map(l => [l.id, l.name])]
 let lastInput = null
 function step(d, focus) {
   const i = layout.keys.findIndex(k => k.half === selected.half && k.id === selected.id)

@@ -326,7 +326,15 @@ const build = ({ results, right, U, put, say, dx }) => {
   // print files, one per half, true size: the drawing is exactly the holder
   for (const half of ['left', 'right']) {
     const { slots, W, H } = holderLayout(U, perHalf(half))
-    const body = slots.map(s => legendSvg(km, km.keys[half][s.id], capOf(U, s.units).top, s.cx, s.cy)).join('\n')
+    // a key whose top is a layer's colour gets the whole top filled with it, under its legends
+    const fillOf = (s, top) => {
+      const f = Legends.capFill(km.keys[half][s.id], km.style, km.layers)
+      return `<rect x="${r3(s.cx - top.w / 2)}" y="${r3(s.cy - top.h / 2)}" width="${r3(top.w)}" height="${r3(top.h)}" rx="${U.cap_r_top}" fill="${f.color}"/>`
+    }
+    const body = slots.map(s => {
+      const top = capOf(U, s.units).top
+      return (Legends.capFill(km.keys[half][s.id], km.style, km.layers).tinted ? fillOf(s, top) + '\n' : '') + legendSvg(km, km.keys[half][s.id], top, s.cx, s.cy)
+    }).join('\n')
     put(`keymap/print_${half}.svg`, svgDoc(W, H, body))
     // preview: the holder, the caps' tops and which key each slot is
     const c = U.holder_clear
@@ -334,7 +342,7 @@ const build = ({ results, right, U, put, say, dx }) => {
     for (const s of slots) {
       const cap = capOf(U, s.units)
       prev.push(`<rect x="${r3(s.cx - cap.w / 2 - c)}" y="${r3(s.cy - cap.d / 2 - c)}" width="${r3(cap.w + 2 * c)}" height="${r3(cap.d + 2 * c)}" rx="${U.cap_r_bottom + c}" fill="#bdb6a6"/>`)
-      prev.push(`<rect x="${r3(s.cx - cap.top.w / 2)}" y="${r3(s.cy - cap.top.h / 2)}" width="${r3(cap.top.w)}" height="${r3(cap.top.h)}" rx="${U.cap_r_top}" fill="${km.style.capColor}"/>`)
+      prev.push(fillOf(s, cap.top))
       prev.push(legendSvg(km, km.keys[half][s.id], cap.top, s.cx, s.cy))
       prev.push(`<text x="${r3(s.cx)}" y="${r3(s.cy + cap.d / 2 + 1.7)}" font-size="1.3" font-family="sans-serif" text-anchor="middle" fill="#555">${s.id.replace(/^matrix_|_thumb$/g, '')}</text>`)
     }

@@ -5,8 +5,9 @@
 // The base legend sits in the middle. Each layer's legend sits at its position, smaller and in
 // the layer's colour: "left" or "right" (the middle of that edge), or a corner: "top-left",
 // "top-right", "bottom-left", "bottom-right". A shift legend sits centred along the top; the
-// base legend stays in the middle either way. A key's baseColor, a layer's id, draws its base
-// legend in that layer's colour (for the key that switches to the layer). The shift and base legends stay
+// base legend stays in the middle either way. A key's baseColor, a layer's id or 'shift', draws
+// its base legend in that colour (e.g. for the key that switches to the layer), and a key's
+// capColor fills its top with one (capFill). The shift and base legends stay
 // centred if they can, slide clear of a layer legend if they must, and shrink only when there
 // isn't room.
 //
@@ -91,11 +92,27 @@
       }
       // a key can colour its base legend as a layer (baseColor: the layer's id), e.g. the key
       // that switches to that layer
-      const tint = legends.baseColor && layers.find(l => l.id === legends.baseColor)
-      out.push({ text: base, x: c.x, y: mid + c.size / 2, size: c.size, color: tint ? tint.color : style.base.color, anchor: 'middle', layer: 'base' })
+      const tint = colorOf(legends.baseColor, style, layers)
+      out.push({ text: base, x: c.x, y: mid + c.size / 2, size: c.size, color: tint || style.base.color, anchor: 'middle', layer: 'base' })
     }
     return out
   }
 
-  return { place, pieces, POSITIONS }
+  // the colour a key's baseColor or capColor names: 'shift' (the shift legends' colour) or a
+  // layer's id; null for anything else
+  const colorOf = (id, style, layers) => {
+    if (!id) return null
+    if (id === 'shift') return style.shift.color
+    const l = layers.find(l => l.id === id)
+    return l ? l.color : null
+  }
+
+  // the colour of a key's top: the cap colour, or capColor's; and whether it's capColor's (so
+  // the print file fills the top with it)
+  const capFill = (legends, style, layers) => {
+    const tint = colorOf(legends && legends.capColor, style, layers)
+    return { color: tint || style.capColor, tinted: !!tint }
+  }
+
+  return { place, pieces, capFill, colorOf, POSITIONS }
 })

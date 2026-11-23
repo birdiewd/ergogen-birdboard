@@ -1,18 +1,18 @@
 {
   "style": {
-    "capColor": "#f3f3fb",
+    "capColor": "#7d7d7d",
     "font": "C:/Windows/Fonts/segoeuib.ttf",
     "symbolFont": "C:/Windows/Fonts/seguisym.ttf",
     "shift": {
       "size": 3,
-      "color": "#858585"
+      "color": "#3b3b3b"
     },
     "base": {
-      "size": 3,
-      "color": "#383838"
+      "size": 3.5,
+      "color": "#ededed"
     },
     "side": {
-      "size": 3,
+      "size": 2.5,
       "inset": 1.4
     },
     "symbol": {
@@ -30,13 +30,13 @@
     {
       "id": "lower",
       "name": "Lower",
-      "color": "#4aa3ff",
+      "color": "#163655",
       "side": "bottom-left"
     },
     {
       "id": "raise",
       "name": "Raise",
-      "color": "#ff7a45",
+      "color": "#6c234a",
       "side": "top-right"
     }
   ],
@@ -73,79 +73,79 @@
         "raise": "%"
       },
       "matrix_outer_home": {
-        "base": ":circle:",
+        "base": "alt",
         "lower": "m3",
         "raise": ""
       },
       "matrix_pinky_home": {
         "base": "A",
-        "lower": "f1",
-        "raise": ""
+        "lower": "gui",
+        "raise": "f1"
       },
       "matrix_ring_home": {
         "base": "S",
-        "lower": "f2",
-        "raise": ""
+        "lower": "ctrl",
+        "raise": "f2"
       },
       "matrix_middle_home": {
         "base": "D",
-        "lower": "f3",
-        "raise": ""
+        "lower": "alt",
+        "raise": "f3"
       },
       "matrix_index_home": {
         "base": "F",
-        "lower": "f4",
-        "raise": ""
+        "lower": "shift",
+        "raise": "f4"
       },
       "matrix_inner_home": {
         "base": "G",
-        "lower": "f5",
-        "raise": ""
+        "lower": "",
+        "raise": "f5"
       },
       "matrix_outer_bottom": {
-        "base": ":square:",
+        "base": "ctrl",
         "lower": "m4",
         "raise": ""
       },
       "matrix_pinky_bottom": {
         "base": "Z",
-        "lower": "f6",
-        "raise": ""
+        "lower": "",
+        "raise": "f6"
       },
       "matrix_ring_bottom": {
         "base": "X",
-        "lower": "f7",
-        "raise": ":volume-xmark:"
+        "lower": ":volume-xmark:",
+        "raise": "f7"
       },
       "matrix_middle_bottom": {
         "base": "C",
-        "lower": "f8",
-        "raise": ":volume-off:"
+        "lower": ":volume-off:",
+        "raise": "f8"
       },
       "matrix_index_bottom": {
         "base": "V",
-        "lower": "f9",
-        "raise": ":volume-low:"
+        "lower": ":volume-low:",
+        "raise": "f9"
       },
       "matrix_inner_bottom": {
         "base": "B",
-        "lower": "f10",
-        "raise": ""
+        "lower": "",
+        "raise": "f10"
       },
       "mod_outer_thumb": {
-        "base": ":star:",
+        "base": "gui",
         "lower": "m5",
         "raise": ""
       },
       "mod_pinky_thumb": {
-        "base": "",
-        "lower": "f11",
-        "raise": ""
+        "base": "f12",
+        "lower": "f13",
+        "raise": "f11"
       },
       "mod_ring_thumb": {
-        "base": "",
-        "lower": "f12",
-        "raise": ""
+        "base": "f15",
+        "lower": "f16",
+        "raise": "f14"
       },
       "thumbfan_outer_thumb": {
         "base": ":pause:",
@@ -156,13 +156,14 @@
         "base": ":angles-down:",
         "lower": "",
         "raise": "",
-        "baseColor": "lower"
+        "capColor": "lower"
       },
       "thumbfan_home_thumb": {
         "base": "moose",
         "lower": "",
         "raise": "",
-        "shift": ""
+        "shift": "",
+        "capColor": "shift"
       }
     },
     "right": {
@@ -278,14 +279,14 @@
       },
       "thumbfan_outer_thumb": {
         "base": ":power-off:",
-        "lower": "",
-        "raise": "m1"
+        "lower": "m1",
+        "raise": ""
       },
       "thumbfan_fn_thumb": {
         "base": ":angles-up:",
         "lower": "",
         "raise": "",
-        "baseColor": "raise"
+        "capColor": "raise"
       },
       "thumbfan_home_thumb": {
         "base": "moose",
