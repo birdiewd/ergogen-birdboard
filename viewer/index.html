@@ -37,10 +37,6 @@
   .pane.active { display: block; }
   .stage { width: 100%; height: 100%; display: block; cursor: grab; overflow: hidden; position: relative; }
   .stage.dragging { cursor: grabbing; }
-  #pcbWorld { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
-  #pcbWorld img { position: absolute; left: 0; top: 0; pointer-events: none; }
-  #pcbWorld.back { transform: scaleX(-1); }
-  #pcbGrid { position: absolute; inset: 0; }
   .banner { position: absolute; left: 12px; right: 12px; bottom: 12px; max-height: 40%; overflow: auto; background: #2d1517; border: 1px solid var(--err); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; font: 12px/1.4 ui-monospace, monospace; display: none; z-index: 5; }
   .empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); pointer-events: none; text-align: center; padding: 20px; }
   #threeCanvas { width: 100%; height: 100%; display: block; }
@@ -59,11 +55,6 @@
   #edNote button { margin-left: 6px; }
   #splitter { position: absolute; top: 0; right: -4px; width: 8px; height: 100%; cursor: col-resize; z-index: 10; }
   #editorBtn.on { background: #1f3b5c; border-color: #2f5f93; }
-  .seg { display: flex; gap: 2px; background: #15171b; padding: 2px; border-radius: 8px; margin-bottom: 10px; }
-  .seg button { flex: 1; border: 0; background: transparent; color: var(--muted); padding: 4px 6px; border-radius: 6px; }
-  .seg button.active { background: #2b3038; color: var(--text); }
-  #kcHost { position: absolute; inset: 0; display: none; }
-  #kcHost kicanvas-embed { display: block; width: 100%; height: 100%; }
 </style>
 <link rel="stylesheet" data-name="vs/editor/editor.main" href="/vendor/monaco/vs/editor/editor.main.css">
 <script type="importmap">
@@ -75,15 +66,12 @@
   <h1>Ergogen viewer</h1>
   <div class="tabs">
     <button data-tab="outlines">Outlines</button>
-    <button data-tab="pcb">PCB</button>
     <button data-tab="cases">3D</button>
   </div>
   <a href="/keymap" style="color: var(--muted); text-decoration: none; padding: 4px 8px" title="Plan the key legends and print them">Keymap ↗</a>
   <div class="status"><span class="dot" id="dot"></span><span id="statusText">connecting…</span></div>
-  <div class="status" id="pcbStatusBox" style="display:none"><span class="dot" id="pcbDot"></span><span id="pcbStatusText"></span></div>
   <div class="spacer"></div>
   <label class="tog" id="gridTog"><input type="checkbox" id="grid" checked> grid</label>
-  <label class="tog" id="backTog" style="display:none"><input type="checkbox" id="back"> view from back</label>
   <button id="editorBtn" title="Show or hide the editor (E)">Editor</button>
   <button id="fit" title="Fit to view (F)">Fit</button>
   <button id="rebuild" title="Rebuild now (R)">Rebuild</button>
@@ -91,15 +79,6 @@
 </header>
 <aside>
   <div data-side="outlines"><h2>Outlines</h2><div id="dxfList"></div></div>
-  <div data-side="pcb">
-    <h2>PCB</h2>
-    <div class="seg" id="pcbMode">
-      <button data-mode="kicanvas" title="Interactive viewer: layers, zoom, click a footprint or pad to inspect it">KiCanvas</button>
-      <button data-mode="plot" title="Layer images drawn by KiCad's own command-line tool">KiCad plot</button>
-    </div>
-    <div id="kcSide"><select id="kcSelect"></select><div class="hint">Layers, zoom and the inspector are in the KiCanvas panels on the right of the view.</div></div>
-    <div id="plotSide"><select id="pcbSelect"></select><div id="layerList"></div></div>
-  </div>
   <div data-side="cases"><h2>Cases</h2><div id="stlList"></div></div>
 </aside>
 <section id="editor">
@@ -128,11 +107,6 @@
     </svg>
     <div class="empty" id="dxfEmpty">No outlines selected</div>
   </section>
-  <section class="pane" data-pane="pcb">
-    <div class="stage" id="pcbStage"><div id="pcbWorld"></div></div>
-    <div id="kcHost"></div>
-    <div class="empty" id="pcbEmpty">Waiting for the PCB plot…</div>
-  </section>
   <section class="pane" data-pane="cases">
     <canvas id="threeCanvas"></canvas>
     <div class="empty" id="stlEmpty">No cases yet. Add a <code>cases:</code> section to config.yaml and they will appear here.</div>
@@ -141,7 +115,6 @@
 </main>
 <script type="module">
 const COLORS = ['#58a6ff', '#f0883e', '#3fb950', '#d2a8ff', '#ff7b72', '#e3b341', '#56d4dd', '#f778ba']
-const LAYER_COLORS = { 'F.Cu': '#C83434', 'B.Cu': '#4D7FC4', 'F.Silkscreen': '#F2EDA1', 'B.Silkscreen': '#E8B2A7', 'F.Fab': '#AFAFAF', 'B.Fab': '#585D84', 'Dwgs.User': '#C2C2C2', 'Edge.Cuts': '#D0D2CD' }
 const $ = id => document.getElementById(id)
 const store = (k, v) => v === undefined ? JSON.parse(localStorage.getItem('viewer:' + k) || 'null') : localStorage.setItem('viewer:' + k, JSON.stringify(v))
 let st = null
@@ -149,13 +122,9 @@ let st = null
 // =====================================================================
 // Tabs
 // =====================================================================
-let tab = store('tab') || 'outlines'
-let pcbMode = store('pcbMode') || 'kicanvas'
+let tab = ['outlines', 'cases'].includes(store('tab')) ? store('tab') : 'outlines'
 function updateHeader() {
-  const plot = tab === 'pcb' && pcbMode === 'plot', kicanvas = tab === 'pcb' && pcbMode === 'kicanvas'
-  $('gridTog').style.display = tab === 'outlines' || plot ? '' : 'none'
-  $('backTog').style.display = plot ? '' : 'none'
-  $('fit').style.display = kicanvas ? 'none' : ''
+  $('gridTog').style.display = tab === 'outlines' ? '' : 'none'
 }
 function setTab(t) {
   tab = t; store('tab', t)
@@ -166,28 +135,14 @@ function setTab(t) {
   $('coords').textContent = ''
   showBanner()
   if (t === 'outlines') dxf.apply()
-  if (t === 'pcb') setPcbMode(pcbMode)
   if (t === 'cases') three.activate()
 }
-function setPcbMode(m) {
-  pcbMode = m; store('pcbMode', m)
-  document.querySelectorAll('#pcbMode button').forEach(b => b.classList.toggle('active', b.dataset.mode === m))
-  $('kcHost').style.display = m === 'kicanvas' ? 'block' : 'none'
-  $('pcbStage').style.display = m === 'plot' ? '' : 'none'
-  $('kcSide').style.display = m === 'kicanvas' ? '' : 'none'
-  $('plotSide').style.display = m === 'plot' ? '' : 'none'
-  updateHeader()
-  if (m === 'kicanvas') kc.render()
-  else { $('pcbEmpty').style.display = pcb.hasBoard() ? 'none' : 'grid'; pcb.apply() }
-}
-document.querySelectorAll('#pcbMode button').forEach(b => (b.onclick = () => setPcbMode(b.dataset.mode)))
 document.querySelectorAll('.tabs button').forEach(b => (b.onclick = () => setTab(b.dataset.tab)))
 
 function showBanner() {
   let text = ''
   if (st) {
     if (st.status === 'error') text = st.log
-    else if (tab === 'pcb' && (st.pcbStatus === 'error' || st.pcbStatus === 'unavailable')) text = st.pcbLog
     else if (tab === 'cases' && st.stlLog) text = st.stlLog
   }
   $('error').textContent = text
@@ -195,7 +150,7 @@ function showBanner() {
 }
 
 // =====================================================================
-// Pan / zoom helper (shared by outlines and PCB)
+// Pan / zoom helper
 // =====================================================================
 function panZoom(el, onApply, onMove) {
   const v = { x: 0, y: 0, s: 1, set: false }
@@ -352,130 +307,6 @@ const dxf = (() => {
     list(); draw()
   }
   return { update, fit, apply: () => { if (first && shown().length) { first = false; fit() } else apply() } }
-})()
-
-// =====================================================================
-// PCB (layer SVGs plotted by kicad-cli)
-// =====================================================================
-const pcb = (() => {
-  const stage = $('pcbStage'), world = $('pcbWorld')
-  let boards = [], current = store('pcb'), box = null, first = true, stamp = 0
-  const sel = new Set(store('pcbLayers') || ['B.Cu', 'F.Cu', 'F.Silkscreen', 'F.Fab', 'Edge.Cuts'])
-  const v = panZoom(stage, () => apply(), (mx, my) => {
-    if (!box) return
-    let x = (mx - v.x) / v.s, y = (my - v.y) / v.s
-    if ($('back').checked) x = box.w - x
-    $('coords').textContent = `x ${x.toFixed(2)}  y ${y.toFixed(2)} mm (board area)`
-  })
-  const board = () => boards.find(b => b.name === current) || boards[0]
-
-  function apply() {
-    if (!box || !v.set) return
-    world.style.left = v.x + 'px'; world.style.top = v.y + 'px'
-    world.style.width = box.w * v.s + 'px'; world.style.height = box.h * v.s + 'px'
-    world.style.transformOrigin = `${box.w * v.s / 2}px 0`
-    for (const img of world.children) { img.style.width = box.w * v.s + 'px'; img.style.height = box.h * v.s + 'px' }
-    stage.style.backgroundImage = $('grid').checked
-      ? `linear-gradient(#323743 1px, transparent 1px), linear-gradient(90deg, #323743 1px, transparent 1px)` : 'none'
-    stage.style.backgroundSize = `${10 * v.s}px ${10 * v.s}px`
-    stage.style.backgroundPosition = `${v.x}px ${v.y}px`
-  }
-  function fit() {
-    const r = stage.getBoundingClientRect()
-    if (!box || !r.width) return
-    const pad = 30
-    v.s = Math.min((r.width - 2 * pad) / box.w, (r.height - 2 * pad) / box.h)
-    v.x = (r.width - box.w * v.s) / 2; v.y = (r.height - box.h * v.s) / 2; v.set = true
-    apply()
-  }
-  function list() {
-    const s = $('pcbSelect')
-    s.style.display = boards.length > 1 ? '' : 'none'
-    s.innerHTML = boards.map(b => `<option ${b === board() ? 'selected' : ''}>${b.name}</option>`).join('')
-    s.onchange = () => { current = s.value; store('pcb', current); first = true; draw() }
-    const el = $('layerList'); el.innerHTML = ''
-    const b = board()
-    if (!b) { el.innerHTML = '<div class="hint">No PCBs</div>'; return }
-    for (const { layer } of [...b.layers].reverse()) {
-      const row = document.createElement('label'); row.className = 'item'
-      row.innerHTML = `<input type="checkbox" ${sel.has(layer) ? 'checked' : ''}><span class="swatch box" style="background:${LAYER_COLORS[layer] || '#888'}"></span><span class="name">${layer}</span>`
-      row.querySelector('input').onchange = e => { e.target.checked ? sel.add(layer) : sel.delete(layer); store('pcbLayers', [...sel]); draw() }
-      el.appendChild(row)
-    }
-  }
-  async function draw() {
-    const b = board()
-    world.innerHTML = ''
-    if (pcbMode === 'plot') $('pcbEmpty').style.display = b ? 'none' : 'grid'
-    if (!b) return
-    if (!box && b.layers.length) {
-      const t = await (await fetch('/output/' + b.layers[0].file + '?t=' + stamp)).text()
-      const m = t.match(/viewBox="([\d.\-]+) ([\d.\-]+) ([\d.]+) ([\d.]+)"/)
-      box = m ? { w: +m[3], h: +m[4] } : { w: 100, h: 100 }
-    }
-    const back = $('back').checked
-    world.classList.toggle('back', back)
-    const layers = b.layers.filter(l => sel.has(l.layer))
-    // Bottom-to-top stacking; from the back, the B.* layers go on top.
-    const ordered = back ? [...layers].sort((a, c) => (a.layer.startsWith('B.') - c.layer.startsWith('B.')) || 0) : layers
-    for (const l of ordered) {
-      const img = new Image()
-      img.src = '/output/' + l.file + '?t=' + stamp
-      if (/Cu$/.test(l.layer)) img.style.opacity = '0.85'
-      world.appendChild(img)
-    }
-    if (first && tab === 'pcb') { first = false; fit() } else apply()
-  }
-  async function update(newBoards) {
-    boards = newBoards; box = null; stamp = Date.now()
-    list(); await draw()
-  }
-  $('back').onchange = () => draw()
-  return { update, fit, hasBoard: () => !!board(), apply: () => { if (first && box) { first = false; fit() } else apply() } }
-})()
-
-// =====================================================================
-// PCB in KiCanvas (viewer/vendor/kicanvas.js, from kicanvas.org)
-// =====================================================================
-const kc = (() => {
-  const host = $('kcHost')
-  let files = [], stamp = '', rendered = '', loading = null
-  const name = f => f.replace(/^pcbs\//, '').replace(/\.kicad_pcb$/i, '')
-  const file = () => files.find(f => name(f) === store('pcb')) || files[0]
-  const load = () => (loading = loading || new Promise((resolve, reject) => {
-    const s = document.createElement('script')
-    s.src = '/vendor/kicanvas.js'
-    s.onload = () => customElements.whenDefined('kicanvas-embed').then(resolve)
-    s.onerror = () => reject(new Error('Could not load viewer/vendor/kicanvas.js'))
-    document.head.appendChild(s)
-  }))
-  function list() {
-    const s = $('kcSelect')
-    s.style.display = files.length > 1 ? '' : 'none'
-    s.innerHTML = files.map(f => `<option value="${f}" ${f === file() ? 'selected' : ''}>${name(f)}</option>`).join('')
-    s.onchange = () => { store('pcb', name(s.value)); render() }
-  }
-  async function render() {
-    if (tab !== 'pcb' || pcbMode !== 'kicanvas') return
-    const f = file()
-    $('pcbEmpty').style.display = f ? 'none' : 'grid'
-    if (!f) { host.innerHTML = ''; rendered = ''; return }
-    const key = stamp + '|' + f
-    if (key === rendered) return
-    rendered = key
-    try { await load() } catch (err) { host.innerHTML = `<div class="empty">${err.message}</div>`; return }
-    // A fresh element per build: KiCanvas loads its source once.
-    const el = document.createElement('kicanvas-embed')
-    el.setAttribute('src', `/kicanvas/${stamp}/${f}`)
-    el.setAttribute('controls', 'full')
-    host.replaceChildren(el)
-  }
-  function update(newFiles, time) {
-    files = newFiles
-    stamp = String(Date.parse(time) || Date.now())
-    list(); render()
-  }
-  return { update, render }
 })()
 
 // =====================================================================
@@ -803,11 +634,11 @@ const editor = (() => {
 // =====================================================================
 // Controls and live updates
 // =====================================================================
-const fitCurrent = () => (tab === 'outlines' ? dxf.fit() : tab === 'pcb' ? pcb.fit() : three.fit())
+const fitCurrent = () => (tab === 'outlines' ? dxf.fit() : three.fit())
 $('fit').onclick = fitCurrent
 $('rebuild').onclick = () => fetch('/rebuild', { method: 'POST' })
-$('grid').onchange = () => (tab === 'pcb' ? pcb.apply() : dxf.apply())
-window.addEventListener('resize', () => (tab === 'pcb' ? pcb.apply() : dxf.apply()))
+$('grid').onchange = () => dxf.apply()
+window.addEventListener('resize', () => dxf.apply())
 window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.closest?.('#editor')) return
   if (e.ctrlKey || e.metaKey || e.altKey) return
@@ -816,7 +647,7 @@ window.addEventListener('keydown', e => {
   if (e.key === 'r' || e.key === 'R') fetch('/rebuild', { method: 'POST' })
 })
 
-let lastBuild = null, lastPcb = null
+let lastBuild = null
 const es = new EventSource('/events')
 es.onmessage = async ev => {
   const prev = st
@@ -824,18 +655,10 @@ es.onmessage = async ev => {
   $('dot').className = 'dot ' + st.status
   const t = st.time ? new Date(st.time).toLocaleTimeString() : ''
   $('statusText').textContent = { idle: 'waiting for first build', building: 'building…', ok: `built ${t}`, error: `build failed ${t}` }[st.status]
-  $('pcbStatusBox').style.display = st.pcbStatus === 'idle' ? 'none' : ''
-  $('pcbDot').className = 'dot ' + st.pcbStatus
-  $('pcbStatusText').textContent = { building: 'plotting PCB…', ok: 'PCB plotted', error: 'PCB plot failed', unavailable: 'no kicad-cli' }[st.pcbStatus] || ''
   showBanner()
   if (st.status === 'ok' && st.time !== lastBuild) {
     lastBuild = st.time
-    kc.update(st.pcbFiles || [], st.time)
     await Promise.all([dxf.update(st.dxf), three.update(st.stl)])
-  }
-  if (st.pcbStatus === 'ok' && (st.time + JSON.stringify(st.pcbs)) !== lastPcb) {
-    lastPcb = st.time + JSON.stringify(st.pcbs)
-    await pcb.update(st.pcbs)
   }
 }
 es.onerror = () => { $('dot').className = 'dot error'; $('statusText').textContent = 'viewer server stopped' }

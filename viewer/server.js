@@ -1,18 +1,16 @@
-// Local viewer for Ergogen: outlines (DXF), cases (STL) and PCBs (KiCad).
+// Local viewer for Ergogen: outlines (DXF) and cases (STL).
 // Watches config.yaml and footprints/, rebuilds into output/ on every change,
 // and serves a page that shows the results and reloads after each build.
 //
-// After each Ergogen build it also:
-//   - converts every output/cases/*.jscad to an .stl with OpenJSCAD v1
-//   - plots every output/pcbs/*.kicad_pcb to per-layer SVGs with kicad-cli
-//     (found in PATH, in the KICAD_CLI environment variable, or in Program Files)
+// After each Ergogen build it also converts every output/cases/*.jscad to an .stl with
+// OpenJSCAD v1.
 //
 // Usage: npm run view   (then open http://localhost:4600)
 
 const http = require('http')
 const fs = require('fs')
 const path = require('path')
-const { spawn, spawnSync } = require('child_process')
+const { spawn } = require('child_process')
 
 const ROOT = path.resolve(__dirname, '..')
 const OUTPUT = path.join(ROOT, 'output')
@@ -20,29 +18,7 @@ const { build: runErgogen } = require('./build')
 const OPENJSCAD = path.join(ROOT, 'node_modules', '@jscad', 'openjscad', 'src', 'cli', 'cli.js')
 const THREE = path.join(ROOT, 'node_modules', 'three')
 const MONACO = path.join(ROOT, 'node_modules', 'monaco-editor', 'min')
-// PCB layer plots live outside output/ (served as /output/preview/...).
-const PREVIEW = path.join(require('os').tmpdir(), 'ergogen-preview-' + Buffer.from(ROOT).toString('hex').slice(-16))
 const PORT = Number(process.env.PORT) || 4600
-const PCB_LAYERS = ['B.Fab', 'B.Silkscreen', 'B.Cu', 'F.Cu', 'F.Silkscreen', 'F.Fab', 'Dwgs.User', 'Edge.Cuts']
-const BG = '#16181c'
-
-// ---------- kicad-cli lookup ----------
-const findKicadCli = () => {
-  if (process.env.KICAD_CLI && fs.existsSync(process.env.KICAD_CLI)) return process.env.KICAD_CLI
-  const which = spawnSync(process.platform === 'win32' ? 'where' : 'which', ['kicad-cli'], { encoding: 'utf8' })
-  if (which.status === 0 && which.stdout.trim()) return which.stdout.trim().split(/\r?\n/)[0]
-  const candidates = []
-  if (process.platform === 'win32') {
-    const base = path.join(process.env.ProgramFiles || 'C:\\Program Files', 'KiCad')
-    if (fs.existsSync(base)) {
-      for (const v of fs.readdirSync(base).sort((a, b) => parseFloat(b) - parseFloat(a))) candidates.push(path.join(base, v, 'bin', 'kicad-cli.exe'))
-    }
-  } else if (process.platform === 'darwin') {
-    candidates.push('/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli')
-  }
-  return candidates.find(c => fs.existsSync(c)) || null
-}
-const KICAD_CLI = findKicadCli()
 
 // ---------- helpers ----------
 const run = (cmd, args) => new Promise(resolve => {
@@ -65,8 +41,7 @@ const listFiles = (dir, ext, base = '') => {
 
 let state = {
   status: 'idle', log: '', time: null,
-  dxf: [], stl: [], stlLog: '', pcbFiles: [],
-  pcbStatus: KICAD_CLI ? 'idle' : 'unavailable', pcbLog: KICAD_CLI ? '' : 'kicad-cli not found. Install KiCad 8 or newer, or set KICAD_CLI to its path.', pcbs: [],
+  dxf: [], stl: [], stlLog: '',
 }
 const clients = new Set()
 const broadcast = () => {
@@ -95,39 +70,6 @@ const convertCases = async (attempt = 1) => {
     return convertCases(attempt + 1)
   }
   return logs.join('\n\n')
-}
-
-const plotPcbs = async () => {
-  const boards = listFiles(path.join(OUTPUT, 'pcbs'), '.kicad_pcb')
-  const out = []
-  const logs = []
-  for (const rel of boards) {
-    const name = rel.replace(/\.kicad_pcb$/i, '')
-    // Plot from a snapshot in the preview folder (outside output/), so a build started
-    // elsewhere with --clean can't delete files out from under kicad-cli.
-    const dir = path.join(PREVIEW, name)
-    fs.rmSync(dir, { recursive: true, force: true })
-    fs.mkdirSync(dir, { recursive: true })
-    const snapshot = path.join(dir, path.basename(rel))
-    fs.copyFileSync(path.join(OUTPUT, 'pcbs', rel), snapshot)
-    const { code, log } = await run(KICAD_CLI, [
-      'pcb', 'export', 'svg', '--mode-multi', '--page-size-mode', '2', '--exclude-drawing-sheet',
-      '-l', PCB_LAYERS.join(','), '-o', dir, snapshot,
-    ])
-    if (code !== 0) { logs.push(`${rel}:\n${log}`); continue }
-    const layers = []
-    for (const layer of PCB_LAYERS) {
-      const fileLayer = layer === 'Dwgs.User' ? 'User_Drawings' : layer.replace('.', '_')
-      const file = fs.readdirSync(dir).find(f => f.endsWith(`-${fileLayer}.svg`))
-      if (!file) continue
-      // Drill holes are plotted white; draw them in the page background colour instead.
-      const p = path.join(dir, file)
-      fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replace(/fill:#FFFFFF/gi, `fill:${BG}`))
-      layers.push({ layer, file: path.posix.join('preview', name, file) })
-    }
-    out.push({ name, file: path.posix.join('pcbs', rel), layers })
-  }
-  return { pcbs: out, log: logs.join('\n\n') }
 }
 
 let building = false
@@ -164,20 +106,10 @@ const buildSteps = async () => {
       ...state, status: 'ok', log, time: new Date().toISOString(),
       dxf: listFiles(path.join(OUTPUT, 'outlines'), '.dxf').map(f => 'outlines/' + f),
       stl: listFiles(path.join(OUTPUT, 'cases'), '.stl').map(f => 'cases/' + f),
-      pcbFiles: listFiles(path.join(OUTPUT, 'pcbs'), '.kicad_pcb').map(f => 'pcbs/' + f),
       stlLog,
-      // The previous plot was wiped by --clean, so mark it stale in the same update.
-      pcbStatus: KICAD_CLI ? 'building' : state.pcbStatus,
     }
     console.log(`[${new Date().toLocaleTimeString()}] build ok${stlLog ? ' (STL conversion problems)' : ''}`)
     broadcast()
-
-    if (KICAD_CLI) {
-      const { pcbs, log: pcbLog } = await plotPcbs()
-      state = { ...state, pcbStatus: pcbLog ? 'error' : 'ok', pcbLog, pcbs }
-      console.log(`[${new Date().toLocaleTimeString()}] pcb plot ${state.pcbStatus}`)
-      broadcast()
-    }
   }
 }
 
@@ -283,7 +215,7 @@ const handleSourceApi = async (req, res, url, query) => {
 }
 
 // ---------- http ----------
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.dxf': 'text/plain', '.svg': 'image/svg+xml', '.stl': 'model/stl', '.ttf': 'font/ttf', '.json': 'application/json', '.kicad_pcb': 'text/plain; charset=utf-8' }
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.dxf': 'text/plain', '.svg': 'image/svg+xml', '.stl': 'model/stl', '.ttf': 'font/ttf', '.json': 'application/json' }
 const sendFile = (res, file) => {
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404); return res.end('not found') }
@@ -312,15 +244,9 @@ http.createServer((req, res) => {
     return
   }
   if (url === '/rebuild' && req.method === 'POST') { build(); res.writeHead(204); return res.end() }
-  if (url.startsWith('/output/preview/')) return serveUnder(res, PREVIEW, url.slice('/output/preview/'.length))
   if (url.startsWith('/output/')) return serveUnder(res, OUTPUT, url.slice('/output/'.length))
   if (url.startsWith('/vendor/three/')) return serveUnder(res, THREE, url.slice('/vendor/three/'.length))
   if (url.startsWith('/vendor/monaco/')) return serveUnder(res, MONACO, url.slice('/vendor/monaco/'.length))
-  if (url === '/vendor/kicanvas.js') return sendFile(res, path.join(__dirname, 'vendor', 'kicanvas.js'))
-  // KiCanvas picks the file type from the URL's extension, so cache-bust with a path segment
-  // (/kicanvas/<build stamp>/pcbs/x.kicad_pcb) instead of a query string.
-  const kc = url.match(/^\/kicanvas\/[^/]+\/(.+)$/)
-  if (kc) return serveUnder(res, OUTPUT, kc[1])
   if (url === '/' || url === '/index.html') return sendFile(res, path.join(__dirname, 'index.html'))
   if (url === '/keymap' || url === '/keymap.html') return sendFile(res, path.join(__dirname, 'keymap.html'))
   if (url === '/art/legends.js') return sendFile(res, path.join(ROOT, 'art', 'legends.js'))
@@ -329,6 +255,5 @@ http.createServer((req, res) => {
   res.writeHead(404); res.end('not found')
 }).listen(PORT, () => {
   console.log(`Ergogen viewer on http://localhost:${PORT}`)
-  console.log(KICAD_CLI ? `kicad-cli: ${KICAD_CLI}` : 'kicad-cli not found: PCB view disabled')
   build()
 })
