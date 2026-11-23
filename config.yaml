@@ -33,9 +33,9 @@ units:
   frame_t: 1.3        # plate's lower (frame) layer: room for the switch housing below the clips
   plate_t: 1.2        # plate thickness the switch clips are made for: 1.20 +/- 0.05
   plate_z: case_floor + wire_gap                   # underside of the plate
-  case_h: plate_z + frame_t + plate_t + 1.5        # wall height: 1.5 mm above the plate
+  case_h: plate_z + frame_t + plate_t              # wall height: flush with the plate's top
   case_wall: 2        # wall thickness
-  case_clear: 0.5     # gap between the plate edge and the wall
+  case_clear: 0.25    # gap between the plate edge and the wall
   case_off: case_clear + case_wall
   case_chamfer: 0.8   # 45 degree chamfer round the case's bottom edge (wiring/build.js)
   standoff_r: 2.5     # standoff radius (5 mm)

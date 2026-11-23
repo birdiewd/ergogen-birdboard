@@ -45,7 +45,7 @@ files to `art/print/`:
 - `print_plate_left.svg`, `print_plate_right.svg`: the word, as seen looking down on the plate.
 
 Each is true size, and the drawing is exactly the part's outline's bounding box (the case
-172.2 × 110.1 mm, the plate 167.2 × 105.1 mm). The art is filled shapes in a cream colour,
+171.7 × 109.6 mm, the plate 167.2 × 105.1 mm). The art is filled shapes in a cream colour,
 with no strokes and nothing else in the file.
 
 1. Put the case upside down on the E1's bed, floor up. For the plate, put it top up.
