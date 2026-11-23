@@ -76,8 +76,6 @@ units:
   usb_z_link: case_floor + link_pcb_t + 1.6
   usb_notch_w: 13     # wall opening for a USB-C plug's overmould
   usb_notch_down: 3.3 # opening reaches this far below the port centre (open to the top)
-  # Moose head inlaid in the case's bottom face (art/moose.js), as its own body
-  art_depth: 0.6      # 3 layers at 0.2 mm
   # Keycaps (art/keycaps.js): low profile, for the KS-33's MX-style cross stem, in two parts:
   # a shell (keycap_*_side_shell) and a stem insert (keycap_*_stem) glued inside it. The skirt
   # ends level with the bottom of the stem post, and the post rides on the switch's slider, so

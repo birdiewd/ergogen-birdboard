@@ -1,18 +1,18 @@
 {
   "style": {
-    "capColor": "#7d7d7d",
+    "capColor": "#ffffff",
     "font": "C:/Windows/Fonts/segoeuib.ttf",
     "symbolFont": "C:/Windows/Fonts/seguisym.ttf",
     "shift": {
       "size": 3,
-      "color": "#3b3b3b"
+      "color": "#8a8a8a"
     },
     "base": {
-      "size": 3.5,
-      "color": "#ededed"
+      "size": 3,
+      "color": "#303030"
     },
     "side": {
-      "size": 2.5,
+      "size": 3,
       "inset": 1.4
     },
     "symbol": {
@@ -30,13 +30,13 @@
     {
       "id": "lower",
       "name": "Lower",
-      "color": "#163655",
+      "color": "#c8953c",
       "side": "bottom-left"
     },
     {
       "id": "raise",
       "name": "Raise",
-      "color": "#6c234a",
+      "color": "#ffb866",
       "side": "top-right"
     }
   ],
@@ -156,7 +156,8 @@
         "base": ":angles-down:",
         "lower": "",
         "raise": "",
-        "capColor": "lower"
+        "capColor": "lower",
+        "baseColor": "raise"
       },
       "thumbfan_home_thumb": {
         "base": "moose",
@@ -286,7 +287,8 @@
         "base": ":angles-up:",
         "lower": "",
         "raise": "",
-        "capColor": "raise"
+        "capColor": "raise",
+        "baseColor": "lower"
       },
       "thumbfan_home_thumb": {
         "base": "moose",

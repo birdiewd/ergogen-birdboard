@@ -32,7 +32,8 @@ const anchor = require(path.join(EG, 'anchor.js')).parse
 // ---------- switch, diode and wiring geometry (key frame, seen from the front, mm) ----------
 const PIN_COL = [-4.4, -4.7]     // Gateron LP KS-33 pin wired to the column
 const PIN_DIO = [2.6, -5.75]     // the other pin: the diode's anode leg
-const DIODE_X = 7.2              // 1N4148 body runs up beside the switch, in the gap to the next key
+const ART_COLOUR = '#f2ead8'     // the UV-printed moose and "moose" (output/art/print/)
+const DIODE_X = 7.2             // 1N4148 body runs up beside the switch, in the gap to the next key
 const ANODE = [DIODE_X, -5.75]   // anode leg bends over to PIN_DIO
 const CATHODE = [DIODE_X, 4.41]  // cathode leg meets the row wire here
 const MCU_LEG = 15               // extra wire to reach the MCU from a net's end, beyond the straight line
@@ -261,10 +262,6 @@ const placement = (results, U, caps) => {
   out['cases/keycap_1_5u.stl'] = [ext.low[0] + 50, front - 60, 0]
   out['cases/keycap_1u_homing.stl'] = [ext.low[0] + 80, front - 60, 0]
   out['cases/keycap_holder.stl'] = [ext.low[0] + 160, front + 15, 0]
-  out['cases/keyboard_case_art.stl'] = [0, 0, 0]
-  out['cases/keyboard_case_art_right.stl'] = [dx, 0, 0]
-  out['cases/switchplate_text.stl'] = [0, 0, U.plate_z]
-  out['cases/switchplate_text_right.stl'] = [dx, 0, U.plate_z]
   return out
 }
 
@@ -307,7 +304,8 @@ const build = async ({ echo = false } = {}) => {
     }
     const right = mirroredRun(text)
     writeCases(right.cases, '_right', put)
-    // the moose on the underside: cut into each case, plus one body per colour
+    // the moose on the underside, UV printed: a print file per half; the case's bottom is
+    // rebuilt only for its chamfer
     const caseChains = makerjs.model.findChains(results.outlines.case_outer.yaml)
     const caseOutline = makerjs.chain.toKeyPoints(caseChains.sort((a, b) => b.pathLength - a.pathLength)[0], 0.5)
     const o = P.matrix_outer_top
@@ -316,20 +314,20 @@ const build = async ({ echo = false } = {}) => {
     // clear of them)
     const head = makerjs.chain.toKeyPoints(headChains.sort((a, b) => b.pathLength - a.pathLength)[0], 0.5)
     const art = require('../art/moose')({ at: (x, y) => [o.x + x - 100, o.y + y + 62], head })
-    // The case's bottom, rebuilt in 0.1 mm slices up to the top of the chamfer or the art,
-    // whichever is higher: the floor's outline in each slice (inset by what the 45 degree
-    // chamfer takes at the slice's middle), minus the art in the slices the art fills
-    const dzs = 0.1, hi = Math.max(U.case_chamfer, U.art_depth)
+    // The case's bottom, rebuilt in 0.1 mm slices up to the top of the chamfer: the floor's
+    // outline in each slice, inset by what the 45 degree chamfer takes at the slice's middle
+    const dzs = 0.1, hi = U.case_chamfer
     const slicesAt = mirror => Array.from({ length: Math.round(hi / dzs) }, (_, i) => {
       const z0 = i * dzs, z1 = (i + 1) * dzs, d = U.case_chamfer - (z0 + z1) / 2
       return { z0, z1, footprint: d > 0 ? Inlay.polyExpr(Inlay.inset(caseOutline, d).map(p => (mirror ? [-p[0], p[1]] : p))) : 'case_outer_2d()' }
     })
     for (const [suffix, mirror, base] of [['', false, results.cases.keyboard_case.jscad], ['_right', true, right.cases.keyboard_case.jscad || right.cases.keyboard_case]]) {
       // the art never reaches the chamfer
-      const inlay = Inlay.build({ art, holes: [], depth: U.art_depth, outline: caseOutline, mirror, edge: U.case_chamfer })
-      put(`cases/keyboard_case${suffix}.jscad`, inlay.caseWith(Inlay.with2d(base, 'case_outer'), slicesAt(mirror)))
-      put(`cases/keyboard_case_art${suffix}.jscad`, inlay.art)
-      put(`art/moose${suffix || '_left'}.svg`, Inlay.preview(inlay.flat, caseOutline.map(p => (mirror ? [-p[0], p[1]] : p)), []))
+      const inlay = Inlay.build({ art, holes: [], depth: 0, outline: caseOutline, mirror, edge: U.case_chamfer })
+      const shape = caseOutline.map(p => (mirror ? [-p[0], p[1]] : p))
+      put(`cases/keyboard_case${suffix}.jscad`, inlay.caseWith(Inlay.with2d(base, 'case_outer'), slicesAt(mirror), { cut: false }))
+      put(`art/moose${suffix || '_left'}.svg`, Inlay.preview(inlay.flat, shape, []))
+      put(`art/print/print_case${suffix || '_left'}.svg`, Inlay.print(inlay.flat, shape, ART_COLOUR))
       for (const w of inlay.warnings) say(`art${suffix} warning: ${w}`)
     }
     // "moose" on the plate's top face, below the thumb cluster: the word runs parallel to the
@@ -343,12 +341,11 @@ const build = async ({ echo = false } = {}) => {
     for (const [suffix, mirror, base] of [['', false, results.cases.switchplate.jscad], ['_right', true, right.cases.switchplate.jscad || right.cases.switchplate]]) {
       const fx = p => (mirror ? [-p[0], p[1]] : p)
       const text = require('../art/text')({ centre: fx(textCentre), angle: mirror ? -textAngle : textAngle })
-      const inlay = Inlay.build({ art: text, holes: mountHoles.map(fx), holeR: U.hole_d / 2 + 0.4, depth: U.art_depth, outline: outline.map(fx), top: U.frame_t + U.plate_t })
-      // the plate's top layer, from the text's depth up, rebuilt from the plate outline
-      const top = U.frame_t + U.plate_t
-      put(`cases/switchplate${suffix}.jscad`, inlay.caseWith(Inlay.with2d(base, 'plate'), [{ z0: top - U.art_depth, z1: top, footprint: 'plate_2d()' }]))
-      put(`cases/switchplate_text${suffix}.jscad`, inlay.art)
-      put(`art/text${suffix || '_left'}.svg`, Inlay.preview(inlay.flat, outline.map(fx), mountHoles.map(fx), { case: '#7a5536', art: '#f2ead8' }, { fromTop: true, extra: keycaps.map(k => k.map(fx)) }))
+      // UV printed on the plate's top: only the checks and the print file; the plate itself
+      // stays as Ergogen makes it
+      const inlay = Inlay.build({ art: text, holes: mountHoles.map(fx), holeR: U.hole_d / 2 + 0.4, depth: 0, outline: outline.map(fx), top: U.frame_t + U.plate_t })
+      put(`art/text${suffix || '_left'}.svg`, Inlay.preview(inlay.flat, outline.map(fx), mountHoles.map(fx), { case: '#7a5536', art: ART_COLOUR }, { fromTop: true, extra: keycaps.map(k => k.map(fx)) }))
+      put(`art/print/print_plate${suffix || '_left'}.svg`, Inlay.print(inlay.flat, outline.map(fx), ART_COLOUR, { fromTop: true }))
       for (const w of inlay.warnings) say(`text${suffix} warning: ${w}`)
       for (const p of inlay.flat.lines.flatMap(l => l.pts)) {
         const k = keycaps.find(c => G.pointPoly(fx(p), c).inside)

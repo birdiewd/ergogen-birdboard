@@ -43,6 +43,13 @@ const main = async () => {
     fs.copyFileSync(path.join(KM, f), path.join(PRINT, f))
     console.log(`ok   keymap/print/${f}`)
   }
+  // the case and plate art's print files for the UV printer, into art/print/
+  const ART = path.join(ROOT, 'art', 'print'), AO = path.join(ROOT, 'output', 'art', 'print')
+  fs.mkdirSync(ART, { recursive: true })
+  for (const f of fs.readdirSync(AO).filter(f => f.endsWith('.svg'))) {
+    fs.copyFileSync(path.join(AO, f), path.join(ART, f))
+    console.log(`ok   art/print/${f}`)
+  }
   return results.every(Boolean) ? 0 : 1
 }
 

@@ -1,9 +1,10 @@
-// Turns the underside art (art/moose.js) into a two-colour inlay for the case:
-//   - the case gets the art cut into its bottom face, `depth` deep
-//   - the art becomes its own body (keyboard_case_art) filling that cut exactly, so a
-//     multi-colour printer prints it flush in the first layers
-// Import the case and its art body together as one multi-part object (they share
-// coordinates) and give each part its filament.
+// Art for a part's face (the moose under the case, the word on the plate):
+//   - print: a true-size print file for the UV printer, the art alone (what the build uses)
+//   - preview: a picture of the art on its part
+//   - build: the checks (the art stays inside the face and clear of holes), and a two-colour
+//     inlay: the art cut into the face `depth` deep (caseWith) and the art as its own body
+//     filling that cut (art), for a multi-colour 3D printer. caseWith also rebuilds the
+//     case's chamfered bottom, with cut: false without the art.
 
 const G = require('../wiring/geom')
 
@@ -256,7 +257,8 @@ function art2d() { return ${cag.expr}${holeCuts}; }
     //           anything else that has to be rebuilt (the chamfer); footprint is a JSCAD
     //           expression for the part's 2D outline in that slice; the art is taken out of
     //           every slice inside the art's depth
-    caseWith: (base, slices) => {
+    //   cut: false rebuilds the slices without taking the art out (for the chamfer alone)
+    caseWith: (base, slices, { cut = true } = {}) => {
       const lo = Math.min(...slices.map(s => s.z0)), hi = Math.max(...slices.map(s => s.z1))
       const keep = top === null
         ? `whole().intersect(CSG.cube({ corner1: [-1000, -1000, ${r4(hi)}], corner2: [1000, 1000, 1000] }))`
@@ -267,7 +269,7 @@ function art2d() { return ${cag.expr}${holeCuts}; }
       // narrower), on the top face downwards (the plate below has no art taken out).
       const EPS = 0.02
       const layers = slices.map(s => {
-        const inArt = s.z0 >= z0 - 1e-6 && s.z1 <= z1 + 1e-6
+        const inArt = cut && s.z0 >= z0 - 1e-6 && s.z1 <= z1 + 1e-6
         const [a, b] = top === null ? [s.z0, s.z1 + EPS] : [s.z0 - EPS, s.z1]
         return `(${s.footprint})${inArt ? '.subtract(art2d())' : ''}.extrude({ offset: [0, 0, ${r4(b - a)}] }).translate([0, 0, ${r4(a)}])`
       })
@@ -301,6 +303,32 @@ const preview = ({ polys, lines }, outline, holes, colours = { case: '#7a5536', 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${r4(W)} ${r4(H)}" width="${r4(W * 5)}" height="${r4(H * 5)}"><rect width="100%" height="100%" fill="#fff"/>\n${s.join('\n')}\n</svg>`
 }
 
+// A print file for the UV printer: the art alone, true size (mm), seen from below (mirrored)
+// or from the top with fromTop. The drawing is exactly the part outline's bounding box, so
+// lining its edges up with the part's lines the art up. Lines are drawn as filled outlines,
+// not strokes, which any printer software renders the same.
+const print = ({ polys, lines }, outline, colour, { fromTop = false } = {}) => {
+  const xs = outline.map(p => p[0]), ys = outline.map(p => p[1])
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys)
+  const X = x => (fromTop ? x - minX : maxX - x)
+  const d = pts => 'M' + pts.map(p => `${r4(X(p[0]))} ${r4(maxY - p[1])}`).join('L') + 'Z'
+  const s = polys.map(p => `<path d="${d(p)}"/>`)
+  for (const { pts, w } of lines) {
+    const closed = pts.length > 2 && G.dist(pts[0], pts[pts.length - 1]) < 1e-6
+    for (const piece of closed ? [pts] : splitTurns(pts)) {
+      const { outer, hole } = strokeOutline(piece, w)
+      s.push(`<path fill-rule="evenodd" d="${d(outer)}${hole ? d(hole) : ''}"/>`)
+    }
+  }
+  const W = maxX - minX, H = maxY - minY
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${r4(W)}mm" height="${r4(H)}mm" viewBox="0 0 ${r4(W)} ${r4(H)}">
+<g fill="${colour}">
+${s.join('\n')}
+</g>
+</svg>
+`
+}
 
 // Ergogen's case JSCAD has a function per outline that returns it extruded. This adds a 2D
 // twin, `<name>_2d()`, to the source: the same body without the final extrude.
@@ -326,4 +354,4 @@ const inset = (pts, d) => {
   })
 }
 
-module.exports = { build, preview, polyExpr, inset, with2d }
+module.exports = { build, preview, print, polyExpr, inset, with2d }

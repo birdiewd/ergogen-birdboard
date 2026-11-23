@@ -1,6 +1,7 @@
 # birdboard v4.5
 
-A split keyboard designed with [Ergogen](https://ergogen.xyz). It's handwired, like the
+A split keyboard designed with [Ergogen](https://ergogen.xyz). The art on the case and plate,
+and the keycap legends, are UV printed. It's handwired, like the
 [Scotto44](https://scottokeebs.com/blogs/keyboards/scotto44): there is no PCB. The Gateron
 low-profile switches clip into a 3D-printed plate that covers just the keys. The 1N4148 diodes
 and the 18 AWG solid copper rows and columns are soldered straight onto the switch pins. Each
@@ -22,10 +23,10 @@ The printable STLs are kept in the repo in `stl/`:
 | --- | --- |
 | `keyboard_case.stl`, `keyboard_case_right.stl` | cases, with the module seats and standoffs, and a 0.8 mm chamfer round the bottom edge |
 | `switchplate.stl`, `switchplate_right.stl` | switch plates (they also cover the pods) |
-| `keyboard_case_art.stl`, `keyboard_case_art_right.stl` | the moose on the case's underside, in a second colour |
-| `switchplate_text.stl`, `switchplate_text_right.stl` | "moose" on the plate's top, in a second colour |
 
-### The moose on the underside
+The case and plate print in one colour. The art on them is UV printed afterwards.
+
+## The art, UV printed
 
 Seen from below, each case reads as a cartoon moose head, drawn in one colour in
 [art/moose.js](art/moose.js):
@@ -33,21 +34,29 @@ Seen from below, each case reads as a cartoon moose head, drawn in one colour in
 - **Antlers:** small blocky antlers with three prongs each, in the two pods.
 - **Face:** a simple line face on the thumb-cluster muzzle.
 
-It's inlaid into the case's bottom face, `art_depth` (0.6 mm, 3 layers) deep. To print it in two
-colours, load `keyboard_case.stl` and `keyboard_case_art.stl` together as one multi-part object.
-They share coordinates, so they line up. Give the art its own filament and print the case floor
-down.
-
-`npm run build` writes a preview of each half, seen from below, to `output/art/moose_left.svg`
-and `output/art/moose_right.svg`.
-
 The word "moose" is also hand-lettered on top of each switch plate, in [art/text.js](art/text.js).
 It sits in the band of plate below the thumb cluster, which still shows with the keycaps on,
-and runs parallel to the bottom edge. It reads left to right on both halves. It's inlaid the same
-way, 0.6 mm into the plate's top face. The plate prints top-down, so the lettering comes out in the
-first layers. Load `switchplate.stl` and `switchplate_text.stl` together as one multi-part object.
-The previews, seen from above with the keycaps shaded, are `output/art/text_left.svg` and
-`text_right.svg`.
+and runs parallel to the bottom edge. It reads left to right on both halves.
+
+Both are printed on the eufyMake E1, like the keycap legends. `npm run stl` writes the print
+files to `art/print/`:
+- `print_case_left.svg`, `print_case_right.svg`: the moose, as seen looking at the case's
+  underside.
+- `print_plate_left.svg`, `print_plate_right.svg`: the word, as seen looking down on the plate.
+
+Each is true size, and the drawing is exactly the part's outline's bounding box (the case
+172.2 × 110.1 mm, the plate 167.2 × 105.1 mm). The art is filled shapes in a cream colour,
+with no strokes and nothing else in the file.
+
+1. Put the case upside down on the E1's bed, floor up. For the plate, put it top up.
+2. In eufyMake Studio, import that part's print file. Line the drawing's edges up with the
+   part's outermost edges in the camera view, and size it to the part if it isn't already.
+3. Use a white underlay on a dark case or plate, so the cream stays bright.
+4. Print, then do the other half with its own file.
+
+`npm run build` also writes previews, the art drawn on its part: `output/art/moose_left.svg`
+and `moose_right.svg` (seen from below), and `output/art/text_left.svg` and `text_right.svg`
+(seen from above, with the keycaps shaded, so you can see the word stays clear of them).
 
 ## Keycaps and legends
 
