@@ -67,6 +67,73 @@ const writeErgogenOutputs = results => {
   writeCases(results.cases, '', put)
   return put
 }
+// The standoffs' radius at the top of the floor: standoff_r under the plate, widening
+// downwards at standoff_flare degrees a side
+const standoffBase = U => U.standoff_r + (U.plate_z - U.case_floor) * Math.tan(U.standoff_flare * Math.PI / 180)
+
+// The case's standoffs and their heat-set insert holes. Each standoff is a cone from
+// standoffBase on the floor up to standoff_r under the plate. Each hole is insert_r at the
+// standoff's top, narrowing at insert_taper degrees a side down to insert_r_min, then
+// straight down to the top of the floor. A standoff is trimmed where it would reach into a
+// module's pocket (`pockets`, outlines), so the module still lies flat on the floor.
+const withInserts = (src, holes, pockets, U) => {
+  const f = v => Math.round(v * 1e4) / 1e4
+  const top = U.plate_z + 0.01, bottom = U.case_floor
+  const trim = pockets.map(p => `${Inlay.polyExpr(p)}.extrude({ offset: [0, 0, ${f(U.plate_z + 1)}] })`)
+  const posts = holes.map(([x, y]) =>
+    `CSG.cylinder({ start: [${f(x)}, ${f(y)}, ${f(bottom - 0.01)}], end: [${f(x)}, ${f(y)}, ${f(U.plate_z)}], radiusStart: ${f(standoffBase(U))}, radiusEnd: ${f(U.standoff_r)}, resolution: 64 })` +
+    (trim.length ? `.subtract([${trim.join(', ')}])` : ''))
+  const taper = Math.min((U.insert_r - U.insert_r_min) / Math.tan(U.insert_taper * Math.PI / 180), top - bottom)
+  const rEnd = U.insert_r - taper * Math.tan(U.insert_taper * Math.PI / 180)
+  const cuts = holes.flatMap(([x, y]) => [
+    `CSG.cylinder({ start: [${f(x)}, ${f(y)}, ${f(top - taper)}], end: [${f(x)}, ${f(y)}, ${f(top)}], radiusStart: ${f(rEnd)}, radiusEnd: ${f(U.insert_r)}, resolution: 48 })`,
+    ...(top - taper > bottom ? [`CSG.cylinder({ start: [${f(x)}, ${f(y)}, ${f(bottom)}], end: [${f(x)}, ${f(y)}, ${f(top - taper + 0.01)}], radius: ${f(rEnd)}, resolution: 48 })`] : []),
+  ])
+  // (cut before the bottom is rebuilt, which leaves main() in the form caseWith expects)
+  const m = src.match(/function main\(\)\s*\{\s*return (\w+)\(\);\s*\}/)
+  if (!m) throw new Error('no main() in the case source')
+  return src.replace(m[0], 'function main() { return tapped(); }') + `
+function tapped() {
+  return ${m[1]}().union([
+    ${posts.join(',\n    ')}
+  ]).subtract([
+    ${cuts.join(',\n    ')}
+  ]);
+}
+`
+}
+
+// How close the flared standoffs' bases come to what's on the floor round them: the switch
+// pins, diodes and row and column wires (taken at their centrelines), the module seats and
+// the wall. The halves are mirror images, so the left one is checked.
+const standoffCheck = (g, L, U, results, say) => {
+  const rb = standoffBase(U)
+  const segs = polys => polys.flatMap(p => p.slice(1).map((q, i) => [p[i], q]))
+  const closed = p => [...p, p[0]]
+  const chainsOf = name => makerjs.model.findChains(results.outlines[name].yaml).map(c => closed(makerjs.chain.toKeyPoints(c, 0.5)))
+  const things = [
+    ['a switch pin', g.keys.flatMap(k => [[k.col, k.col], [k.dio, k.dio]])],
+    ['a diode', segs(g.keys.map(k => closed(k.diode)))],
+    ['a wire', segs(g.nets.map(n => n.pts))],
+    ['a module seat', segs(chainsOf('module_seats'))],
+    ['a module', segs(chainsOf('modules'))],
+  ]
+  const wall = segs([closed(L.outline)])
+  say(`standoffs: ${(2 * rb).toFixed(1)} mm across at the floor`)
+  for (const [what, ss] of [...things, ['the wall', wall]]) {
+    let worst = null
+    for (const h of L.mountHoles) for (const [a, b] of ss) {
+      const gap = what === 'the wall' ? G.pointSeg(h, a, b) + U.case_clear - rb : G.pointSeg(h, a, b) - rb
+      if (!worst || gap < worst.gap) worst = { gap, h }
+    }
+    const at = `(${worst.h[0].toFixed(1)}, ${worst.h[1].toFixed(1)})`
+    if (what === 'a module' && worst.gap < U.seat_tol) say(`  the base at ${at} is trimmed clear of a module's pocket`)
+    else if ((what === 'a module seat' || what === 'the wall') && worst.gap < 0) say(`  the base at ${at} joins ${what}`)
+    else if (worst.gap < 0.5) say(`standoff warning: the base at ${at} is ${worst.gap.toFixed(1)} mm from ${what}`)
+    else say(`  closest to ${what}: ${worst.gap.toFixed(1)} mm, at ${at}`)
+  }
+}
+
 const writeCases = (cases, suffix, put) => {
   for (const [name, c] of Object.entries(cases)) if (!name.startsWith('_')) put(`cases/${name}${suffix}.jscad`, c.jscad || c)
 }
@@ -293,6 +360,7 @@ const build = async ({ echo = false } = {}) => {
     }
     for (const [half, mirror] of [['left', false], ['right', true]]) {
       const g = layout(L, mirror)
+      if (!mirror) standoffCheck(g, L, U, results, say)
       put(`wiring/wiring_${half}.svg`, svgGuide(g, `BirdBoard v4.6 wiring, ${half} half`))
       put(`wiring/report_${half}.md`, report(g, half))
       say(`wiring ${half}: ${g.keys.length} keys, ${g.nets.length} nets, ${g.crossings.length} column/row crossings`)
@@ -316,11 +384,14 @@ const build = async ({ echo = false } = {}) => {
       const z0 = i * dzs, z1 = (i + 1) * dzs, d = U.case_chamfer - (z0 + z1) / 2
       return { z0, z1, footprint: d > 0 ? Inlay.polyExpr(Inlay.inset(caseOutline, d).map(p => (mirror ? [-p[0], p[1]] : p))) : 'case_outer_2d()' }
     })
+    // the modules' pockets in their seats: each module and its clearance
+    const pockets = makerjs.model.findChains(results.outlines.modules.yaml).map(c => Inlay.inset(makerjs.chain.toKeyPoints(c, 0.5), -U.seat_tol))
+    const fxc = mirror => p => (mirror ? [-p[0], p[1]] : p)
     for (const [suffix, mirror, base] of [['', false, results.cases.keyboard_case.jscad], ['_right', true, right.cases.keyboard_case.jscad || right.cases.keyboard_case]]) {
       // the art never reaches the chamfer
       const inlay = Inlay.build({ art, holes: [], depth: 0, outline: caseOutline, mirror, edge: U.case_chamfer })
       const shape = caseOutline.map(p => (mirror ? [-p[0], p[1]] : p))
-      put(`cases/keyboard_case${suffix}.jscad`, inlay.caseWith(Inlay.with2d(base, 'case_outer'), slicesAt(mirror), { cut: false }))
+      put(`cases/keyboard_case${suffix}.jscad`, inlay.caseWith(Inlay.with2d(withInserts(base, mountHoles.map(fxc(mirror)), pockets.map(p => p.map(fxc(mirror))), U), 'case_outer'), slicesAt(mirror), { cut: false }))
       put(`art/moose${suffix || '_left'}.svg`, Inlay.preview(inlay.flat, shape, []))
       put(`art/print/print_case${suffix || '_left'}.svg`, Inlay.print(inlay.flat, shape, ART_COLOUR))
       for (const w of inlay.warnings) say(`art${suffix} warning: ${w}`)

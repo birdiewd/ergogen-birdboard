@@ -21,7 +21,7 @@ The printable STLs are kept in the repo in `stl/`:
 
 | File | Part |
 | --- | --- |
-| `keyboard_case.stl`, `keyboard_case_right.stl` | cases, with the module seats and standoffs, and a 0.8 mm chamfer round the bottom edge |
+| `keyboard_case.stl`, `keyboard_case_right.stl` | cases, with the module seats and standoffs, and a 0.8 mm chamfer round the bottom edge. Each standoff is 5 mm across under the plate and flares out at 10° a side to 6.9 mm on the floor (`standoff_*`), trimmed where it would reach into a module's pocket. Its M2 heat-set insert hole is 3.2 mm across at the top and narrows at 10° a side to 2.2 mm, then runs straight down to the floor (`insert_*` in config.yaml) |
 | `switchplate.stl`, `switchplate_right.stl` | switch plates (they also cover the pods) |
 
 The case and plate print in one colour. The art on them is UV printed afterwards.
@@ -45,7 +45,7 @@ files to `art/print/`:
 - `print_plate_left.svg`, `print_plate_right.svg`: the word, as seen looking down on the plate.
 
 Each is true size, and the drawing is exactly the part's outline's bounding box (the case
-171.7 × 109.6 mm, the plate 167.2 × 105.1 mm). The art is filled shapes in a cream colour,
+169.8 × 105.9 mm, the plate 165.7 × 101.8 mm). The art is filled shapes in a cream colour,
 with no strokes and nothing else in the file.
 
 1. Put the case upside down on the E1's bed, floor up. For the plate, put it top up.
@@ -72,7 +72,7 @@ legends are UV printed on a eufyMake E1. Everything is generated from [config.ya
 | `stl/keycap_holder.stl` | holds one half's 24 caps, top up, on the E1's bed |
 
 Each cap is one piece: a flat top `cap_top_t` (1.2 mm) thick with rounded corners, and the stem
-post joined under it, 4.5 mm tall in all. The face's edge is chamfered 0.4 mm at 45°
+post joined under it, 4.5 mm tall in all. The face's edge is chamfered 0.8 mm at 45°
 (`cap_face_chamfer`). They print top down, so the face comes out bed-smooth. The post's end is
 level with the bottom of the skirt. The post rides on the switch's slider, so the skirt can't
 reach the plate at bottom-out.
