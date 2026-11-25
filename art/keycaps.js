@@ -79,6 +79,107 @@ const meshPoly = pts => {
   return Math.hypot(...n) < 1e-7 ? null : r
 }
 
+// The scaffold for a cap printed on its left face (the *_supported files). Everything here is
+// in the printing frame (the left face on the bed, z = 0), found by taking points from the cap's
+// own frame through the same turn csSource's cap gets. The scaffold is a separate solid that
+// touches the cap nowhere:
+//   - a thin baseplate on the bed, beside the cap's open end (the skirt's bottom),
+//   - from it a column up and a sloping arm into the open end,
+//   - the arm splits into a fan of tines that reach into the hollow and stop sup_gap short of
+//       (1) the stem post's underside, at the middle of its length, and
+//       (2) the hollow's ceiling (the right wall's inside, flat on top when printed), at the
+//           middle of its height, high above the post, so the tines pass over it.
+// Every sample along every part is checked against the cap, and the build stops if a part
+// comes closer than sup_gap, so a support can never be fused to the cap.
+const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
+  const { turn, lift } = csPrint(U, cap)
+  const th = turn * Math.PI / 180, c = Math.cos(th), sn = Math.sin(th)
+  const P = ([x, y, z]) => [x * c + z * sn, y, -x * sn + z * c + lift]      // cap frame -> printing frame
+  const D = ([x, y, z]) => [x * c + z * sn, y, -x * sn + z * c]              // a direction
+  const Q = ([x, y, z]) => [(x - 0) * c - (z - lift) * sn, y, x * sn + (z - lift) * c]   // printing -> cap frame
+  const R = U.cap_post_d / 2, gap = U.sup_gap, rTip = U.sup_w / 2, rArm = U.sup_arm_w / 2
+  const sub = (p, q) => p.map((v, i) => v - q[i]), add = (p, q) => p.map((v, i) => v + q[i]), mul = (p, k) => p.map(v => v * k)
+  const len = v => Math.hypot(...v), unit = v => mul(v, 1 / len(v))
+  // where the open end (the skirt's bottom, cap z = 0) is at height z' (x' of that plane's line)
+  const openEdge = z => c * (z - lift) / -sn
+  const norm = [-1, 0, -a].map(v => v / Math.hypot(1, a))          // ceiling's normal, into the hollow
+  const postTop = ceil(0)                                          // the post's visible length
+  const segs = []        // { p, q, r0, r1 }: a tapered round bar
+  const balls = []       // { p, r }
+  const tips = []        // the tine ends, to check the gap
+  const jointR = rArm
+  const bar = (p, q, r0, r1) => segs.push({ p, q, r0, r1 })
+  const xc = [openEdge(0) + U.sup_plate_x, openEdge(0) + U.sup_plate_x + U.sup_col_pitch]   // the columns' x': the post's, the ceiling's
+  const tineY = Array.from({ length: U.sup_tines }, (_, i) => (i - (U.sup_tines - 1) / 2) * U.sup_tine_pitch)
+  const target = (surf, nrm, zFan, col, what) => {
+    // surf: the tine ends' points on the cap's surface; nrm: their outward normals (into the free space)
+    const ends = surf.map((s, i) => add(P(s), mul(D(nrm[i]), gap + rTip)))
+    const zs = ends.reduce((m, e) => m + e[2], 0) / ends.length
+    const zJ = zs - zFan
+    const J = [openEdge(zJ) + U.sup_clear + rArm, 0, zJ]
+    const top = [xc[col], 0, zJ - U.sup_rise]
+    bar([xc[col], 0, U.sup_plate_t / 2], top, rArm, rArm)     // column
+    balls.push({ p: top, r: rArm })
+    bar(top, J, rArm, rArm * 0.55)                              // arm
+    balls.push({ p: J, r: rArm * 0.55 })
+    ends.forEach(e => { bar(J, e, rArm * 0.45, rTip); tips.push({ e, what }) })
+  }
+  // (1) the post's underside: on the cylinder at each fan y, the side facing down when printed
+  const zm = postTop / 2
+  target(tineY.map(y => [-Math.sqrt(R * R - y * y), y, zm]), tineY.map(y => [-Math.sqrt(R * R - y * y) / R, y / R, 0]), U.sup_fan, 0, 'post')
+  // (2) the ceiling: x = xmax(z) at the fan's y, the middle of its height
+  const zc = ceil(0) / 2
+  target(tineY.map(y => [xmax(zc), y, zc]), tineY.map(() => norm), U.sup_fan, 1, 'ceiling')
+
+  // the baseplate: under both columns, clear of the cap
+  const x0 = xc[0] - U.sup_plate_pad, x1 = xc[1] + U.sup_plate_pad, yb = U.sup_plate_w / 2
+  const plate = { c: [(x0 + x1) / 2, 0, U.sup_plate_t / 2], r: [(x1 - x0) / 2, yb, U.sup_plate_t / 2] }
+
+  // ---- checks: how far a point of the scaffold is from the cap (the nearest of: the hollow's
+  // side walls, front and back walls, ceiling and the post; the wall ends for a point outside
+  // the open end). The distances are measured along x, y or z, so they can be a little long on
+  // the drafted wall (2%), never short.
+  const clearance = pt => {
+    const [x, y, z] = Q(pt), zz = Math.max(z, 0)
+    const lat = Math.min(x - xmin(zz), xmax(zz) - x, yi - Math.abs(y), Math.hypot(x, y) - R)
+    if (z < 0) return lat > 0 ? Math.hypot(lat, z) : -z
+    return Math.min(lat, ceil(y) - z)
+  }
+  let worst = 1e9
+  const closest = {}
+  for (const sg of segs) {
+    const L = len(sub(sg.q, sg.p)), n = Math.max(2, Math.ceil(L / 0.05))
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, pt = add(sg.p, mul(sub(sg.q, sg.p), t)), r = sg.r0 + (sg.r1 - sg.r0) * t
+      const d = clearance(pt) - r
+      worst = Math.min(worst, d)
+    }
+  }
+  for (const t of tips) {
+    const d = clearance(t.e) - rTip
+    closest[t.what] = Math.min(closest[t.what] === undefined ? 1e9 : closest[t.what], d)
+  }
+  const plateGap = x0 - openEdge(0)           // the cap's open end leans away higher up, so this is the nearest
+  const problems = []
+  if (worst < gap - 0.01) problems.push(`a support comes within ${worst.toFixed(3)} mm of the cap (needs ${gap})`)
+  for (const k of ['post', 'ceiling']) if (!(closest[k] < gap + 0.05)) problems.push(`the ${k} tines are ${closest[k] && closest[k].toFixed(2)} mm from it, not ${gap}`)
+  if (plateGap < 1) problems.push(`the baseplate is only ${plateGap.toFixed(2)} mm from the cap`)
+  if (problems.length) throw new Error(`supports (${cap.w} mm cap): ${problems.join('; ')}`)
+  if (say) say(`supports ${cap.w} mm cap: closest approach ${worst.toFixed(3)} mm, post tines ${closest.post.toFixed(3)} mm and ceiling tines ${closest.ceiling.toFixed(3)} mm off, baseplate ${plateGap.toFixed(1)} mm from the cap, columns ${xc.map(v => v.toFixed(1)).join(' and ')} mm out`)
+
+  const V = v => `[${v.map(r3).join(', ')}]`
+  const parts = [
+    `CSG.cube({ center: ${V(plate.c)}, radius: ${V(plate.r)} })`,
+    ...segs.map(g => `CSG.cylinder({ start: ${V(g.p)}, end: ${V(g.q)}, radiusStart: ${r3(g.r0)}, radiusEnd: ${r3(g.r1)}, resolution: 20 })`),
+    ...balls.map(b => `CSG.sphere({ center: ${V(b.p)}, radius: ${r3(b.r)}, resolution: 20 })`),
+  ]
+  return `
+function scaffold() {
+  return ${parts.map((p, i) => (i ? '    .union(' + p + ')' : p)).join('\n')};
+}
+`
+}
+
 // A Chicago-style cap: its side profile (points, as above) the same all the way across, the
 // left and right faces drafted like the flat cap's (cap_draft over its height, per mm), and
 // the top's left and right edges chamfered cap_cs_edge. Inside, a hollow cap_top_t under the
@@ -146,62 +247,9 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
     pushC([p.TL, p.TR, q.TR, q.TL], [p.BR, q.BR, q.TR, p.TR], [p.TL, q.TL, q.BL, p.BL], [p.BL, q.BL, q.BR, p.BR])
   }
   pushC([hol[0].BL, hol[0].BR, hol[0].TR, hol[0].TL], [hol[hol.length - 1].TL, hol[hol.length - 1].TR, hol[hol.length - 1].BR, hol[hol.length - 1].BL])
-  // Built-in supports (the *_supported files): printed on its left face, the stem post and the
-  // hollow's ceiling (the right wall's inside) float above the left wall. Each is held by a
-  // square pillar standing on the left wall's inside face, tapering in a straight line from a
-  // wide base to a thin tip, which stops sup_gap short of its target. The base is no wider than
-  // fits in the hollow with sup_edge to spare from its ceiling, so it never touches the cap
-  // anywhere but the left wall. Under the post: one on the post's centre line, at the middle
-  // of its length. Under the ceiling: one each side of the post (the middle is the post's),
-  // halfway between the post and the hollow's front and back walls, at the middle of the
-  // ceiling's height there.
-  const supMesh = []
-  const supInfo = []
-  if (supports) {
-    const tip = U.sup_w / 2, postR = U.cap_post_d / 2
-    const quad = (a, b, c, d, out) => { const q = meshPoly([a, b, c, d]); if (q) supMesh.push(...tris(q)) }
-    // a pillar along x: from the base (x = xb, half-size bh round (yc, zc)) to the tip, whose
-    // end face is at xt(z)
-    const pillar = (yc, zc, bh, xb, xt) => {
-      const B = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([i, j]) => [xb, yc + i * bh, zc + j * bh])
-      const T = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([i, j]) => [xt(zc + j * tip), yc + i * tip, zc + j * tip])
-      const cx = (B[0][0] + T[0][0]) / 2, cy = yc, cz = zc
-      // faces, each turned so its normal points away from the pillar's middle
-      const faces = [[B[3], B[2], B[1], B[0]], [T[0], T[1], T[2], T[3]]]
-      for (let k = 0; k < 4; k++) faces.push([B[k], B[(k + 1) % 4], T[(k + 1) % 4], T[k]])
-      for (const f of faces) {
-        const [a, b, c] = f
-        const n = [(b[1] - a[1]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[1] - a[1]), (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]), (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])]
-        const out = n[0] * (a[0] - cx) + n[1] * (a[1] - cy) + n[2] * (a[2] - cz)
-        quad(...(out >= 0 ? f : f.slice().reverse()))
-      }
-    }
-    // the biggest base half-size, up to sup_base_w / 2, that fits: its z range stays on the
-    // cap's side of the ceiling (and not below the skirt's bottom), its y range inside the
-    // hollow's front and back walls, with sup_edge to spare. keepOffPost: also clear of the post.
-    const fit = (yc, zc, keepOffPost) => {
-      for (let bh = U.sup_base_w / 2; bh >= tip - 1e-9; bh -= 0.05) {
-        let ok = zc - bh >= 0 && Math.abs(yc) + bh + U.sup_edge <= yi
-        for (let y = yc - bh; ok && y <= yc + bh + 1e-9; y += 0.05) ok = zc + bh + U.sup_edge <= ceil(y)
-        if (ok && keepOffPost) ok = Math.abs(yc) - bh >= postR + U.sup_edge
-        if (ok) return bh
-      }
-      return 0
-    }
-    const wallIn = z => xmin(z) - U.sup_embed           // base plane: sup_embed into the left wall
-    const add = (what, yc, zc, keepOffPost, xt) => {
-      const bh = fit(yc, zc, keepOffPost)
-      if (!bh) { supInfo.push(`${what}: no room for a support`); return }
-      pillar(yc, zc, bh, wallIn(zc - bh), xt)
-      supInfo.push(`${what}: y ${r3(yc)}, z ${r3(zc)}, base ${r3(2 * bh)} mm, tip ${r3(2 * tip)} mm`)
-    }
-    // the post's underside, as seen from the left, is the cylinder's far side: x = -postR
-    add('post', 0, ceil(0) / 2, false, () => -postR - U.sup_gap)
-    // the ceiling's: the right wall's inside, x = xmax(z), sloping with the draft
-    const yc = (postR + yi) / 2
-    for (const sgn of [-1, 1]) add(`ceiling ${sgn < 0 ? 'front' : 'back'}`, sgn * yc, ceil(sgn * yc) / 2, true, z => xmax(z) - U.sup_gap)
-    if (say) for (const l of supInfo) say(`supports ${cap.w} mm cap, ${l}`)
-  }
+  // Built-in supports (the *_supported files): a scaffold beside the cap, a separate solid that
+  // touches the cap nowhere (see scaffoldSource).
+  const scaffold = supports ? scaffoldSource(U, cap, { xmin, xmax, ceil, yi, a, say }) : ''
   const cl = U.cap_cross + tol, cw = U.cap_cross_w + tol
   // homing: a rounded bar across the face, standing cap_cs_homing_bump proud of it
   const hr = U.cap_homing_r, hy = -cap.d / 2 + U.cap_draft + U.cap_homing_in, hz = S(hy) + U.cap_cs_homing_bump - hr
@@ -211,16 +259,17 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
 function cap() {
   const body = ${solid(mesh)};
   const hollow = ${solid(cav)};
-${supMesh.length ? `  const supports = ${solid(supMesh)};\n` : ''}  const post = CSG.cylinder({ start: [0, 0, 0], end: [0, 0, ${r3(z1 + 0.3)}], radius: ${U.cap_post_d / 2}, resolution: 48 });
+  const post = CSG.cylinder({ start: [0, 0, 0], end: [0, 0, ${r3(z1 + 0.3)}], radius: ${U.cap_post_d / 2}, resolution: 48 });
   const socket = CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cl / 2)}, ${r3(cw / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] })
     .union(CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cw / 2)}, ${r3(cl / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] }));
   // everything taken out of the outside, as one cut: the hollow (less the post, which stays)
   // and the socket. (Cut one at a time, the CSG steps leave holes.)
   const cut = hollow.subtract(post).union(socket);
   let cap = ${homing ? `body.union(CSG.roundedCylinder({ start: [${r3(-U.cap_homing_len / 2 + hr)}, ${r3(hy)}, ${r3(hz)}], end: [${r3(U.cap_homing_len / 2 - hr)}, ${r3(hy)}, ${r3(hz)}], radius: ${hr}, resolution: 32 }))` : 'body'}.subtract(cut);
-${supMesh.length ? '  cap = cap.union(supports);\n' : ''}  // laid on its left face for printing
-  return cap.rotateY(${turn}).translate([0, 0, ${lift}]).fixTJunctions();
+  // laid on its left face for printing
+  return cap.rotateY(${turn}).translate([0, 0, ${lift}]).fixTJunctions()${scaffold ? '.union(scaffold())' : ''};
 }
+${scaffold}
 `
 }
 

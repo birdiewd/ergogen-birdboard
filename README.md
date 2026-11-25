@@ -103,6 +103,14 @@ The stem post runs sideways, 3.6 mm out from the top with nothing under it. Its 
 underside is an overhang, so if it sags on your printer, add a support under the post in the
 slicer.
 
+**Supports:** each cap also has a `_supported` STL (`keycap_cs_*_supported.stl`): the cap with
+a scaffold beside it, a separate solid that touches the cap nowhere. A thin baseplate lies on
+the bed next to the cap's open end, with a column and a sloping arm from it into the open
+end, ending in a fan of three thin tines. They stop `sup_gap` (0.08 mm, one layer) short of
+the stem post's underside and of the hollow's ceiling, so the scaffold breaks away by hand.
+The build checks every part's distance to the cap and stops if one is closer than the gap.
+Print the plain STL if you'd rather use the slicer's supports.
+
 They sit in the legend holder. Put each bottom-row cap in the holder turned
 round, tall side to the front, as it sits on the keyboard, so its legend prints the right way
 up.
