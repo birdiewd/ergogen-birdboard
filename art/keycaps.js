@@ -135,8 +135,8 @@ const meshPoly = pts => {
 // the top's left and right edges chamfered cap_cs_edge. Inside, a hollow cap_top_t under the
 // top (the profile eroded by that much), no higher than cap_skirt, cap_wall in from the sides.
 // It prints on its left face, so each layer is the profile. Printed that way, the stem post
-// runs sideways and the hollow's right side is a ceiling: that side slopes at 45 degrees (a
-// thicker right wall low down). The post sticks out sideways with nothing under it.
+// runs sideways and the hollow's right side is a ceiling (a flat overhang: both side walls
+// are cap_wall thick, drafted the same). The post sticks out sideways with nothing under it.
 // The outside and the hollow are built as meshes of strips across the width (each a flat
 // four-sided face between two profile points), which keeps the CSG steps that follow sound.
 const csSource = (U, cap, tol, points, { homing = false } = {}) => {
@@ -179,8 +179,8 @@ const csSource = (U, cap, tol, points, { homing = false } = {}) => {
     for (let u = -T; u <= T + 1e-9; u += 0.05) m = Math.min(m, S(y + u) - Math.sqrt(Math.max(0, T * T - u * u)))
     return Math.max(0, m)
   }
-  const xi0 = cap.w / 2 - U.cap_wall, xiTop = xi0 - a * z1
-  const xmin = z => -(xi0 - a * z), xmax = z => xiTop - z
+  const xi0 = cap.w / 2 - U.cap_wall
+  const xmin = z => -(xi0 - a * z), xmax = z => xi0 - a * z      // both sides drafted, cap_wall thick
   let ys = []
   for (let y = -yi; y <= yi + 1e-9; y += 0.2) ys.push(y)
   // only the stretch round the middle where there's room, closed at C = 0 at its ends
