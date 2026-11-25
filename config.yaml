@@ -148,22 +148,20 @@ units:
   # across the width. Printed on the left side, so every layer is the profile.
   cap_cs_edge: 0.6    # 45 degree chamfer along the top's left and right edges
   # Built-in supports for the Chicago caps (the keycap_cs_*_supported files): a scaffold beside
-  # the cap, a separate solid that touches it nowhere. A baseplate on the bed, columns up from it,
-  # sloping arms into the cap's open end, and a fan of thin tines that stop sup_gap short of the
+  # the cap, a separate solid that touches it nowhere. A baseplate on the bed, straight
+  # leaning struts from it into the cap's open end, and a fan of thin tines that stop sup_gap short of the
   # stem post's underside and of the hollow's ceiling (break-off gap: 0.08 mm is one layer).
   sup_gap: 0.08       # gap between a tine's end and the cap
   sup_w: 0.8          # tine end width
   sup_tines: 3        # tines in each fan
   sup_tine_pitch: 1.1 #   and their spacing along the post's length / the ceiling's depth (a fan standing up from the baseplate)
-  sup_arm_w: 2        # column and arm width
+  sup_arm_w: 2        # strut width
   sup_plate_t: 0.8    # baseplate thickness (10 layers at 0.08)
   sup_plate_w: 8      #   its width across the cap's depth
-  sup_plate_pad: 2.5  #   how far it runs past each column
-  sup_plate_x: 4.5    # first column's distance from the cap's open end on the bed (the post's)
-  sup_col_pitch: 3.2  #   and the next column's (the ceiling's): further out
-  sup_clear: 1.3      # an arm's end stays this far outside the cap's open end
+  sup_plate_pad: 2.5  #   how far it runs past each strut's foot
+  sup_lean: 30        # a strut's lean from the vertical, degrees: more is a wider, stabler stance and longer struts
+  sup_clear: 1.3      # a strut's end stays this far outside the cap's open end
   sup_fan: 1          # a fan's root is this far below its tines' ends
-  sup_rise: 1.8       # a column ends this far below its arm's end
   cap_cs_print_slope: 30    # keymap planner only: the face is shaded where it's steeper than
                             #   this (degrees), as a UV-printed legend lands stretched there
   cap_cs_homing_bump: 0.4   # keycap_cs_home_1u_homing: a rounded bar standing this proud of

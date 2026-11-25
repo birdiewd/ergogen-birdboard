@@ -84,7 +84,7 @@ const meshPoly = pts => {
 // own frame through the same turn csSource's cap gets. The scaffold is a separate solid that
 // touches the cap nowhere:
 //   - a thin baseplate on the bed, beside the cap's open end (the skirt's bottom),
-//   - from it a column up and a sloping arm into the open end,
+//   - from it a straight strut for each fan, leaning in over the cap (sup_lean from the vertical),
 //   - the arm splits into a fan of tines, in a vertical plane (standing up from the baseplate), that reach into the hollow and stop sup_gap short of
 //       (1) the stem post's underside, at the middle of its length and each side of it, and
 //       (2) the hollow's ceiling (the right wall's inside, flat on top when printed), at the
@@ -109,31 +109,32 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
   const tips = []        // the tine ends, to check the gap
   const jointR = rArm
   const bar = (p, q, r0, r1) => segs.push({ p, q, r0, r1 })
-  const xc = [openEdge(0) + U.sup_plate_x, openEdge(0) + U.sup_plate_x + U.sup_col_pitch]   // the columns' x': the post's, the ceiling's
+  const lean = Math.tan(U.sup_lean * Math.PI / 180)      // a strut's lean from the vertical
+  const feet = []                                          // where each strut stands on the baseplate (x')
   // the tines' offsets along the cap's height (cap z, which is along the post and across the ceiling's depth): a fan in a vertical plane
   const tineZ = Array.from({ length: U.sup_tines }, (_, i) => (i - (U.sup_tines - 1) / 2) * U.sup_tine_pitch)
-  const target = (surf, nrm, zFan, col, what) => {
+  const target = (surf, nrm, zFan, what) => {
     // surf: the tine ends' points on the cap's surface; nrm: their outward normals (into the free space)
     const ends = surf.map((s, i) => add(P(s), mul(D(nrm[i]), gap + rTip)))
     const zs = ends.reduce((m, e) => m + e[2], 0) / ends.length
     const zJ = zs - zFan
     const J = [openEdge(zJ) + U.sup_clear + rArm, 0, zJ]
-    const top = [xc[col], 0, zJ - U.sup_rise]
-    bar([xc[col], 0, U.sup_plate_t / 2], top, rArm, rArm)     // column
-    balls.push({ p: top, r: rArm })
-    bar(top, J, rArm, rArm * 0.55)                              // arm
+    // one straight strut from the baseplate up to the fan's root, leaning in over the cap (no elbow)
+    const foot = [J[0] + (J[2] - U.sup_plate_t / 2) * lean, 0, U.sup_plate_t / 2]
+    feet.push(foot[0])
+    bar(foot, J, rArm, rArm * 0.55)
     balls.push({ p: J, r: rArm * 0.55 })
     ends.forEach(e => { bar(J, e, rArm * 0.45, rTip); tips.push({ e, what }) })
   }
   // (1) the post's underside (cap x = -R, the side facing down when printed), at its length's middle and each side of it
   const zm = postTop / 2
-  target(tineZ.map(dz => [-R, 0, zm + dz]), tineZ.map(() => [-1, 0, 0]), U.sup_fan, 0, 'post')
+  target(tineZ.map(dz => [-R, 0, zm + dz]), tineZ.map(() => [-1, 0, 0]), U.sup_fan, 'post')
   // (2) the ceiling: x = xmax(z), at the middle of its height and each side of it
   const zc = ceil(0) / 2
-  target(tineZ.map(dz => [xmax(zc + dz), 0, zc + dz]), tineZ.map(() => norm), U.sup_fan, 1, 'ceiling')
+  target(tineZ.map(dz => [xmax(zc + dz), 0, zc + dz]), tineZ.map(() => norm), U.sup_fan, 'ceiling')
 
   // the baseplate: under both columns, clear of the cap
-  const x0 = xc[0] - U.sup_plate_pad, x1 = xc[1] + U.sup_plate_pad, yb = U.sup_plate_w / 2
+  const x0 = Math.max(Math.min(...feet) - U.sup_plate_pad, openEdge(0) + 1.5), x1 = Math.max(...feet) + U.sup_plate_pad, yb = U.sup_plate_w / 2
   const plate = { c: [(x0 + x1) / 2, 0, U.sup_plate_t / 2], r: [(x1 - x0) / 2, yb, U.sup_plate_t / 2] }
 
   // ---- checks: how far a point of the scaffold is from the cap (the nearest of: the hollow's
@@ -166,7 +167,7 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
   for (const k of ['post', 'ceiling']) if (!(closest[k] < gap + 0.05)) problems.push(`the ${k} tines are ${closest[k] && closest[k].toFixed(2)} mm from it, not ${gap}`)
   if (plateGap < 1) problems.push(`the baseplate is only ${plateGap.toFixed(2)} mm from the cap`)
   if (problems.length) throw new Error(`supports (${cap.w} mm cap): ${problems.join('; ')}`)
-  if (say) say(`supports ${cap.w} mm cap: closest approach ${worst.toFixed(3)} mm, post tines ${closest.post.toFixed(3)} mm and ceiling tines ${closest.ceiling.toFixed(3)} mm off, baseplate ${plateGap.toFixed(1)} mm from the cap, columns ${xc.map(v => v.toFixed(1)).join(' and ')} mm out`)
+  if (say) say(`supports ${cap.w} mm cap: closest approach ${worst.toFixed(3)} mm, post tines ${closest.post.toFixed(3)} mm and ceiling tines ${closest.ceiling.toFixed(3)} mm off, baseplate ${plateGap.toFixed(1)} mm from the cap, struts stand ${feet.map(v => v.toFixed(1)).join(' and ')} mm out, leaning ${U.sup_lean} degrees`)
 
   const V = v => `[${v.map(r3).join(', ')}]`
   const parts = [
