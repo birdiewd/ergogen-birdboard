@@ -65,6 +65,23 @@ units:
   led_wall: 1.2       # tube wall
   led_tube_z: case_floor + mcu_t + led_h + led_clear   # tube's bottom, from the case bottom
   led_tube_len: plate_z - led_tube_z                   # how far it hangs below the plate
+  # BOOT and RESET buttons: paperclip holes in the plate over them, each with a guide tube
+  # under the plate. Button centres are 7.5 mm up from the board's end away from the USB-C and
+  # 4 mm in from each side; RESET is the right one (USB-C up), with a groove ring round its hole.
+  btn_y: -mcu_h / 2 + 7.5      # up the board from its centre
+  btn_dx: mcu_w / 2 - 4        # each side of its centre line
+  btn_h: 2.6                   # button height above the board's top face
+  btn_clear: 1                 # gap between the button's top and the tube's bottom (paperclip travel)
+  btn_hole: 1.4                # paperclip hole
+  btn_wall: 1.2                # guide tube wall
+  btn_tube_z: case_floor + mcu_t + btn_h + btn_clear   # tube's bottom, from the case bottom
+  btn_tube_len: plate_z - btn_tube_z                   # how far it hangs below the plate
+  ring_gap: 0.8                # RESET ring: from the hole's edge to the groove
+  ring_w: 0.5                  #   groove width
+  ring_depth: 0.3              #   groove depth into the plate's top
+  # +1, or -1 in the mirrored (right half) run (wiring/build.js): the mirrored run flips every
+  # shift, but the board is not mirrored, so the RESET ring's shift is flipped back with this
+  mirror_sign: 1
   usb_w: 13.8         # 4-pin USB-C breakout: length along the cable direction (up the board)
   usb_h: 12           #   and width
   link_pcb_t: 1.6     #   and board thickness (receptacle on top)
@@ -321,6 +338,43 @@ outlines:
     radius: led_bore / 2
     adjust:
       shift: [mcu_cx + led_x, mcu_cy + led_y]
+  # BOOT and RESET paperclip holes: guide tubes, holes, and the groove ring round RESET (right).
+  btn_tubes:
+  - what: circle
+    where: matrix_outer_top
+    radius: btn_hole / 2 + btn_wall
+    adjust:
+      shift: [mcu_cx - btn_dx, mcu_cy + btn_y]
+  - what: circle
+    operation: add
+    where: matrix_outer_top
+    radius: btn_hole / 2 + btn_wall
+    adjust:
+      shift: [mcu_cx + btn_dx, mcu_cy + btn_y]
+  btn_holes:
+  - what: circle
+    where: matrix_outer_top
+    radius: btn_hole / 2
+    adjust:
+      shift: [mcu_cx - btn_dx, mcu_cy + btn_y]
+  - what: circle
+    operation: add
+    where: matrix_outer_top
+    radius: btn_hole / 2
+    adjust:
+      shift: [mcu_cx + btn_dx, mcu_cy + btn_y]
+  reset_ring:
+  - what: circle
+    where: matrix_outer_top
+    radius: btn_hole / 2 + ring_gap + ring_w
+    adjust:
+      shift: [mcu_cx + btn_dx * mirror_sign, mcu_cy + btn_y]
+  - what: circle
+    operation: subtract
+    where: matrix_outer_top
+    radius: btn_hole / 2 + ring_gap
+    adjust:
+      shift: [mcu_cx + btn_dx * mirror_sign, mcu_cy + btn_y]
   # Everything inside the case walls: the key area and the two pods. Also the plate's outline.
   _inside:
     - name: board
@@ -507,17 +561,34 @@ cases:
       extrude: plate_t
       shift: [0, 0, frame_t]
       operation: add
-    # status-light tube down from the underside, with a bore through the whole plate (open and
-    # flush on top) for a piece of clear 1.75 mm filament, as long as the plate plus the tube
+    # Tubes down from the underside (the status light's, and a guide for each paperclip hole),
+    # all added first, then: the LED bore, a paperclip hole for each button (both open and
+    # flush on top; the bores run 1 mm past the top so no skin is left) and the RESET ring,
+    # a groove in the top face.
     - what: outline
       name: led_tube
       extrude: led_tube_len
       shift: [0, 0, -led_tube_len]
       operation: add
     - what: outline
+      name: btn_tubes
+      extrude: btn_tube_len
+      shift: [0, 0, -btn_tube_len]
+      operation: add
+    - what: outline
       name: led_hole
-      extrude: led_tube_len + frame_t + plate_t
+      extrude: led_tube_len + frame_t + plate_t + 1
       shift: [0, 0, -led_tube_len]
+      operation: subtract
+    - what: outline
+      name: btn_holes
+      extrude: btn_tube_len + frame_t + plate_t + 1
+      shift: [0, 0, -btn_tube_len]
+      operation: subtract
+    - what: outline
+      name: reset_ring
+      extrude: ring_depth + 1
+      shift: [0, 0, frame_t + plate_t - ring_depth]
       operation: subtract
   # Keyboard case (z = 0 is the case bottom): floor with the two module seats, walls with
   # openings for both USB-C plugs, and standoffs with M2 heat-set insert holes under all

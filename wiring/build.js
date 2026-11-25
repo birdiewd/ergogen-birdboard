@@ -189,6 +189,8 @@ const mirroredRun = text => {
   let [config] = io.interpret(text, () => {})
   const prep = req('prepare.js')
   config = prep.parameterize(prep.inherit(prep.unnest(config)))
+  // the board is not mirrored: tells the config to flip back the shifts that must not mirror
+  config.units = Object.assign({}, config.units, { mirror_sign: -1 })
   const units = req('units.js').parse(config)
   const points = req('points.js').parse(config.points, units)
   for (const p of Object.values(points)) {
