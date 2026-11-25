@@ -120,7 +120,11 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
     const zJ = zs - zFan
     const J = [openEdge(zJ) + U.sup_clear + rArm, 0, zJ]
     // one straight strut from the baseplate up to the fan's root, leaning in over the cap (no elbow)
-    const foot = [J[0] + (J[2] - U.sup_plate_t / 2) * lean, 0, U.sup_plate_t / 2]
+    // the foot's end disc is square to the strut, so a leaning strut's disc dips by rArm * sin(lean): the
+    // foot is that far (and 0.3 mm more) up inside the plate, so nothing shows through its underside
+    const fz = rArm * Math.sin(U.sup_lean * Math.PI / 180) + 0.3
+    if (fz > U.sup_plate_t - 0.2) throw new Error('supports: the baseplate is too thin for the struts to stand in (sup_plate_t, sup_lean)')
+    const foot = [J[0] + (J[2] - fz) * lean, 0, fz]
     feet.push(foot[0])
     bar(foot, J, rArm, rArm * 0.55)
     balls.push({ p: J, r: rArm * 0.55 })

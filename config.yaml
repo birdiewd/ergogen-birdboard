@@ -156,7 +156,7 @@ units:
   sup_tines: 3        # tines in each fan
   sup_tine_pitch: 1.1 #   and their spacing along the post's length / the ceiling's depth (a fan standing up from the baseplate)
   sup_arm_w: 2        # strut width
-  sup_plate_t: 0.8    # baseplate thickness (10 layers at 0.08)
+  sup_plate_t: 1.2    # baseplate thickness (15 layers at 0.08); the struts' feet sink into it
   sup_plate_w: 8      #   its width across the cap's depth
   sup_plate_pad: 2.5  #   how far it runs past each strut's foot
   sup_lean: 30        # a strut's lean from the vertical, degrees: more is a wider, stabler stance and longer struts
