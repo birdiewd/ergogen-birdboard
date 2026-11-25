@@ -127,15 +127,20 @@ printer, change it and export again.
 ### Planning the legends
 
 Run `npm run view` and open http://localhost:4600/keymap (or **Keymap ↗** in the viewer):
-- **Keys:** both halves are shown as they're laid out. Click a key and type its legends: the
-  base legend sits in the middle, and each layer's legend sits in its own place (Lower in the
-  bottom-left corner, Raise in the top-right), smaller and in the layer's colour. A shift
-  legend, if a key has one, sits centred along the top, and the base legend stays in the
-  middle. The menu beside the base legend can draw it in the shift colour or a layer's colour
-  instead, e.g. for the key that switches to that layer (the middle thumb keys are Lower and
-  Raise). The **Top** menu fills the key's whole top with the shift colour or a layer's colour,
-  printed under its legends. Legends slide clear of each other, and shrink only when there isn't room. Tab, Shift+Tab and Enter move
-  between keys.
+- **Keys:** both halves are shown as they're laid out. Click a key and type its legends. Each
+  legend goes in its own corner, reading clockwise from the top left:
+  - **Base:** top left.
+  - **Shift:** top right, in the shift colour.
+  - **Raise:** bottom right, in its colour.
+  - **Lower:** bottom left, in its colour.
+
+  A key with only a base legend (space, enter, the media keys) has it in the middle instead.
+  Two legends in the same row shrink together if they'd run into each other.
+- **Colours:** the menu beside the base legend can draw it in the shift colour or a layer's
+  colour instead, e.g. for the key that switches to that layer (the middle thumb keys are Lower
+  and Raise). The **Top** menu fills the key's whole top with the shift colour or a layer's
+  colour, printed under its legends.
+- **Moving between keys:** Tab, Shift+Tab and Enter.
 - **Faces:** the **Flat caps / Chicago caps** switch at the top picks which caps the keys are
   drawn as. With Chicago caps, each key shows the face of the cap it takes, seen from above
   (the bottom row's turned round). The face is outlined, and darker wherever it's steeper than
@@ -147,8 +152,11 @@ Run `npm run view` and open http://localhost:4600/keymap (or **Keymap ↗** in t
   name between colons, `:volume-high:`. Solid style is the default; `:regular/keyboard:` and
   `:brands/apple:` pick the others. Unicode symbols (⌘ ⌥ ⏎ and the like) still work too.
 - **Layers and style:** each layer's name, colour and place on the cap (either side, or any
-  corner), the cap colour, and legend sizes. The buttons at
-  the top show one layer at a time.
+  corner), the cap colour, legend sizes, and the legends' padding from the edges of the cap's
+  top: **Padding** sets the left-and-right (`style.side.padX`) and the top-and-bottom
+  (`style.side.padY`) separately. The base and shift legends have a place menu too:
+  either side, any corner, or their old spots (the middle for base, centred along the top for
+  shift). The buttons at the top show one layer at a time.
 - Changes save to `keymap/legends.json` on their own.
 
 The legends are set in Segoe UI Bold, with Segoe UI Symbol for symbols. These are read from

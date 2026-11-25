@@ -2,14 +2,16 @@
 // the UV print export (in Node), so the plan and the print match. Cap-local coordinates: mm,
 // origin at the middle of the cap's flat top, y pointing down (as in SVG).
 //
-// The base legend sits in the middle. Each layer's legend sits at its position, smaller and in
-// the layer's colour: "left" or "right" (the middle of that edge), or a corner: "top-left",
-// "top-right", "bottom-left", "bottom-right". A shift legend sits centred along the top; the
-// base legend stays in the middle either way. A key's baseColor, a layer's id or 'shift', draws
-// its base legend in that colour (e.g. for the key that switches to the layer), and a key's
-// capColor fills its top with one (capFill). The shift and base legends stay
-// centred if they can, slide clear of a layer legend if they must, and shrink only when there
-// isn't room.
+// Every legend has a position on the cap: "left" or "right" (the middle of that edge), or a
+// corner: "top-left", "top-right", "bottom-left", "bottom-right". Each layer's is its side; the
+// base legend's is style.base.side, which can also be "middle" (the default), and the shift
+// legend's style.shift.side, which can also be "top" (centred along the top, the default). A key
+// with only a base legend has it in the middle whatever style.base.side says. Two
+// corner legends in the same row shrink together if they'd run into each other. A key's
+// baseColor, a layer's id or 'shift', draws its base legend in that colour (e.g. for the key
+// that switches to the layer), and a key's capColor fills its top with one (capFill). A
+// middle base legend and a top shift legend stay centred if they can, slide clear of the
+// other legends if they must, and shrink only when there isn't room.
 //
 // place(key legends, cap top { w, h }, keymap style, layers, measure) -> [{ text, x, y, size,
 //   color, anchor: 'start' | 'middle' | 'end' }], x/y the anchor point on the baseline.
@@ -52,26 +54,50 @@
 
   const place = (legends, top, style, layers, measure) => {
     const out = [], boxes = []
-    const inset = style.side.inset, sideSize = style.side.size
-    const W = top.w / 2 - inset, H = top.h / 2 - inset   // the usable half-width and half-height
-    const used = {}
+    // the legends' padding from the top's edges: padX from the left and right, padY from the
+    // top and bottom (an older plan's single inset does for both)
+    const sideSize = style.side.size
+    const padX = style.side.padX ?? style.side.inset ?? 1.4, padY = style.side.padY ?? style.side.inset ?? 1.4
+    const W = top.w / 2 - padX, H = top.h / 2 - padY   // the usable half-width and half-height
+    const sh = style.shift || { size: sideSize, color: style.base.color }
+    // a key with only a base legend has it in the middle, wherever base legends go otherwise
+    const alone = !!(legends && legends.base) && !(legends.shift || layers.some(l => legends[l.id]))
+    const baseSide = !alone && POSITIONS.includes(style.base.side) ? style.base.side : 'middle'
+    const shiftSide = POSITIONS.includes(sh.side) ? sh.side : 'top'
+    // the legends at an edge or corner: the layers', and the base and shift legends if theirs
+    // are set to one
+    const edge = []
     for (const layer of layers) {
       const text = (legends && legends[layer.id]) || ''
-      if (!text) continue
-      const pos = POSITIONS.includes(layer.side) ? layer.side : 'left'
-      const w = measure(text, sideSize)
-      used[pos] = Math.max(used[pos] || 0, w)
-      const left = pos.endsWith('left')
-      const y = pos.startsWith('top') ? -H + sideSize : pos.startsWith('bottom') ? H : sideSize / 2
+      if (text) edge.push({ text, pos: POSITIONS.includes(layer.side) ? layer.side : 'left', size: sideSize, color: layer.color, layer: layer.id })
+    }
+    if (baseSide !== 'middle' && legends && legends.base) {
+      edge.push({ text: legends.base, pos: baseSide, size: style.base.size, color: colorOf(legends.baseColor, style, layers) || style.base.color, layer: 'base' })
+    }
+    if (shiftSide !== 'top' && legends && legends.shift) edge.push({ text: legends.shift, pos: shiftSide, size: sh.size, color: sh.color, layer: 'shift' })
+    // each row's legends (top, middle, bottom) shrink together, no smaller than MIN, if the
+    // left one and the right one would run into each other or past the edge
+    for (const row of ['top', 'mid', 'bottom']) {
+      const rowOf = e => (e.pos.startsWith('top') ? 'top' : e.pos.startsWith('bottom') ? 'bottom' : 'mid')
+      const inRow = edge.filter(e => rowOf(e) === row)
+      const width = side => Math.max(0, ...inRow.filter(e => e.pos.endsWith(side)).map(e => measure(e.text, e.size)))
+      const wl = width('left'), wr = width('right'), room = 2 * W - (wl && wr ? GAP : 0)
+      if (wl + wr > room) { const f = Math.max(MIN, room / (wl + wr)); for (const e of inRow) e.size *= f }
+    }
+    const used = {}
+    for (const e of edge) {
+      const w = measure(e.text, e.size)
+      used[e.pos] = Math.max(used[e.pos] || 0, w)
+      const left = e.pos.endsWith('left')
+      const y = e.pos.startsWith('top') ? -H + e.size : e.pos.startsWith('bottom') ? H : e.size / 2
       const x = left ? -W : W
-      out.push({ text, x, y, size: sideSize, color: layer.color, anchor: left ? 'start' : 'end', layer: layer.id })
-      boxes.push({ x0: left ? x : x - w, x1: left ? x + w : x, y0: y - sideSize, y1: y })
+      out.push({ text: e.text, x, y, size: e.size, color: e.color, anchor: left ? 'start' : 'end', layer: e.layer })
+      boxes.push({ x0: left ? x : x - w, x1: left ? x + w : x, y0: y - e.size, y1: y })
     }
     const room = (a, b) => [-W + (used[a] ? used[a] + GAP : 0), W - (used[b] ? used[b] + GAP : 0)]
 
-    // shift: centred along the top, clear of any top-corner legends
-    const shift = (legends && legends.shift) || ''
-    const sh = style.shift || { size: sideSize, color: style.base.color }
+    // shift (when it's "top"): centred along the top, clear of any top-corner legends
+    const shift = shiftSide === 'top' ? (legends && legends.shift) || '' : ''
     if (shift) {
       const { size, w, x } = centred(shift, sh.size, ...room('top-left', 'top-right'), measure)
       const y = -H + size
@@ -79,9 +105,9 @@
       boxes.push({ x0: x - w / 2, x1: x + w / 2, y0: y - size, y1: y })
     }
 
-    // base: centred on the cap whether or not there's a shift legend, clear of the edge
-    // legends; smaller if it would still run into the shift or a corner legend
-    const base = (legends && legends.base) || ''
+    // base (when it's "middle"): centred on the cap whether or not there's a shift legend,
+    // clear of the edge legends; smaller if it would still run into the shift or a corner legend
+    const base = baseSide === 'middle' ? (legends && legends.base) || '' : ''
     if (base) {
       const mid = 0
       const [L, R] = room('left', 'right')
@@ -114,5 +140,5 @@
     return { color: tint || style.capColor, tinted: !!tint }
   }
 
-  return { place, pieces, capFill, colorOf, POSITIONS }
+  return { place, pieces, capFill, colorOf, POSITIONS, BASE_POSITIONS: ['middle', ...POSITIONS], SHIFT_POSITIONS: ['top', ...POSITIONS] }
 })

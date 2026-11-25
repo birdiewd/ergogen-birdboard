@@ -84,10 +84,11 @@
 
   <h2>Style</h2>
   <div class="field"><label>Cap</label><div class="row"><input type="color" id="capColor"></div></div>
-  <div class="field"><label>Shift</label><div class="row"><input type="color" id="shiftColor"><input type="number" id="shiftSize" step="0.1" min="1" max="6" title="cap height, mm"></div></div>
-  <div class="field"><label>Base</label><div class="row"><input type="color" id="baseColor"><input type="number" id="baseSize" step="0.1" min="1" max="10" title="cap height, mm"></div></div>
-  <div class="field"><label>Layers</label><div class="row"><input type="number" id="sideSize" step="0.1" min="1" max="6" title="cap height, mm"><input type="number" id="sideInset" step="0.1" min="0" max="5" title="distance from the top's edge, mm"></div></div>
-  <div class="hint">Sizes are cap heights in mm; the second Layers number is the distance from the cap top's edge. A shift legend sits along the top; the base legend stays in the middle.</div>
+  <div class="field"><label>Shift</label><div class="row"><input type="color" id="shiftColor"><input type="number" id="shiftSize" step="0.1" min="1" max="6" title="cap height, mm"><select id="shiftSide" title="where the shift legend goes on the cap"></select></div></div>
+  <div class="field"><label>Base</label><div class="row"><input type="color" id="baseColor"><input type="number" id="baseSize" step="0.1" min="1" max="10" title="cap height, mm"><select id="baseSide" title="where the base legend goes on the cap"></select></div></div>
+  <div class="field"><label>Layers</label><div class="row"><input type="number" id="sideSize" step="0.1" min="1" max="6" title="cap height, mm"></div></div>
+  <div class="field"><label>Padding</label><div class="row"><input type="number" id="sidePadX" step="0.1" min="0" max="5" title="from the left and right edges of the cap's top, mm"><input type="number" id="sidePadY" step="0.1" min="0" max="5" title="from the top and bottom edges of the cap's top, mm"></div></div>
+  <div class="hint">Sizes are cap heights in mm. Padding is the legends' distance in mm from the cap top's edges: the first number from the left and right, the second from the top and bottom. The menus beside Shift and Base set where those legends go: along the top / in the middle, or an edge or a corner.</div>
 
   <h2>Print files (eufyMake E1)</h2>
   <div class="links">
@@ -336,8 +337,16 @@ function styleFields() {
   $('shiftSize').value = km.style.shift.size
   $('baseColor').value = km.style.base.color
   $('baseSize').value = km.style.base.size
+  // where the base and shift legends go: the middle / along the top, or an edge or a corner
+  for (const [id, opts, key, dflt] of [['baseSide', Legends.BASE_POSITIONS, 'base', 'middle'], ['shiftSide', Legends.SHIFT_POSITIONS, 'shift', 'top']]) {
+    const s = $(id); s.textContent = ''
+    for (const p of opts) { const o = document.createElement('option'); o.value = p; o.textContent = p.replace('-', ' '); s.appendChild(o) }
+    s.value = opts.includes(km.style[key].side) ? km.style[key].side : dflt
+    s.onchange = () => { km.style[key].side = s.value; draw(); save() }
+  }
   $('sideSize').value = km.style.side.size
-  $('sideInset').value = km.style.side.inset
+  $('sidePadX').value = km.style.side.padX ?? km.style.side.inset
+  $('sidePadY').value = km.style.side.padY ?? km.style.side.inset
 }
 // recolour the Shift label when its colour changes
 function refreshKey() { const lab = document.querySelector('#keyFields input[data-layer=shift]'); if (lab) lab.previousSibling.style.color = km.style.shift.color }
@@ -345,8 +354,8 @@ function refresh() { draw(); if (selected) { const k = selected; const f = docum
 $('capColor').addEventListener('input', e => { km.style.capColor = e.target.value; draw(); save() })
 $('baseColor').addEventListener('input', e => { km.style.base.color = e.target.value; draw(); save() })
 $('shiftColor').addEventListener('input', e => { km.style.shift.color = e.target.value; draw(); refreshKey(); save() })
-for (const [id, set] of [['shiftSize', v => (km.style.shift.size = v)], ['baseSize', v => (km.style.base.size = v)], ['sideSize', v => (km.style.side.size = v)], ['sideInset', v => (km.style.side.inset = v)]]) {
-  $(id).addEventListener('input', e => { const v = parseFloat(e.target.value); if (v > 0 || (id === 'sideInset' && v >= 0)) { set(v); draw(); save() } })
+for (const [id, set] of [['shiftSize', v => (km.style.shift.size = v)], ['baseSize', v => (km.style.base.size = v)], ['sideSize', v => (km.style.side.size = v)], ['sidePadX', v => (km.style.side.padX = v)], ['sidePadY', v => (km.style.side.padY = v)]]) {
+  $(id).addEventListener('input', e => { const v = parseFloat(e.target.value); if (v > 0 || (id.startsWith('sidePad') && v >= 0)) { set(v); draw(); save() } })
 }
 
 // ---------- load and save ----------

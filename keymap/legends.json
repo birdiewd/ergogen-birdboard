@@ -4,16 +4,19 @@
     "font": "C:/Windows/Fonts/segoeuib.ttf",
     "symbolFont": "C:/Windows/Fonts/seguisym.ttf",
     "shift": {
-      "size": 3,
-      "color": "#8a8a8a"
+      "size": 3.4,
+      "color": "#949494",
+      "side": "top-right"
     },
     "base": {
-      "size": 3,
-      "color": "#303030"
+      "size": 3.4,
+      "color": "#1f1f1f",
+      "side": "top-left"
     },
     "side": {
-      "size": 3,
-      "inset": 1.4
+      "size": 2.8,
+      "padX": 1.7,
+      "padY": 3
     },
     "symbol": {
       "scale": 1.4,
@@ -37,14 +40,14 @@
       "id": "raise",
       "name": "Raise",
       "color": "#44d5cb",
-      "side": "top-right"
+      "side": "bottom-right"
     }
   ],
   "keys": {
     "left": {
       "matrix_outer_top": {
-        "base": ":arrow-right-to-bracket:",
-        "lower": "m2",
+        "base": "tab",
+        "lower": "m1",
         "raise": ""
       },
       "matrix_pinky_top": {
@@ -74,7 +77,7 @@
       },
       "matrix_outer_home": {
         "base": "alt",
-        "lower": "m3",
+        "lower": "m2",
         "raise": ""
       },
       "matrix_pinky_home": {
@@ -94,7 +97,7 @@
       },
       "matrix_index_home": {
         "base": "F",
-        "lower": "shift",
+        "lower": "shft",
         "raise": "f4"
       },
       "matrix_inner_home": {
@@ -104,7 +107,7 @@
       },
       "matrix_outer_bottom": {
         "base": "ctrl",
-        "lower": "m4",
+        "lower": "m3",
         "raise": ""
       },
       "matrix_pinky_bottom": {
@@ -134,18 +137,18 @@
       },
       "mod_outer_thumb": {
         "base": "gui",
-        "lower": "m5",
+        "lower": "m4",
         "raise": ""
       },
       "mod_pinky_thumb": {
-        "base": "f12",
-        "lower": "f13",
-        "raise": "f11"
+        "base": "f11",
+        "lower": "m5",
+        "raise": ""
       },
       "mod_ring_thumb": {
-        "base": "f15",
-        "lower": "f16",
-        "raise": "f14"
+        "base": "f12",
+        "lower": "m6",
+        "raise": ""
       },
       "thumbfan_outer_thumb": {
         "base": ":pause:",
@@ -153,13 +156,13 @@
         "raise": ""
       },
       "thumbfan_fn_thumb": {
-        "base": ":angles-down:",
+        "base": ":angles-left:",
         "lower": "",
         "raise": "",
         "capColor": "lower"
       },
       "thumbfan_home_thumb": {
-        "base": "moose",
+        "base": "enter",
         "lower": "",
         "raise": "",
         "shift": "",
@@ -211,22 +214,22 @@
       },
       "matrix_ring_home": {
         "base": "L",
-        "lower": ":hand-point-down:",
+        "lower": "pgdn",
         "raise": "["
       },
       "matrix_middle_home": {
         "base": "K",
-        "lower": ":hand-point-up:",
+        "lower": "pgup",
         "raise": ""
       },
       "matrix_index_home": {
         "base": "J",
-        "lower": ":hand-point-right:",
+        "lower": "end",
         "raise": "+"
       },
       "matrix_inner_home": {
         "base": "H",
-        "lower": ":hand-point-left:",
+        "lower": "home",
         "raise": "_"
       },
       "matrix_outer_bottom": {
@@ -237,7 +240,7 @@
       },
       "matrix_pinky_bottom": {
         "base": ":arrow-up:",
-        "lower": "m6",
+        "lower": "",
         "raise": "}"
       },
       "matrix_ring_bottom": {
@@ -264,32 +267,32 @@
       },
       "mod_outer_thumb": {
         "base": ":arrow-right:",
-        "lower": "m9",
+        "lower": "m10",
         "raise": ""
       },
       "mod_pinky_thumb": {
         "base": ":arrow-down:",
-        "lower": "m8",
+        "lower": "m9",
         "raise": ""
       },
       "mod_ring_thumb": {
         "base": ":arrow-left:",
-        "lower": "m7",
+        "lower": "m8",
         "raise": ""
       },
       "thumbfan_outer_thumb": {
-        "base": ":power-off:",
-        "lower": "m1",
+        "base": "esc",
+        "lower": "m7",
         "raise": ""
       },
       "thumbfan_fn_thumb": {
-        "base": ":angles-up:",
+        "base": ":angles-right:",
         "lower": "",
         "raise": "",
         "capColor": "raise"
       },
       "thumbfan_home_thumb": {
-        "base": "moose",
+        "base": "space",
         "lower": "",
         "raise": ""
       }
