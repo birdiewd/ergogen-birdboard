@@ -147,6 +147,14 @@ units:
   # art/cs_profiles.json (traced from art/cs_profiles.png by art/trace-profile.js) running
   # across the width. Printed on the left side, so every layer is the profile.
   cap_cs_edge: 0.6    # 45 degree chamfer along the top's left and right edges
+  # Built-in supports for the Chicago caps (the keycap_cs_*_supported files). They stand on the
+  # left wall's inside face (the plate on the bed) and hold up the stem post and the ceiling of
+  # the hollow, tapering from a wide base to a thin tip that stops sup_gap short (break off by hand).
+  sup_w: 0.8          # tip width
+  sup_base_w: 3       # base width wanted (less where it wouldn't fit the hollow)
+  sup_gap: 0.08       # break-off gap between a tip and what it holds up (printed at 0.08 mm layers)
+  sup_edge: 0.3       # a base keeps at least this far from the cap's ceiling and front and back walls
+  sup_embed: 0.4      # a base runs this far into the left wall, so it fuses to it
   cap_cs_print_slope: 30    # keymap planner only: the face is shaded where it's steeper than
                             #   this (degrees), as a UV-printed legend lands stretched there
   cap_cs_homing_bump: 0.4   # keycap_cs_home_1u_homing: a rounded bar standing this proud of
