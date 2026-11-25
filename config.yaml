@@ -147,6 +147,10 @@ units:
   # art/cs_profiles.json (traced from art/cs_profiles.png by art/trace-profile.js) running
   # across the width. Printed on the left side, so every layer is the profile.
   cap_cs_edge: 0.6    # 45 degree chamfer along the top's left and right edges
+  cap_cs_dish: 0.5    # a shallow dip in the middle of the top: this deep at the centre, easing
+                      #   to nothing at the left and right edges and the front and back
+                      #   (0 for a flat top). The hollow drops to match, so the top keeps cap_top_t.
+  cap_cs_dish_cols: 16  #   strips across the width the dished top is built from
   # Built-in supports for the Chicago caps (the keycap_cs_*_supported files): a scaffold beside
   # the cap, a separate solid that touches it nowhere. A baseplate on the bed, straight
   # leaning struts from it into the cap's open end, and a fan of thin tines that stop sup_gap short of the

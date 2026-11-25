@@ -112,7 +112,11 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
   const lean = Math.tan(U.sup_lean * Math.PI / 180)      // a strut's lean from the vertical
   const feet = []                                          // where each strut stands on the baseplate (x')
   // the tines' offsets along the cap's height (cap z, which is along the post and across the ceiling's depth): a fan in a vertical plane
-  const tineZ = Array.from({ length: U.sup_tines }, (_, i) => (i - (U.sup_tines - 1) / 2) * U.sup_tine_pitch)
+  // (closer together than sup_tine_pitch if the hollow is too short for it, as under a dished
+  // top: the post's outer tines must stay sup_gap clear of the ceiling and of the open end)
+  const half = (U.sup_tines - 1) / 2
+  const pitch = half > 0 ? Math.min(U.sup_tine_pitch, (postTop / 2 - rTip - gap - 0.15) / half) : 0
+  const tineZ = Array.from({ length: U.sup_tines }, (_, i) => (i - half) * pitch)
   const target = (surf, nrm, zFan, what) => {
     // surf: the tine ends' points on the cap's surface; nrm: their outward normals (into the free space)
     const ends = surf.map((s, i) => add(P(s), mul(D(nrm[i]), gap + rTip)))
@@ -151,14 +155,14 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
     if (z < 0) return lat > 0 ? Math.hypot(lat, z) : -z
     return Math.min(lat, ceil(y) - z)
   }
-  let worst = 1e9
+  let worst = 1e9, worstAt = null
   const closest = {}
   for (const sg of segs) {
     const L = len(sub(sg.q, sg.p)), n = Math.max(2, Math.ceil(L / 0.05))
     for (let i = 0; i <= n; i++) {
       const t = i / n, pt = add(sg.p, mul(sub(sg.q, sg.p), t)), r = sg.r0 + (sg.r1 - sg.r0) * t
       const d = clearance(pt) - r
-      worst = Math.min(worst, d)
+      if (d < worst) { worst = d; worstAt = Q(pt).map(v => v.toFixed(2)).join(', ') }
     }
   }
   for (const t of tips) {
@@ -167,7 +171,7 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
   }
   const plateGap = x0 - openEdge(0)           // the cap's open end leans away higher up, so this is the nearest
   const problems = []
-  if (worst < gap - 0.01) problems.push(`a support comes within ${worst.toFixed(3)} mm of the cap (needs ${gap})`)
+  if (worst < gap - 0.01) problems.push(`a support comes within ${worst.toFixed(3)} mm of the cap (needs ${gap}), at (${worstAt}) in the cap's own frame`)
   for (const k of ['post', 'ceiling']) if (!(closest[k] < gap + 0.05)) problems.push(`the ${k} tines are ${closest[k] && closest[k].toFixed(2)} mm from it, not ${gap}`)
   if (plateGap < 1) problems.push(`the baseplate is only ${plateGap.toFixed(2)} mm from the cap`)
   if (problems.length) throw new Error(`supports (${cap.w} mm cap): ${problems.join('; ')}`)
@@ -209,14 +213,29 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
   // twice the chamfer (it drops nearly straight down there), are left off: the ends are
   // straight walls up to it instead, and the chamfer is the same all the way along
   const first = points.findIndex(p => p[1] >= 2 * c), last = points.length - 1 - points.slice().reverse().findIndex(p => p[1] >= 2 * c)
+  // the dish: a shallow dip cap_cs_dish deep at the middle of the top, easing to nothing at the
+  // left and right edges (where the chamfers start) and at the front and back ends of the top,
+  // (1 - u^2)(1 - v^2) with u across the width and v front to back, both -1 to 1
+  const D = U.cap_cs_dish || 0, N = D > 0 ? Math.max(2, U.cap_cs_dish_cols || 16) : 1
+  const yA = points[first][0], yB = points[last][0], yc = (yA + yB) / 2, yh = (yB - yA) / 2
+  const dishY = y => D * Math.max(0, 1 - ((y - yc) / yh) ** 2)          // the dip along the middle
   const ring = points.slice(first, last + 1).map(([y, z]) => {
-    const ck = c
-    return { IR: [X(z) - ck, y, z], IL: [-(X(z) - ck), y, z], OR: [X(z - ck), y, z - ck], OL: [-X(z - ck), y, z - ck], BR: [X(0), y, 0], BL: [-X(0), y, 0] }
+    const ck = c, xe = X(z) - ck
+    // the top across the width, left (IL) to right (IR), dipped in the middle
+    const cols = Array.from({ length: N + 1 }, (_, j) => { const u = -1 + 2 * j / N; return [u * xe, y, z - dishY(y) * (1 - u * u)] })
+    return { cols, IR: cols[N], IL: cols[0], OR: [X(z - ck), y, z - ck], OL: [-X(z - ck), y, z - ck], BR: [X(0), y, 0], BL: [-X(0), y, 0] }
   })
+  // the first and last rows of the top have no dip, so they're kept as just their two edge
+  // points (no points in a line along the ends), and the strips next to them fan out to the
+  // next row's points
+  const L = ring.length - 1
   for (let k = 0; k + 1 < ring.length; k++) {
     const p = ring[k], q = ring[k + 1]
-    push([p.IL, p.IR, q.IR, q.IL],                                   // top
-      [p.OR, q.OR, q.IR], [p.OR, q.IR, p.IR],                        // right chamfer
+    if (N === 1) push([p.IL, p.IR, q.IR, q.IL])                       // top (flat)
+    else if (k === 0) for (let j = 0; j < N; j++) mesh.push(...[[p.IL, q.cols[j + 1], q.cols[j]], ...(j === N - 1 ? [[p.IL, p.IR, q.IR]] : [])].map(meshPoly).filter(Boolean))
+    else if (k + 1 === L) for (let j = 0; j < N; j++) mesh.push(...[[p.cols[j], p.cols[j + 1], q.IL], ...(j === N - 1 ? [[p.IR, q.IR, q.IL]] : [])].map(meshPoly).filter(Boolean))
+    else for (let j = 0; j < N; j++) push([p.cols[j], p.cols[j + 1], q.cols[j + 1], q.cols[j]])   // top
+    push([p.OR, q.OR, q.IR], [p.OR, q.IR, p.IR],                        // right chamfer
       [p.BR, q.BR, q.OR, p.OR],                                      // right face
       [q.IL, q.OL, p.OL], [p.IL, q.IL, p.OL],                        // left chamfer
       [p.OL, q.OL, q.BL, p.BL],                                      // left face
@@ -227,12 +246,13 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
     push(back ? wall.slice().reverse() : wall)
   }
   // the hollow: its ceiling C(y) = min(skirt, the profile eroded by cap_top_t), from the
-  // bottom (and 0.5 below it) up; both sides drafted
+  // bottom (and 0.5 below it) up; both sides drafted. The profile here is the dished top's
+  // middle (its lowest line), so the top is never thinner than cap_top_t
   const T = U.cap_top_t, yi = cap.d / 2 - U.cap_wall
   const ceil = y => {
     if (Math.abs(y) > yi) return 0
     let m = z1
-    for (let u = -T; u <= T + 1e-9; u += 0.05) m = Math.min(m, S(y + u) - Math.sqrt(Math.max(0, T * T - u * u)))
+    for (let u = -T; u <= T + 1e-9; u += 0.05) m = Math.min(m, S(y + u) - dishY(y + u) - Math.sqrt(Math.max(0, T * T - u * u)))
     return Math.max(0, m)
   }
   const xi0 = cap.w / 2 - U.cap_wall
@@ -258,7 +278,7 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
   const scaffold = supports ? scaffoldSource(U, cap, { xmin, xmax, ceil, yi, a, say }) : ''
   const cl = U.cap_cross + tol, cw = U.cap_cross_w + tol
   // homing: a rounded bar across the face, standing cap_cs_homing_bump proud of it
-  const hr = U.cap_homing_r, hy = -cap.d / 2 + U.cap_draft + U.cap_homing_in, hz = S(hy) + U.cap_cs_homing_bump - hr
+  const hr = U.cap_homing_r, hy = -cap.d / 2 + U.cap_draft + U.cap_homing_in, hz = S(hy) - dishY(hy) + U.cap_cs_homing_bump - hr
   const { turn, lift } = csPrint(U, cap)
   const solid = polys => `CSG.fromPolygons(${JSON.stringify(polys)}.map(p => new CSG.Polygon(p.map(v => new CSG.Vertex(new CSG.Vector3D(v[0], v[1], v[2]))))))`
   return `
