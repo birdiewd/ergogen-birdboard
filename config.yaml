@@ -154,7 +154,7 @@ units:
   sup_gap: 0.08       # gap between a tine's end and the cap
   sup_w: 0.8          # tine end width
   sup_tines: 3        # tines in each fan
-  sup_tine_pitch: 1.1 #   and their spacing across the cap's depth
+  sup_tine_pitch: 1.1 #   and their spacing along the post's length / the ceiling's depth (a fan standing up from the baseplate)
   sup_arm_w: 2        # column and arm width
   sup_plate_t: 0.8    # baseplate thickness (10 layers at 0.08)
   sup_plate_w: 8      #   its width across the cap's depth

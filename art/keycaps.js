@@ -85,8 +85,8 @@ const meshPoly = pts => {
 // touches the cap nowhere:
 //   - a thin baseplate on the bed, beside the cap's open end (the skirt's bottom),
 //   - from it a column up and a sloping arm into the open end,
-//   - the arm splits into a fan of tines that reach into the hollow and stop sup_gap short of
-//       (1) the stem post's underside, at the middle of its length, and
+//   - the arm splits into a fan of tines, in a vertical plane (standing up from the baseplate), that reach into the hollow and stop sup_gap short of
+//       (1) the stem post's underside, at the middle of its length and each side of it, and
 //       (2) the hollow's ceiling (the right wall's inside, flat on top when printed), at the
 //           middle of its height, high above the post, so the tines pass over it.
 // Every sample along every part is checked against the cap, and the build stops if a part
@@ -110,7 +110,8 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
   const jointR = rArm
   const bar = (p, q, r0, r1) => segs.push({ p, q, r0, r1 })
   const xc = [openEdge(0) + U.sup_plate_x, openEdge(0) + U.sup_plate_x + U.sup_col_pitch]   // the columns' x': the post's, the ceiling's
-  const tineY = Array.from({ length: U.sup_tines }, (_, i) => (i - (U.sup_tines - 1) / 2) * U.sup_tine_pitch)
+  // the tines' offsets along the cap's height (cap z, which is along the post and across the ceiling's depth): a fan in a vertical plane
+  const tineZ = Array.from({ length: U.sup_tines }, (_, i) => (i - (U.sup_tines - 1) / 2) * U.sup_tine_pitch)
   const target = (surf, nrm, zFan, col, what) => {
     // surf: the tine ends' points on the cap's surface; nrm: their outward normals (into the free space)
     const ends = surf.map((s, i) => add(P(s), mul(D(nrm[i]), gap + rTip)))
@@ -124,12 +125,12 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
     balls.push({ p: J, r: rArm * 0.55 })
     ends.forEach(e => { bar(J, e, rArm * 0.45, rTip); tips.push({ e, what }) })
   }
-  // (1) the post's underside: on the cylinder at each fan y, the side facing down when printed
+  // (1) the post's underside (cap x = -R, the side facing down when printed), at its length's middle and each side of it
   const zm = postTop / 2
-  target(tineY.map(y => [-Math.sqrt(R * R - y * y), y, zm]), tineY.map(y => [-Math.sqrt(R * R - y * y) / R, y / R, 0]), U.sup_fan, 0, 'post')
-  // (2) the ceiling: x = xmax(z) at the fan's y, the middle of its height
+  target(tineZ.map(dz => [-R, 0, zm + dz]), tineZ.map(() => [-1, 0, 0]), U.sup_fan, 0, 'post')
+  // (2) the ceiling: x = xmax(z), at the middle of its height and each side of it
   const zc = ceil(0) / 2
-  target(tineY.map(y => [xmax(zc), y, zc]), tineY.map(() => norm), U.sup_fan, 1, 'ceiling')
+  target(tineZ.map(dz => [xmax(zc + dz), 0, zc + dz]), tineZ.map(() => norm), U.sup_fan, 1, 'ceiling')
 
   // the baseplate: under both columns, clear of the cap
   const x0 = xc[0] - U.sup_plate_pad, x1 = xc[1] + U.sup_plate_pad, yb = U.sup_plate_w / 2
