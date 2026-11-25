@@ -203,7 +203,15 @@ const build = ({ results, right, U, put, say, dx }) => {
   const P = results.points
   const kmFile = path.join(ROOT, 'keymap', 'legends.json')
   const km = JSON.parse(fs.readFileSync(kmFile, 'utf8'))
-  for (const f of [km.style.font, km.style.symbolFont]) if (!fs.existsSync(f)) say(`keymap warning: font not found: ${f}`)
+  // Fonts the machine doesn't have (the plan names Windows fonts; a Linux build server has none)
+  // are swapped for the open DejaVu fonts kept in the repo, so the build still runs there.
+  const FALLBACK = path.join(ROOT, 'keymap', 'fonts', 'fallback')
+  for (const [key, alt] of [['font', 'DejaVuSans-Bold.ttf'], ['symbolFont', 'DejaVuSans.ttf']]) {
+    if (!fs.existsSync(km.style[key])) {
+      say(`keymap warning: font not found: ${km.style[key]}, using ${alt}`)
+      km.style[key] = path.join(FALLBACK, alt)
+    }
+  }
 
   // every key on both halves, for the planner: the right half mirrored and moved across, as
   // in the assembled view
