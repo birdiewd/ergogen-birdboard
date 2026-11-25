@@ -171,7 +171,7 @@ const csSource = (U, cap, tol, points, { homing = false } = {}) => {
     push(back ? wall.slice().reverse() : wall)
   }
   // the hollow: its ceiling C(y) = min(skirt, the profile eroded by cap_top_t), from the
-  // bottom (and 0.5 below it) up; left side drafted, right side at 45 degrees
+  // bottom (and 0.5 below it) up; both sides drafted
   const T = U.cap_top_t, yi = cap.d / 2 - U.cap_wall
   const ceil = y => {
     if (Math.abs(y) > yi) return 0
