@@ -267,7 +267,10 @@ function cap() {
   const cut = hollow.subtract(post).union(socket);
   let cap = ${homing ? `body.union(CSG.roundedCylinder({ start: [${r3(-U.cap_homing_len / 2 + hr)}, ${r3(hy)}, ${r3(hz)}], end: [${r3(U.cap_homing_len / 2 - hr)}, ${r3(hy)}, ${r3(hz)}], radius: ${hr}, resolution: 32 }))` : 'body'}.subtract(cut);
   // laid on its left face for printing
-  return cap.rotateY(${turn}).translate([0, 0, ${lift}]).fixTJunctions()${scaffold ? '.union(scaffold())' : ''};
+  cap = cap.rotateY(${turn}).translate([0, 0, ${lift}]).fixTJunctions();
+${scaffold ? `  // the scaffold touches the cap nowhere, so the two are put in one file as they are: a boolean
+  // union of it with the cap's big mesh runs out of memory on the build server
+  return CSG.fromPolygons(cap.toPolygons().concat(scaffold().toPolygons()));` : '  return cap;'}
 }
 ${scaffold}
 `

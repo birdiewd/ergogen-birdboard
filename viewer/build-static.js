@@ -27,7 +27,7 @@ const ZIP_NAME = 'moose-birdboard-downloads.zip'
 
 // ---------- helpers ----------
 const convert = (src, dst) => new Promise(resolve => {
-  const proc = spawn(process.execPath, [OPENJSCAD, src, '-of', 'stlb', '-o', dst], { cwd: ROOT })
+  const proc = spawn(process.execPath, ['--max-old-space-size=3072', OPENJSCAD, src, '-of', 'stlb', '-o', dst], { cwd: ROOT })
   let log = ''
   proc.stdout.on('data', d => (log += d))
   proc.stderr.on('data', d => (log += d))
@@ -147,16 +147,21 @@ const main = async () => {
   // case .jscad -> binary .stl next to it (the viewer's 3D tab and the zip both use these)
   const jscads = fs.readdirSync(CASES).filter(f => f.endsWith('.jscad'))
   if (!jscads.length) { console.error('no cases were built'); return 1 }
-  const stlResults = await Promise.all(jscads.map(async f => {
+  const one = async f => {
     const dst = path.join(CASES, f.replace(/\.jscad$/, '.stl'))
     const r = await convert(path.join(CASES, f), dst)
     const ok = r.code === 0 && fs.existsSync(dst) && fs.statSync(dst).size > 0
     console.log(`${ok ? 'ok  ' : 'FAIL'} ${path.relative(ROOT, dst)}`)
-    if (!ok) console.error(r.log)
-    return ok
-  }))
-  if (!stlResults.every(Boolean)) return 1
-
+    if (!ok) console.error(r.log.slice(-600))
+    return { f, ok }
+  }
+  const results = []
+  const queue = jscads.slice()
+  await Promise.all([0, 1].map(async () => { while (queue.length) results.push(await one(queue.shift())) }))
+  // the print-only supported caps may fail without taking the site down; anything else may not
+  const failed = results.filter(r => !r.ok)
+  for (const r of failed.filter(r => r.f.includes('_supported'))) console.warn(`warning: ${r.f} was not converted, left out of the downloads`)
+  if (failed.some(r => !r.f.includes('_supported'))) return 1
   fs.rmSync(DIST, { recursive: true, force: true })
   fs.mkdirSync(DIST, { recursive: true })
 
