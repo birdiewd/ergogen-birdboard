@@ -59,9 +59,9 @@ units:
   # clear 1.75 mm filament, flush with the plate's top, as a light pipe from the LED up.
   led_x: 0            # LED centre across the board, from its centre (centred)
   led_y: -mcu_h / 2 + 8  # and up the board from its centre (8 mm in from the end away from the USB)
-  led_h: 1.6          # LED height above the board's top face (assumed: check the board)
+  led_h: 1                # LED height above the board's top face
   led_clear: 1.5      # gap between the LED's top and the tube's bottom
-  led_bore: 1.9       # bore for 1.75 mm filament: tight press fit, tune after a test print
+  led_bore: 1.85      # bore for 1.75 mm filament: tight press fit, tune after a test print
   led_wall: 1.2       # tube wall
   led_tube_z: case_floor + mcu_t + led_h + led_clear   # tube's bottom, from the case bottom
   led_tube_len: plate_z - led_tube_z                   # how far it hangs below the plate

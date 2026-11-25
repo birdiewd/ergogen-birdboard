@@ -311,7 +311,7 @@ const ASSEMBLY = half => `1. Print \`stl/switchplate${half === 'right' ? '_right
 5. Put the RP2040-Zero in its seat in the pod by the outer column and the USB-C breakout in its seat in the pod by the inner column, both component side up with their ports at the top wall, on double-sided tape.
 6. Wire each row and column from its end (labelled on the guide) to its MCU pin, going by the pin labels printed on the module, and 5V to the breakout's V, GND to G and GP8 to D+ (these three run across the half, from pod to pod). Keep every wire low, under the plate's standoff height.
 7. Check every key (press it) for continuity from its column's MCU pin to its row's MCU pin, and the rows and columns for shorts to each other.
-8. Press a piece of clear 1.75 mm filament, about 3.9 mm long, into the tube under the plate over the RP2040-Zero's LED, from the top, and cut or sand it flush with the plate. It is the status-light pipe.
+8. Press a piece of clear 1.75 mm filament, about 4.5 mm long, into the tube under the plate over the RP2040-Zero's LED, from the top, and cut or sand it flush with the plate. It is the status-light pipe.
 9. Screw the switch plate onto the standoffs (M2 into heat-set inserts). It covers both pods.`
 
 const report = (g, half) => `# BirdBoard v4.6 wiring guide: ${half} half
