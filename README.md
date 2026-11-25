@@ -21,7 +21,7 @@ The printable STLs are kept in the repo in `stl/`:
 
 | File | Part |
 | --- | --- |
-| `keyboard_case.stl`, `keyboard_case_right.stl` | cases, with the module seats and standoffs, and a 0.8 mm chamfer round the bottom edge. Each standoff is 5 mm across under the plate and flares out at 10° a side to 6.9 mm on the floor (`standoff_*`), trimmed where it would reach into a module's pocket. Its M2 heat-set insert hole is 3.2 mm across at the top and narrows at 10° a side to 2.2 mm, then runs straight down to the floor (`insert_*` in config.yaml) |
+| `keyboard_case.stl`, `keyboard_case_right.stl` | cases, with the module seats and standoffs, and a 0.8 mm chamfer round the bottom edge. A lip runs round the inside of the wall for the plate's edge to rest on: its top is level with the plate's underside, `lip_w` (1.2 mm) wide, with a 45° underside so it prints without supports, and it stops either side of each USB opening, with no lip across it. Each standoff is 5 mm across under the plate and flares out at 10° a side to 6.9 mm on the floor (`standoff_*`), trimmed where it would reach into a module's pocket. Its M2 heat-set insert hole is 3.2 mm across at the top and narrows at 10° a side to 2.2 mm, then runs straight down to the floor (`insert_*` in config.yaml) |
 | `switchplate.stl`, `switchplate_right.stl` | switch plates (they also cover the pods) |
 
 The case and plate print in one colour. The art on them is UV printed afterwards.

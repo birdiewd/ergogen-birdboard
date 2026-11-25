@@ -38,6 +38,9 @@ units:
   case_clear: 0.05    # gap between the plate edge and the wall
   case_off: case_clear + case_wall
   case_chamfer: 0.8   # 45 degree chamfer round the case's bottom edge (wiring/build.js)
+  lip_w: 1.2          # a lip round the inside of the wall that the plate's edge rests on: its
+                      #   top at the plate's underside, this wide, with a 45 degree underside
+                      #   (wiring/build.js)
   standoff_r: 2.5     # standoff radius at its top, under the plate (5 mm)
   standoff_flare: 10  # its outside widens downwards at this many degrees a side, to the floor
                       #   (wiring/build.js)

@@ -76,13 +76,58 @@ const standoffBase = U => U.standoff_r + (U.plate_z - U.case_floor) * Math.tan(U
 // standoff's top, narrowing at insert_taper degrees a side down to insert_r_min, then
 // straight down to the top of the floor. A standoff is trimmed where it would reach into a
 // module's pocket (`pockets`, outlines), so the module still lies flat on the floor.
-const withInserts = (src, holes, pockets, U) => {
+// The lip round the inside of the case wall that the plate's edge rests on: its top at the
+// plate's underside (plate_z), lip_w wide there, and its underside sloping at 45 degrees back
+// to the wall, so it prints without supports. `inner` is the wall's inside outline (points);
+// the lip is a closed mesh of triangles, its outer face 0.2 mm inside the wall so it joins it.
+// The USB openings (`notches`, outlines) are cut back out of it. Returns JSCAD source.
+const lipSource = (inner, notches, U) => {
+  // (its top 0.01 mm under the standoffs' tops: faces exactly level with theirs upset the CSG
+  // union, which then leaves holes)
+  const w = U.lip_w, z1 = U.plate_z - 0.01, z0 = z1 - w - 0.2
+  const P = Inlay.inset(inner, -0.2), Q = Inlay.inset(inner, w)   // the same corners, in the same order
+  const tris = []
+  const V = (p, z) => [p[0], p[1], z]
+  for (let i = 0; i < P.length; i++) {
+    const j = (i + 1) % P.length
+    const a = V(P[i], z0), b = V(P[j], z0), c = V(P[j], z1), d = V(P[i], z1), e = V(Q[j], z1), g = V(Q[i], z1)
+    tris.push([a, b, c], [a, c, d])          // the outer face, in the wall
+    tris.push([d, c, e], [d, e, g])          // the top, under the plate
+    tris.push([g, e, b], [g, b, a])          // the 45 degree underside
+  }
+  // each opening's cut runs on inward (down, -y: both openings are in the top wall) past the
+  // lip's width, so no strip of lip is left across it, and stays the opening's width
+  const cut = notches.map(n => {
+    const xs = n.map(p => p[0]), ys = n.map(p => p[1])
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys) - w - 2, y1 = Math.max(...ys)
+    return `${Inlay.polyExpr([[x0, y0], [x1, y0], [x1, y1], [x0, y1]])}.extrude({ offset: [0, 0, ${U.case_h + 2}] }).translate([0, 0, -1])`
+  })
+  return `CSG.fromPolygons(${JSON.stringify(tris)}.map(p => new CSG.Polygon(p.map(v => new CSG.Vertex(new CSG.Vector3D(v[0], v[1], v[2]))))))` +
+    (cut.length ? `.subtract([${cut.join(', ')}])` : '')
+}
+
+// How close the lip's inner edge comes to the switches hanging under the plate (each switch's
+// 14 mm body, square round its key), on the left half (the right is its mirror image)
+const lipCheck = (L, g, inner, U, say) => {
+  const Q = Inlay.inset(inner, U.lip_w)
+  let worst = null
+  for (const k of g.keys) for (let i = 0; i < Q.length; i++) {
+    const a = Q[i], b = Q[(i + 1) % Q.length]
+    for (const c of k.body) { const d = G.pointSeg(c, a, b); if (!worst || d < worst.d) worst = { d, key: k.name } }
+    for (let j = 0; j < k.body.length; j++) { const d = Math.min(G.pointSeg(a, k.body[j], k.body[(j + 1) % k.body.length])); if (d < worst.d) worst = { d, key: k.name } }
+  }
+  const inside = g.keys.some(k => Q.some(p => G.pointPoly(p, k.body).inside))
+  say(`lip: ${U.lip_w} mm wide; its inner edge comes ${inside ? 'INTO a switch body' : `${worst.d.toFixed(2)} mm from a switch body`} (${worst.key})`)
+}
+
+const withInserts = (src, holes, pockets, U, lip = null) => {
   const f = v => Math.round(v * 1e4) / 1e4
   const top = U.plate_z + 0.01, bottom = U.case_floor
   const trim = pockets.map(p => `${Inlay.polyExpr(p)}.extrude({ offset: [0, 0, ${f(U.plate_z + 1)}] })`)
   const posts = holes.map(([x, y]) =>
     `CSG.cylinder({ start: [${f(x)}, ${f(y)}, ${f(bottom - 0.01)}], end: [${f(x)}, ${f(y)}, ${f(U.plate_z)}], radiusStart: ${f(standoffBase(U))}, radiusEnd: ${f(U.standoff_r)}, resolution: 64 })` +
     (trim.length ? `.subtract([${trim.join(', ')}])` : ''))
+  if (lip) posts.push(lip)
   const taper = Math.min((U.insert_r - U.insert_r_min) / Math.tan(U.insert_taper * Math.PI / 180), top - bottom)
   const rEnd = U.insert_r - taper * Math.tan(U.insert_taper * Math.PI / 180)
   const cuts = holes.flatMap(([x, y]) => [
@@ -385,12 +430,17 @@ const build = async ({ echo = false } = {}) => {
     })
     // the modules' pockets in their seats: each module and its clearance
     const pockets = makerjs.model.findChains(results.outlines.modules.yaml).map(c => Inlay.inset(makerjs.chain.toKeyPoints(c, 0.5), -U.seat_tol))
+    // the lip the plate rests on: along the wall's inside, less the USB openings
+    const longest = name => makerjs.chain.toKeyPoints(makerjs.model.findChains(results.outlines[name].yaml).sort((a, b) => b.pathLength - a.pathLength)[0], 0.5)
+    const caseInner = longest('_case_inner')
+    const notches = ['usb_notch_mcu', 'usb_notch_link'].flatMap(n => makerjs.model.findChains(results.outlines[n].yaml).map(c => makerjs.chain.toKeyPoints(c, 0.5)))
+    lipCheck(L, layout(L, false), caseInner, U, say)
     const fxc = mirror => p => (mirror ? [-p[0], p[1]] : p)
     for (const [suffix, mirror, base] of [['', false, results.cases.keyboard_case.jscad], ['_right', true, right.cases.keyboard_case.jscad || right.cases.keyboard_case]]) {
       // the art never reaches the chamfer
       const inlay = Inlay.build({ art, holes: [], depth: 0, outline: caseOutline, mirror, edge: U.case_chamfer })
       const shape = caseOutline.map(p => (mirror ? [-p[0], p[1]] : p))
-      put(`cases/keyboard_case${suffix}.jscad`, inlay.caseWith(Inlay.with2d(withInserts(base, mountHoles.map(fxc(mirror)), pockets.map(p => p.map(fxc(mirror))), U), 'case_outer'), slicesAt(mirror), { cut: false }))
+      put(`cases/keyboard_case${suffix}.jscad`, inlay.caseWith(Inlay.with2d(withInserts(base, mountHoles.map(fxc(mirror)), pockets.map(p => p.map(fxc(mirror))), U, lipSource(caseInner.map(fxc(mirror)), notches.map(n => n.map(fxc(mirror))), U)), 'case_outer'), slicesAt(mirror), { cut: false }))
       put(`art/moose${suffix || '_left'}.svg`, Inlay.preview(inlay.flat, shape, []))
       put(`art/print/print_case${suffix || '_left'}.svg`, Inlay.print(inlay.flat, shape, ART_COLOUR))
       for (const w of inlay.warnings) say(`art${suffix} warning: ${w}`)
