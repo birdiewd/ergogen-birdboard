@@ -91,9 +91,12 @@ so the post rides on the switch's slider and the skirt can't reach the plate at 
   and back.
 
 **The cap:** the left and right faces have a draft of `cap_draft` over the cap's height, and the top's
-left and right edges are chamfered `cap_cs_edge` (0.6 mm). Inside, a hollow keeps
-`cap_top_t` (1.2 mm) under the curved top and is no higher than the 3.3 mm skirt, so it's
-lower near a rounded edge. The top over the stem is 1.24 mm thick on the home cap.
+left and right edges are chamfered `cap_cs_edge` (0.6 mm). The top has a shallow dish:
+`cap_cs_dish` (0.5 mm) deep in the middle, easing to nothing at the left and right edges
+and at the front and back, on top of the profile (the heights in the table above are the
+profile's, along the edges; set `cap_cs_dish` to 0 for a flat top). Inside, a hollow keeps
+`cap_top_t` (1.2 mm) under the curved top, measured from the dish's lowest line, and is no
+higher than the 3.3 mm skirt, so it's lower near a rounded edge and under the dish. The top over the stem is 1.24 mm thick on the home cap.
 
 **Printing:** the caps print lying on their left face, and the STLs are already turned that
 way. So every layer is the profile, and the curve comes out smooth whatever its shape.
