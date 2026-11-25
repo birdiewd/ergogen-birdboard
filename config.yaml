@@ -55,6 +55,16 @@ units:
   mcu_w: 18.3         # Waveshare RP2040-Zero board
   mcu_h: 23.9
   mcu_t: 1.0          # its board thickness
+  # Status-light tube (RP2040-Zero's LED): a hollow tube under the plate holds a short piece of
+  # clear 1.75 mm filament, flush with the plate's top, as a light pipe from the LED up.
+  led_x: 0            # LED centre across the board, from its centre (centred)
+  led_y: -mcu_h / 2 + 8  # and up the board from its centre (8 mm in from the end away from the USB)
+  led_h: 1.6          # LED height above the board's top face (assumed: check the board)
+  led_clear: 1.5      # gap between the LED's top and the tube's bottom
+  led_bore: 1.9       # bore for 1.75 mm filament: tight press fit, tune after a test print
+  led_wall: 1.2       # tube wall
+  led_tube_z: case_floor + mcu_t + led_h + led_clear   # tube's bottom, from the case bottom
+  led_tube_len: plate_z - led_tube_z                   # how far it hangs below the plate
   usb_w: 13.8         # 4-pin USB-C breakout: length along the cable direction (up the board)
   usb_h: 12           #   and width
   link_pcb_t: 1.6     #   and board thickness (receptacle on top)
@@ -298,6 +308,19 @@ outlines:
       shift: [link_cx - pod_overlap / 2, 0.52py - link_pod_h / 2]
     size: [link_pod_w + pod_overlap, link_pod_h]
     corner: 2
+  # Status-light tube: its outside, and the bore for the filament.
+  led_tube:
+  - what: circle
+    where: matrix_outer_top
+    radius: led_bore / 2 + led_wall
+    adjust:
+      shift: [mcu_cx + led_x, mcu_cy + led_y]
+  led_hole:
+  - what: circle
+    where: matrix_outer_top
+    radius: led_bore / 2
+    adjust:
+      shift: [mcu_cx + led_x, mcu_cy + led_y]
   # Everything inside the case walls: the key area and the two pods. Also the plate's outline.
   _inside:
     - name: board
@@ -484,6 +507,18 @@ cases:
       extrude: plate_t
       shift: [0, 0, frame_t]
       operation: add
+    # status-light tube down from the underside, with a bore through the whole plate (open and
+    # flush on top) for a piece of clear 1.75 mm filament, as long as the plate plus the tube
+    - what: outline
+      name: led_tube
+      extrude: led_tube_len
+      shift: [0, 0, -led_tube_len]
+      operation: add
+    - what: outline
+      name: led_hole
+      extrude: led_tube_len + frame_t + plate_t
+      shift: [0, 0, -led_tube_len]
+      operation: subtract
   # Keyboard case (z = 0 is the case bottom): floor with the two module seats, walls with
   # openings for both USB-C plugs, and standoffs with M2 heat-set insert holes under all
   # mounting holes. The switch plate sits on the standoffs inside the walls. This is the
