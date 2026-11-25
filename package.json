@@ -6,7 +6,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "node wiring/build.js",
     "stl": "node viewer/export-stl.js",
-    "view":"node viewer/server.js"
+    "view":"node viewer/server.js",
+    "build:site": "node viewer/build-static.js"
   },
   "keywords": [],
   "author": "",
