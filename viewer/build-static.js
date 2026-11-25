@@ -64,6 +64,23 @@ const cut = (text, startMark, endMark, what) => {
   return text.slice(0, s) + text.slice(e)
 }
 
+// Counts the edges of a binary STL that are not shared with a matching, opposite edge (holes
+// and cracks), and zero-area triangles, so the build log says how sound each mesh is.
+const stlCheck = file => {
+  const b = fs.readFileSync(file)
+  const n = b.readUInt32LE(80), q = v => Math.round(v * 1000)
+  const key = (o, i) => `${q(b.readFloatLE(o + i * 12))},${q(b.readFloatLE(o + i * 12 + 4))},${q(b.readFloatLE(o + i * 12 + 8))}`
+  const E = new Map(); let degenerate = 0
+  for (let t = 0; t < n; t++) {
+    const o = 84 + t * 50 + 12, k = [0, 1, 2].map(i => key(o, i))
+    if (new Set(k).size < 3) { degenerate++; continue }
+    for (let i = 0; i < 3; i++) { const e = k[i] + '>' + k[(i + 1) % 3]; E.set(e, (E.get(e) || 0) + 1) }
+  }
+  let open = 0
+  for (const [e, c] of E) { const [u, v] = e.split('>'); if ((E.get(v + '>' + u) || 0) !== c) open++ }
+  return { triangles: n, open, degenerate }
+}
+
 // ---------- the pages ----------
 const patchIndex = html => {
   // editor: stylesheet, panel, buttons, code
@@ -151,7 +168,9 @@ const main = async () => {
     const dst = path.join(CASES, f.replace(/\.jscad$/, '.stl'))
     const r = await convert(path.join(CASES, f), dst)
     const ok = r.code === 0 && fs.existsSync(dst) && fs.statSync(dst).size > 0
-    console.log(`${ok ? 'ok  ' : 'FAIL'} ${path.relative(ROOT, dst)}`)
+    let note = ''
+    if (ok && dst.includes('keycap_cs')) { try { const c = stlCheck(dst); note = `  (${c.triangles} triangles, ${c.open} open edges, ${c.degenerate} zero-area)` } catch (e) { note = '  (could not check)' } }
+    console.log(`${ok ? 'ok  ' : 'FAIL'} ${path.relative(ROOT, dst)}${note}`)
     if (!ok) console.error(r.log.slice(-600))
     return { f, ok }
   }
