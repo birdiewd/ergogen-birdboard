@@ -68,7 +68,11 @@ units:
   # MCU pod, left of the outer column's top key (positions from matrix_outer_top)
   mcu_pod_w: mcu_w + 2 pod_side
   mcu_pod_h: mcu_h + pod_side
-  mcu_cx: -0.5px - mount_pad - mcu_pod_w / 2       # module centre
+  mcu_pod_in: 3.9     # the pod moved in toward the keys: until the module's pocket is 0.2 mm
+                      #   from the standoff_r column of the mounting hole beside the top key. The seat's
+                      #   rim runs into the standoff, and the standoff's flare is trimmed clear
+                      #   of the pocket (wiring/build.js), as in the breakout's pod
+  mcu_cx: -0.5px - mount_pad - mcu_pod_w / 2 + mcu_pod_in   # module centre
   mcu_cy: 0.5py - mcu_h / 2
   # Breakout pod, right of the inner column's top key (positions from matrix_inner_top),
   # with a mounting hole below the breakout
@@ -79,7 +83,9 @@ units:
   # USB-C port centre heights: each receptacle (~3.2 tall) sits on its board on the floor.
   usb_z_mcu: case_floor + mcu_t + 1.6
   usb_z_link: case_floor + link_pcb_t + 1.6
-  usb_notch_w: 13     # wall opening for a USB-C plug's overmould
+  usb_port_w: 8.94    # a USB-C receptacle's width
+  usb_port_clear: 0.5 # clearance either side of it in the wall opening
+  usb_notch_w: usb_port_w + 2 usb_port_clear       # wall opening's width (9.94)
   usb_notch_down: 3.3 # opening reaches this far below the port centre (open to the top)
   # Keycaps (art/keycaps.js): low profile, for the KS-33's MX-style cross stem, one piece,
   # printed top down with the flat face on the bed. The skirt ends level with the bottom of the
@@ -313,7 +319,7 @@ outlines:
     bound: false
     adjust:
       shift: [mcu_cx, mcu_cy + 11.05]
-    size: [9, 5.3]
+    size: [usb_port_w, 5.3]
   # USB-C breakout, opening facing up
   - what: rectangle
     where: matrix_inner_top
