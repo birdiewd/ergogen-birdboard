@@ -1,8 +1,6 @@
 // Keycaps, the keymap and the UV print files for their legends:
 //   output/keymap/layout.json          every key on both halves, for the keymap planner
-//   output/cases/keycap_1u.jscad       low-profile flat caps, one piece, printed top down
-//   output/cases/keycap_1_5u.jscad
-//   output/cases/keycap_1u_homing.jscad  with a homing groove in its face
+//   output/cases/keycap_cs_*.jscad     the Chicago-style caps, printed on their left face
 //   output/cases/keycap_holder.jscad   holds one half's caps, top up, on the eufyMake E1's bed
 //   output/keymap/print_left.svg       the legends for one half, true size, laid out on the
 //   output/keymap/print_right.svg        holder: the drawing's edges are the holder's edges
@@ -58,55 +56,6 @@ function loft(a, za, b, zb) {
   return CSG.fromPolygons(polys);
 }
 `
-
-// A one-piece flat cap: upright (the skirt's bottom at z = 0, the top at z = H), with rounded
-// corners, a flat top cap_top_t thick and the stem post joined to it, then turned top down for
-// printing, the flat top on the bed. tol: the socket's clearance.
-// The face's edge is chamfered cap_face_chamfer at 45 degrees. homing: a rounded groove in the
-// face, cap_homing_len long, cap_homing_depth deep, cap_homing_in from the front edge. Face down, it's a void in the first
-// layers, roofed by a short bridge.
-const flatSource = (U, cap, tol, { homing = false } = {}) => {
-  const H = U.cap_top_t + U.cap_skirt
-  const at = z => U.cap_draft * z / H
-  // the outside: the drafted sides up to the chamfer, then the chamfer in to the face
-  const ch = U.cap_face_chamfer, zc = H - ch
-  const rAt = z => U.cap_r_bottom + (U.cap_r_top - U.cap_r_bottom) * z / H
-  const rings = [
-    [rrect(cap.w, cap.d, U.cap_r_bottom), 0],
-    [rrect(cap.w - 2 * at(zc), cap.d - 2 * at(zc), rAt(zc)), zc],
-    [rrect(cap.w - 2 * at(zc) - 2 * ch, cap.d - 2 * at(zc) - 2 * ch, rAt(zc) - ch), H],
-  ]
-  const z0 = -0.5, z1 = U.cap_skirt
-  const inner = [z0, z1].map(z => rrect(cap.w - 2 * at(z) - 2 * U.cap_wall, cap.d - 2 * at(z) - 2 * U.cap_wall, Math.max(0.4, U.cap_r_bottom - U.cap_wall)))
-  const cl = U.cap_cross + tol, cw = U.cap_cross_w + tol
-  const hr = U.cap_homing_r, hy = -cap.top.h / 2 + U.cap_homing_in, hz = H + hr - U.cap_homing_depth
-  return `
-function cap() {
-  // a solid through outlines with the same number of points (counter-clockwise), each at its height
-  const rings = ${JSON.stringify(rings.map(([p, z]) => [p, r3(z)]))};
-  const V = (p, z) => new CSG.Vertex(new CSG.Vector3D(p[0], p[1], z));
-  const polys = [
-    new CSG.Polygon(rings[0][0].slice().reverse().map(p => V(p, rings[0][1]))),
-    new CSG.Polygon(rings[rings.length - 1][0].map(p => V(p, rings[rings.length - 1][1]))),
-  ];
-  for (let k = 0; k + 1 < rings.length; k++) {
-    const [a, za] = rings[k], [b, zb] = rings[k + 1];
-    for (let i = 0; i < a.length; i++) {
-      const j = (i + 1) % a.length;
-      polys.push(new CSG.Polygon([V(a[i], za), V(a[j], za), V(b[j], zb), V(b[i], zb)]));
-    }
-  }
-  const body = CSG.fromPolygons(polys)
-    .subtract(loft(${JSON.stringify(inner[0])}, ${z0}, ${JSON.stringify(inner[1])}, ${r3(z1)}));
-  const post = CSG.cylinder({ start: [0, 0, 0], end: [0, 0, ${r3(U.cap_skirt + 0.3)}], radius: ${U.cap_post_d / 2}, resolution: 48 });
-  const socket = CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cl / 2)}, ${r3(cw / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] })
-    .union(CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cw / 2)}, ${r3(cl / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] }));
-  let cap = body.union(post).subtract(socket);
-${homing ? `  cap = cap.subtract(CSG.roundedCylinder({ start: [${r3(-U.cap_homing_len / 2 + hr)}, ${r3(hy)}, ${r3(hz)}], end: [${r3(U.cap_homing_len / 2 - hr)}, ${r3(hy)}, ${r3(hz)}], radius: ${hr}, resolution: 32 }));\n` : ''}  // top down for printing: the flat top on the bed
-  return cap.rotateX(180).translate([0, 0, ${r3(H)}]);
-}
-`
-}
 
 // ---------- Chicago-style caps ----------
 // The side profiles (art/cs_profiles.json): points (y, z) front to back, y from the front (-)
@@ -272,11 +221,9 @@ const M4 = {
 
 // Each cap file's copies on the keys of both halves, for the viewer's assembled view: for
 // each STL, the transforms that take it from where it prints to where it sits on a key. A
-// cap stands on its switch with the bottom of its skirt cap_seat above the plate's top. Only
-// the Chicago caps go on the keys; the flat caps are left out of the assembled view (hidden:
-// true). The Chicago caps print on their left face (csPrint). F and J (the index fingers' home
+// cap stands on its switch with the bottom of its skirt cap_seat above the plate's top. The
+// Chicago caps print on their left face (csPrint). F and J (the index fingers' home
 // keys) take the homing cap; the bottom row takes the top row's cap turned round.
-const FLAT_CAPS = ['keycap_1u', 'keycap_1_5u', 'keycap_1u_homing']
 const assembledCaps = (U, P, dx) => {
   const seat = U.plate_z + U.frame_t + U.plate_t + U.cap_seat
   const csUp = units => { const { turn, lift } = csPrint(U, capOf(U, units)); return M4.mul(M4.R('y', -turn), M4.T(0, 0, -lift)) }
@@ -292,7 +239,6 @@ const assembledCaps = (U, P, dx) => {
     add(cs, M4.mul(K, kind.turned ? M4.R('z', 180) : M4.T(0, 0, 0), csUp(units)))
   }
   const placed = Object.fromEntries(Object.entries(out).map(([f, ms]) => [f, { instances: ms }]))
-  for (const f of FLAT_CAPS) placed[`cases/${f}.stl`] = { hidden: true }
   return placed
 }
 
@@ -439,12 +385,6 @@ const build = ({ results, right, U, put, say, dx }) => {
   }
 
   // keycaps
-  for (const units of [1, 1.5]) {
-    const cap = capOf(U, units)
-    const u = String(units).replace('.', '_')
-    put(`cases/keycap_${u}u.jscad`, LIB + flatSource(U, cap, U.cap_stem_tol) + 'function main() { return cap(); }\n')
-    if (units === 1) put('cases/keycap_1u_homing.jscad', LIB + flatSource(U, cap, U.cap_stem_tol, { homing: true }) + 'function main() { return cap(); }\n')
-  }
   // Chicago-style caps: the top row's (turned round, also the bottom row's), the home row's
   // (also the 1u thumb keys'), the home row's with a homing groove, and the 1.5u thumb key in
   // the home row's profile
