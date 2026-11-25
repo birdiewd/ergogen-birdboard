@@ -50,7 +50,10 @@ function loft(a, za, b, zb) {
   ];
   for (let i = 0; i < a.length; i++) {
     const j = (i + 1) % a.length;
-    polys.push(new CSG.Polygon([V(a[i], za), V(a[j], za), V(b[j], zb), V(b[i], zb)]));
+    // two triangles, not a quad: the quad isn't flat where the outlines' corners differ, and
+    // CSG cuts go wrong on polygons that aren't flat
+    polys.push(new CSG.Polygon([V(a[i], za), V(a[j], za), V(b[j], zb)]));
+    polys.push(new CSG.Polygon([V(a[i], za), V(b[j], zb), V(b[i], zb)]));
   }
   return CSG.fromPolygons(polys);
 }
@@ -101,6 +104,121 @@ function cap() {
   let cap = body.union(post).subtract(socket);
 ${homing ? `  cap = cap.subtract(CSG.roundedCylinder({ start: [${r3(-U.cap_homing_len / 2 + hr)}, ${r3(hy)}, ${r3(hz)}], end: [${r3(U.cap_homing_len / 2 - hr)}, ${r3(hy)}, ${r3(hz)}], radius: ${hr}, resolution: 32 }));\n` : ''}  // top down for printing: the flat top on the bed
   return cap.rotateX(180).translate([0, 0, ${r3(H)}]);
+}
+`
+}
+
+// ---------- Chicago-style caps ----------
+// The side profiles (art/cs_profiles.json): points (y, z) front to back, y from the front (-)
+// to the back (+), z up from the bottom of the skirt.
+const csProfiles = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'art', 'cs_profiles.json'), 'utf8'))
+const zOfProfile = pts => y => {
+  if (y <= pts[0][0] || y >= pts[pts.length - 1][0]) return 0
+  for (let k = 1; k < pts.length; k++) if (pts[k][0] >= y) { const t = (y - pts[k - 1][0]) / ((pts[k][0] - pts[k - 1][0]) || 1); return pts[k - 1][1] + t * (pts[k][1] - pts[k - 1][1]) }
+  return 0
+}
+
+// A polygon for a mesh, without repeated corners; null if there's nothing left of it
+const meshPoly = pts => {
+  const out = []
+  for (const p of pts) if (!out.length || Math.hypot(p[0] - out[out.length - 1][0], p[1] - out[out.length - 1][1], p[2] - out[out.length - 1][2]) > 1e-6) out.push(p)
+  while (out.length > 1 && Math.hypot(out[0][0] - out[out.length - 1][0], out[0][1] - out[out.length - 1][1], out[0][2] - out[out.length - 1][2]) <= 1e-6) out.pop()
+  if (out.length < 3) return null
+  const r = out.map(p => p.map(r3))
+  const a = r[0], b = r[1], c = r[2]
+  const n = [(b[1] - a[1]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[1] - a[1]), (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]), (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])]
+  return Math.hypot(...n) < 1e-7 ? null : r
+}
+
+// A Chicago-style cap: its side profile (points, as above) the same all the way across, the
+// left and right faces drafted like the flat cap's (cap_draft over its height, per mm), and
+// the top's left and right edges chamfered cap_cs_edge. Inside, a hollow cap_top_t under the
+// top (the profile eroded by that much), no higher than cap_skirt, cap_wall in from the sides.
+// It prints on its left face, so each layer is the profile. Printed that way, the stem post
+// runs sideways and the hollow's right side is a ceiling: that side slopes at 45 degrees (a
+// thicker right wall low down), and a rib holds the post up from the left wall.
+// The outside and the hollow are built as meshes of strips across the width (each a flat
+// four-sided face between two profile points), which keeps the CSG steps that follow sound.
+const csSource = (U, cap, tol, points, { homing = false } = {}) => {
+  const a = U.cap_draft / (U.cap_top_t + U.cap_skirt), z1 = U.cap_skirt, c = U.cap_cs_edge
+  const S = zOfProfile(points)
+  const X = z => cap.w / 2 - a * z                     // the outside's half width at height z
+  // (as triangles: rounded to 0.001 mm, a four-sided face is no longer exactly flat, and the
+  // CSG steps go wrong on faces that aren't)
+  const tris = q => q.slice(1, -1).map((_, i) => meshPoly([q[0], q[i + 1], q[i + 2]])).filter(Boolean)
+  const mesh = []
+  const push = (...ps) => { for (const p of ps) { const q = meshPoly(p); if (q) mesh.push(...tris(q)) } }
+  // the outside: for each profile point, the top's edge (I), the chamfer's foot on the side
+  // face (O) and the bottom (B), right (+x) and left. The profile's ends, where it's lower than
+  // twice the chamfer (it drops nearly straight down there), are left off: the ends are
+  // straight walls up to it instead, and the chamfer is the same all the way along
+  const first = points.findIndex(p => p[1] >= 2 * c), last = points.length - 1 - points.slice().reverse().findIndex(p => p[1] >= 2 * c)
+  const ring = points.slice(first, last + 1).map(([y, z]) => {
+    const ck = c
+    return { IR: [X(z) - ck, y, z], IL: [-(X(z) - ck), y, z], OR: [X(z - ck), y, z - ck], OL: [-X(z - ck), y, z - ck], BR: [X(0), y, 0], BL: [-X(0), y, 0] }
+  })
+  for (let k = 0; k + 1 < ring.length; k++) {
+    const p = ring[k], q = ring[k + 1]
+    push([p.IL, p.IR, q.IR, q.IL],                                   // top
+      [p.OR, q.OR, q.IR], [p.OR, q.IR, p.IR],                        // right chamfer
+      [p.BR, q.BR, q.OR, p.OR],                                      // right face
+      [q.IL, q.OL, p.OL], [p.IL, q.IL, p.OL],                        // left chamfer
+      [p.OL, q.OL, q.BL, p.BL],                                      // left face
+      [p.BL, q.BL, q.BR, p.BR])                                      // bottom
+  }
+  for (const [r, back] of [[ring[0], false], [ring[ring.length - 1], true]]) {   // the ends, if they stand up
+    const wall = [r.BL, r.BR, r.OR, r.IR, r.IL, r.OL]
+    push(back ? wall.slice().reverse() : wall)
+  }
+  // the hollow: its ceiling C(y) = min(skirt, the profile eroded by cap_top_t), from the
+  // bottom (and 0.5 below it) up; left side drafted, right side at 45 degrees
+  const T = U.cap_top_t, yi = cap.d / 2 - U.cap_wall
+  const ceil = y => {
+    if (Math.abs(y) > yi) return 0
+    let m = z1
+    for (let u = -T; u <= T + 1e-9; u += 0.05) m = Math.min(m, S(y + u) - Math.sqrt(Math.max(0, T * T - u * u)))
+    return Math.max(0, m)
+  }
+  const xi0 = cap.w / 2 - U.cap_wall, xiTop = xi0 - a * z1
+  const xmin = z => -(xi0 - a * z), xmax = z => xiTop - z
+  let ys = []
+  for (let y = -yi; y <= yi + 1e-9; y += 0.2) ys.push(y)
+  // only the stretch round the middle where there's room, closed at C = 0 at its ends
+  let lo = ys.findIndex(y => ceil(y) > 0.02), hi = ys.length - 1 - ys.slice().reverse().findIndex(y => ceil(y) > 0.02)
+  ys = ys.slice(Math.max(0, lo - 1), hi + 2)
+  const hol = ys.map((y, k) => {
+    const C = k === 0 || k === ys.length - 1 ? 0 : ceil(y)
+    return { TL: [xmin(C), y, C], TR: [xmax(C), y, C], BL: [xmin(-0.5), y, -0.5], BR: [xmax(-0.5), y, -0.5] }
+  })
+  const cav = []
+  const pushC = (...ps) => { for (const p of ps) { const q = meshPoly(p); if (q) cav.push(...tris(q)) } }
+  for (let k = 0; k + 1 < hol.length; k++) {
+    const p = hol[k], q = hol[k + 1]
+    pushC([p.TL, p.TR, q.TR, q.TL], [p.BR, q.BR, q.TR, p.TR], [p.TL, q.TL, q.BL, p.BL], [p.BL, q.BL, q.BR, p.BR])
+  }
+  pushC([hol[0].BL, hol[0].BR, hol[0].TR, hol[0].TL], [hol[hol.length - 1].TL, hol[hol.length - 1].TR, hol[hol.length - 1].BR, hol[hol.length - 1].BL])
+  const cl = U.cap_cross + tol, cw = U.cap_cross_w + tol
+  // homing: a rounded bar across the face, standing cap_cs_homing_bump proud of it
+  const hr = U.cap_homing_r, hy = -cap.d / 2 + U.cap_draft + U.cap_homing_in, hz = S(hy) + U.cap_cs_homing_bump - hr
+  // laid on its left face: turned about y until that face (x = -X(z)) is flat on the bed
+  const turn = Math.atan(1 / a) * 180 / Math.PI - 180
+  const solid = polys => `CSG.fromPolygons(${JSON.stringify(polys)}.map(p => new CSG.Polygon(p.map(v => new CSG.Vertex(new CSG.Vector3D(v[0], v[1], v[2]))))))`
+  return `
+function cap() {
+  const body = ${solid(mesh)};
+  const hollow = ${solid(cav)};
+  const post = CSG.cylinder({ start: [0, 0, 0], end: [0, 0, ${r3(z1 + 0.3)}], radius: ${U.cap_post_d / 2}, resolution: 48 });
+  const rib = CSG.cube({ corner1: [${r3(-xi0 - 0.3)}, ${r3(-U.cap_cs_rib / 2)}, ${U.cap_cs_rib_from}], corner2: [0, ${r3(U.cap_cs_rib / 2)}, ${r3(z1 + 0.3)}] });
+  const socket = CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cl / 2)}, ${r3(cw / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] })
+    .union(CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cw / 2)}, ${r3(cl / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] }));
+  // everything taken out of the outside, as one cut: the hollow (less the post and the rib,
+  // which stay) and the socket. (Cut one at a time, the CSG steps leave holes.)
+  const cut = hollow.subtract(post).subtract(rib).union(socket);
+  let cap = ${homing ? `body.union(CSG.roundedCylinder({ start: [${r3(-U.cap_homing_len / 2 + hr)}, ${r3(hy)}, ${r3(hz)}], end: [${r3(U.cap_homing_len / 2 - hr)}, ${r3(hy)}, ${r3(hz)}], radius: ${hr}, resolution: 32 }))` : 'body'}.subtract(cut);
+  // laid on its left face for printing
+  cap = cap.rotateY(${r3(turn)});
+  const b = cap.getBounds();
+  return cap.translate([0, 0, -b[0].z]).fixTJunctions();
 }
 `
 }
@@ -251,6 +369,15 @@ const build = ({ results, right, U, put, say, dx }) => {
     put(`cases/keycap_${u}u.jscad`, LIB + flatSource(U, cap, U.cap_stem_tol) + 'function main() { return cap(); }\n')
     if (units === 1) put('cases/keycap_1u_homing.jscad', LIB + flatSource(U, cap, U.cap_stem_tol, { homing: true }) + 'function main() { return cap(); }\n')
   }
+  // Chicago-style caps: the top row's (turned round, also the bottom row's), the home row's
+  // (also the 1u thumb keys'), the home row's with a homing groove, and the 1.5u thumb key in
+  // the home row's profile
+  const prof = csProfiles()
+  const capCs = (name, units, points, opts) => put(`cases/keycap_cs_${name}.jscad`, LIB + csSource(U, capOf(U, units), U.cap_stem_tol, points, opts) + 'function main() { return cap(); }\n')
+  capCs('top_1u', 1, prof.top)
+  capCs('home_1u', 1, prof.home)
+  capCs('home_1u_homing', 1, prof.home, { homing: true })
+  capCs('thumb_1_5u', 1.5, prof.home)
 
   // holder: the same for both halves (each has 23 1u caps and one 1.5u)
   const perHalf = half => keys.filter(k => k.half === half)

@@ -105,6 +105,15 @@ units:
   cap_homing_r: 0.6
   cap_homing_in: 2.5
   cap_homing_depth: 0.4
+  # Chicago-style caps (keycap_cs_*): the same footprint and stem, with the side profiles in
+  # art/cs_profiles.json (traced from art/cs_profiles.png by art/trace-profile.js) running
+  # across the width. Printed on the left side, so every layer is the profile.
+  cap_cs_edge: 0.6    # 45 degree chamfer along the top's left and right edges
+  cap_cs_rib: 1.2     # rib from the stem post down to the left wall, which is on the bed
+  cap_cs_rib_from: 1  #   starting this far above the post's end, clear of the switch
+  cap_cs_homing_bump: 0.4   # keycap_cs_home_1u_homing: a rounded bar standing this proud of
+                            #   the face (cap_homing_len long, cap_homing_r round, cap_homing_in
+                            #   from the front edge)
   # Holder for UV printing the legends on the eufyMake E1: one half's caps at a time, top up
   holder_pitch: 23    # slot spacing per unit
   holder_cols: 5      # 1u slots per row

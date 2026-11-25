@@ -81,6 +81,46 @@ The homing cap has a rounded groove cut into its face, 5 mm long, `cap_homing_de
 deep and 2.5 mm from the front edge (the `cap_homing_*` settings). Face down, it's a void in
 the first layers with a short bridge over it.
 
+### Chicago-style caps, printed on their side
+
+There's also a set in a Chicago Steno style: the same footprint and stem, with two side
+profiles traced from a picture and running the full width of the cap.
+
+| File | Part |
+| --- | --- |
+| `stl/keycap_cs_top_1u.stl` | top row: 8.55 mm at its peak, 7.6 mm near the back, 4.3 mm near the front. Turned round, tall side to the front, it's the bottom row's cap too (print 24) |
+| `stl/keycap_cs_home_1u.stl` | home row: 4.74 mm in the middle, 3.5 mm near the front and back, the same both ways. Also the 1u thumb keys (print 20) |
+| `stl/keycap_cs_home_1u_homing.stl` | home row with a homing bump, for F and J: a rounded bar 5 mm long standing `cap_cs_homing_bump` (0.4 mm) proud of the face, 2.5 mm from the front edge (print 2) |
+| `stl/keycap_cs_thumb_1_5u.stl` | 1.5u inner thumb key, in the home row's profile (print 2) |
+
+**The profiles:** the side views are in [art/cs_profiles.png](art/cs_profiles.png), with
+[art/cs_profiles_zoom.png](art/cs_profiles_zoom.png), a sharper screenshot of their tops.
+`node art/trace-profile.js` traces them into `art/cs_profiles.json` and draws
+[art/cs_profiles.svg](art/cs_profiles.svg) to check them by:
+- **Scale:** each shape's width at its base is the cap's 18 mm depth, and its base is the
+  bottom of the skirt.
+- **Smoothing:** the two pictures' traces are averaged and smoothed. The result stays
+  within 0.1 mm of the traces, and its control points are crowded into the corners.
+- **Home row:** its profile is averaged with its own mirror image, so it's the same front
+  and back.
+
+**The cap:** the left and right faces have the same draft as the flat caps, and the top's
+left and right edges are chamfered `cap_cs_edge` (0.6 mm). Inside, a hollow keeps
+`cap_top_t` (1.2 mm) under the curved top and is no higher than the 3.3 mm skirt, so it's
+lower near a rounded edge. The top over the stem is 1.24 mm thick on the home cap.
+
+**Printing:** the caps print lying on their left face, and the STLs are already turned that
+way. So every layer is the profile, and the curve comes out smooth whatever its shape.
+Lying like that, the stem post runs sideways, and the hollow's right side would be a
+ceiling. Two things hold them up, so they print without supports:
+- **The hollow's right side** slopes at 45° instead.
+- **A rib** (`cap_cs_rib`) runs from the post down to the left wall. It stops
+  `cap_cs_rib_from` (1 mm) short of the post's end, to keep clear of the switch.
+
+They fit the legend holder like the flat caps. Put each bottom-row cap in the holder turned
+round, tall side to the front, as it sits on the keyboard, so its legend prints the right way
+up.
+
 **Fit:** the cross socket's clearance is `cap_stem_tol`. It's 0.2 mm, the best fit from an
 earlier fit test of 0.05 to 0.2 mm. If the stems grip too tightly or too loosely on another
 printer, change it and export again.
