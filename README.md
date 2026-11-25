@@ -111,11 +111,10 @@ lower near a rounded edge. The top over the stem is 1.24 mm thick on the home ca
 
 **Printing:** the caps print lying on their left face, and the STLs are already turned that
 way. So every layer is the profile, and the curve comes out smooth whatever its shape.
-Lying like that, the stem post runs sideways, and the hollow's right side would be a
-ceiling. Two things hold them up, so they print without supports:
-- **The hollow's right side** slopes at 45° instead.
-- **A rib** (`cap_cs_rib`) runs from the post down to the left wall. It stops
-  `cap_cs_rib_from` (1 mm) short of the post's end, to keep clear of the switch.
+Lying like that, the hollow's right side would be a ceiling, so it slopes at 45° instead.
+The stem post runs sideways, 3.6 mm out from the top with nothing under it. Its round
+underside is an overhang, so if it sags on your printer, add a support under the post in the
+slicer.
 
 They fit the legend holder like the flat caps. Put each bottom-row cap in the holder turned
 round, tall side to the front, as it sits on the keyboard, so its legend prints the right way
@@ -137,6 +136,12 @@ Run `npm run view` and open http://localhost:4600/keymap (or **Keymap ↗** in t
   Raise). The **Top** menu fills the key's whole top with the shift colour or a layer's colour,
   printed under its legends. Legends slide clear of each other, and shrink only when there isn't room. Tab, Shift+Tab and Enter move
   between keys.
+- **Faces:** the **Flat caps / Chicago caps** switch at the top picks which caps the keys are
+  drawn as. With Chicago caps, each key shows the face of the cap it takes, seen from above
+  (the bottom row's turned round). The face is outlined, and darker wherever it's steeper than
+  `cap_cs_print_slope` (30°), because a UV-printed legend lands stretched there. Keep legends
+  on the lighter part. The legends are still laid out on the flat caps' top, so this is a
+  check, not a change to where they print.
 - **Icons:** the icon panel searches Font Awesome Free's 1,895 icons by name and search terms.
   Click one to put it in the legend you're editing. In a legend, an icon is written as its
   name between colons, `:volume-high:`. Solid style is the default; `:regular/keyboard:` and
@@ -185,4 +190,4 @@ Both halves use the same pin map.
 ## Other commands
 
 - `npm run build`: builds Ergogen and the wiring guides into `output/`.
-- `npm run view`: starts the local viewer at http://localhost:4600. It rebuilds on every edit and shows the outlines and the 3D cases.
+- `npm run view`: starts the local viewer at http://localhost:4600. It rebuilds on every edit and shows the outlines and the 3D cases. In the 3D tab, **Assembled** puts the plates on their standoffs, the right half beside the left, and a Chicago-style keycap on every key (the bottom row's turned round). The flat caps aren't shown there. The caps sit `cap_seat` (3 mm, an estimate) above the plate.

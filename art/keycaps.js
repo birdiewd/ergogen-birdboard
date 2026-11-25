@@ -136,7 +136,7 @@ const meshPoly = pts => {
 // top (the profile eroded by that much), no higher than cap_skirt, cap_wall in from the sides.
 // It prints on its left face, so each layer is the profile. Printed that way, the stem post
 // runs sideways and the hollow's right side is a ceiling: that side slopes at 45 degrees (a
-// thicker right wall low down), and a rib holds the post up from the left wall.
+// thicker right wall low down). The post sticks out sideways with nothing under it.
 // The outside and the hollow are built as meshes of strips across the width (each a flat
 // four-sided face between two profile points), which keeps the CSG steps that follow sound.
 const csSource = (U, cap, tol, points, { homing = false } = {}) => {
@@ -200,27 +200,100 @@ const csSource = (U, cap, tol, points, { homing = false } = {}) => {
   const cl = U.cap_cross + tol, cw = U.cap_cross_w + tol
   // homing: a rounded bar across the face, standing cap_cs_homing_bump proud of it
   const hr = U.cap_homing_r, hy = -cap.d / 2 + U.cap_draft + U.cap_homing_in, hz = S(hy) + U.cap_cs_homing_bump - hr
-  // laid on its left face: turned about y until that face (x = -X(z)) is flat on the bed
-  const turn = Math.atan(1 / a) * 180 / Math.PI - 180
+  const { turn, lift } = csPrint(U, cap)
   const solid = polys => `CSG.fromPolygons(${JSON.stringify(polys)}.map(p => new CSG.Polygon(p.map(v => new CSG.Vertex(new CSG.Vector3D(v[0], v[1], v[2]))))))`
   return `
 function cap() {
   const body = ${solid(mesh)};
   const hollow = ${solid(cav)};
   const post = CSG.cylinder({ start: [0, 0, 0], end: [0, 0, ${r3(z1 + 0.3)}], radius: ${U.cap_post_d / 2}, resolution: 48 });
-  const rib = CSG.cube({ corner1: [${r3(-xi0 - 0.3)}, ${r3(-U.cap_cs_rib / 2)}, ${U.cap_cs_rib_from}], corner2: [0, ${r3(U.cap_cs_rib / 2)}, ${r3(z1 + 0.3)}] });
   const socket = CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cl / 2)}, ${r3(cw / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] })
     .union(CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cw / 2)}, ${r3(cl / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] }));
-  // everything taken out of the outside, as one cut: the hollow (less the post and the rib,
-  // which stay) and the socket. (Cut one at a time, the CSG steps leave holes.)
-  const cut = hollow.subtract(post).subtract(rib).union(socket);
+  // everything taken out of the outside, as one cut: the hollow (less the post, which stays)
+  // and the socket. (Cut one at a time, the CSG steps leave holes.)
+  const cut = hollow.subtract(post).union(socket);
   let cap = ${homing ? `body.union(CSG.roundedCylinder({ start: [${r3(-U.cap_homing_len / 2 + hr)}, ${r3(hy)}, ${r3(hz)}], end: [${r3(U.cap_homing_len / 2 - hr)}, ${r3(hy)}, ${r3(hz)}], radius: ${hr}, resolution: 32 }))` : 'body'}.subtract(cut);
   // laid on its left face for printing
-  cap = cap.rotateY(${r3(turn)});
-  const b = cap.getBounds();
-  return cap.translate([0, 0, -b[0].z]).fixTJunctions();
+  return cap.rotateY(${turn}).translate([0, 0, ${lift}]).fixTJunctions();
 }
 `
+}
+
+// How a Chicago-style cap is laid for printing: turned about y until its left face (the
+// plane x = -(w/2 - a z), a its draft per mm) is flat, then lifted so that face is on the bed.
+// That face is w/2 / sqrt(1 + a^2) from the origin, which the turn puts straight below it.
+const csPrint = (U, cap) => {
+  const a = U.cap_draft / (U.cap_top_t + U.cap_skirt)
+  return { turn: Math.atan(1 / a) * 180 / Math.PI - 180, lift: cap.w / 2 / Math.sqrt(1 + a * a) }
+}
+
+// Which Chicago-style cap a key takes: the top row's cap on the top and bottom rows (turned
+// round on the bottom row), the 1.5u thumb cap on a 1.5u key, the home cap everywhere else;
+// F and J (the index fingers' home keys) have the homing bump.
+const csKind = (id, units) => ({
+  cap: id.endsWith('_top') || id.endsWith('_bottom') ? 'top' : units === 1.5 ? 'thumb' : 'home',
+  turned: id.endsWith('_bottom'),
+  homing: id === 'matrix_index_home',
+})
+
+// A Chicago-style cap's face seen from above, for the keymap planner (mm, x across, y from the
+// front, -, to the back, +): its outline (the top between the left and right chamfers, as far
+// down the profile as the cap is built), and the parts of it no steeper than
+// cap_cs_print_slope, where a UV-printed legend lands true. Steeper, the print is stretched.
+const csFace = (U, cap, points) => {
+  const a = U.cap_draft / (U.cap_top_t + U.cap_skirt), c = U.cap_cs_edge
+  const ring = points.filter(p => p[1] >= 2 * c)
+  const side = pts => [...pts.map(([y, z]) => [cap.w / 2 - a * z - c, y]), ...pts.slice().reverse().map(([y, z]) => [-(cap.w / 2 - a * z - c), y])].map(p => p.map(r3))
+  const limit = Math.tan(U.cap_cs_print_slope * Math.PI / 180)
+  const flat = []
+  let run = []
+  ring.forEach((p, i) => {
+    const q = ring[Math.max(0, i - 1)], s = ring[Math.min(ring.length - 1, i + 1)]
+    const slope = Math.abs((s[1] - q[1]) / ((s[0] - q[0]) || 1e-9))
+    if (slope <= limit) run.push(p)
+    else { if (run.length > 1) flat.push(side(run)); run = [] }
+  })
+  if (run.length > 1) flat.push(side(run))
+  return { outline: side(ring), flat }
+}
+
+// ---------- 4 x 4 transforms (for the assembled view) ----------
+// Row-major, acting on column vectors; angles in degrees, right-handed.
+const M4 = {
+  mul: (...ms) => ms.reduce((A, B) => A.map((row, i) => row.map((_, j) => row.reduce((s, _, k) => s + A[i][k] * B[k][j], 0)))),
+  T: (x, y, z) => [[1, 0, 0, x], [0, 1, 0, y], [0, 0, 1, z], [0, 0, 0, 1]],
+  R: (axis, deg) => {
+    const t = deg * Math.PI / 180, c = Math.cos(t), s = Math.sin(t)
+    return { x: [[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]], y: [[c, 0, s, 0], [0, 1, 0, 0], [-s, 0, c, 0], [0, 0, 0, 1]], z: [[c, -s, 0, 0], [s, c, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]] }[axis]
+  },
+  // column-major, rounded, as three.js's Matrix4.fromArray wants it
+  out: M => [0, 1, 2, 3].flatMap(j => [0, 1, 2, 3].map(i => Math.round(M[i][j] * 1e5) / 1e5)),
+}
+
+// Each cap file's copies on the keys of both halves, for the viewer's assembled view: for
+// each STL, the transforms that take it from where it prints to where it sits on a key. A
+// cap stands on its switch with the bottom of its skirt cap_seat above the plate's top. Only
+// the Chicago caps go on the keys; the flat caps are left out of the assembled view (hidden:
+// true). The Chicago caps print on their left face (csPrint). F and J (the index fingers' home
+// keys) take the homing cap; the bottom row takes the top row's cap turned round.
+const FLAT_CAPS = ['keycap_1u', 'keycap_1_5u', 'keycap_1u_homing']
+const assembledCaps = (U, P, dx) => {
+  const seat = U.plate_z + U.frame_t + U.plate_t + U.cap_seat
+  const csUp = units => { const { turn, lift } = csPrint(U, capOf(U, units)); return M4.mul(M4.R('y', -turn), M4.T(0, 0, -lift)) }
+  const out = {}
+  const add = (file, M) => (out[`cases/${file}.stl`] = out[`cases/${file}.stl`] || []).push(M4.out(M))
+  for (const half of ['left', 'right']) for (const id of ORDER) {
+    const p = P[id]
+    if (!p) continue
+    const units = Math.round(p.meta.width / U.kx * 4) / 4
+    const K = M4.mul(M4.T(half === 'left' ? p.x : dx - p.x, p.y, seat), M4.R('z', half === 'left' ? p.r : -p.r))
+    const kind = csKind(id, units)
+    const cs = kind.cap === 'top' ? 'keycap_cs_top_1u' : kind.homing ? 'keycap_cs_home_1u_homing' : kind.cap === 'thumb' ? 'keycap_cs_thumb_1_5u' : 'keycap_cs_home_1u'
+    add(cs, M4.mul(K, kind.turned ? M4.R('z', 180) : M4.T(0, 0, 0), csUp(units)))
+  }
+  const placed = Object.fromEntries(Object.entries(out).map(([f, ms]) => [f, { instances: ms }]))
+  for (const f of FLAT_CAPS) placed[`cases/${f}.stl`] = { hidden: true }
+  return placed
 }
 
 // ---------- holder ----------
@@ -339,7 +412,8 @@ const build = ({ results, right, U, put, say, dx }) => {
       const p = P[id]
       if (!p) { say(`keymap warning: no key ${id}`); continue }
       const units = Math.round(p.meta.width / U.kx * 4) / 4
-      keys.push({ half, id, units, x: half === 'left' ? p.x : dx - p.x, y: p.y, r: half === 'left' ? p.r : -p.r })
+      const kind = csKind(id, units)
+      keys.push({ half, id, units, x: half === 'left' ? p.x : dx - p.x, y: p.y, r: half === 'left' ? p.r : -p.r, cs: kind.cap, turned: kind.turned })
     }
     for (const id of Object.keys(P)) if (!ORDER.includes(id)) say(`keymap warning: key ${id} isn't in the keymap order`)
   }
@@ -349,6 +423,8 @@ const build = ({ results, right, U, put, say, dx }) => {
     symbolBlocks: T.SYMBOL_BLOCKS,
     cap: { pitch: U.cap_pitch, gap: U.cap_gap, draft: U.cap_draft },
     caps: Object.fromEntries([1, 1.5].map(u => [u, capOf(U, u)])),
+    // the Chicago-style caps' faces from above (csFace), and the slope past which they're shaded
+    cs: (() => { const pr = csProfiles(); return { slope: U.cap_cs_print_slope, top: csFace(U, capOf(U, 1), pr.top), home: csFace(U, capOf(U, 1), pr.home), thumb: csFace(U, capOf(U, 1.5), pr.home) } })(),
     keys,
   }, null, 2))
   for (const half of ['left', 'right']) for (const id of ORDER) if (!km.keys[half] || !km.keys[half][id]) say(`keymap warning: no legends for ${half} ${id}`)
@@ -410,7 +486,7 @@ const build = ({ results, right, U, put, say, dx }) => {
     put(`keymap/preview_${half}.svg`, svgDoc(W, H, prev.join('\n')))
   }
   say(`keymap: ${keys.length} keys, holder ${r3(holder.W)} x ${r3(holder.H)} mm`)
-  return { holder }
+  return { holder, assembled: assembledCaps(U, P, dx) }
 }
 
 module.exports = { build, capOf, ORDER }

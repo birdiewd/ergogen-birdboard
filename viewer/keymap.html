@@ -61,6 +61,10 @@
     <button data-view="shift">Shift</button>
     <button data-view="base">Base</button>
   </div>
+  <div class="seg" id="faces" title="Which caps' faces to draw the legends on">
+    <button data-faces="flat">Flat caps</button>
+    <button data-faces="chicago">Chicago caps</button>
+  </div>
   <div class="spacer"></div>
   <span id="status">loading…</span>
 </header>
@@ -109,6 +113,9 @@ const FA_WEIGHT = { solid: 900, regular: 400, brands: 400 }
 let icons = { scale: 1.3, list: [], codes: {} }
 
 let layout, km, mtime, selected = null, view = 'all'
+// which caps' faces the keys are drawn with: the flat caps' tops, or the Chicago caps' faces
+// from above (shaded where too steep to print on)
+let faces = localStorage.getItem('keymapFaces') || 'chicago'
 
 // legend widths and cap heights, in mm, measured with the same fonts as the print. As in the
 // print, characters the text font lacks are symbols, set in the symbol font, larger
@@ -194,7 +201,16 @@ function draw() {
     g.dataset.key = k.half + '/' + k.id
     // the skirt is the cap's colour; the top may be a layer's (printed on)
     el('rect', { x: -cap.w / 2, y: -cap.d / 2, width: cap.w, height: cap.d, rx: 1.6, fill: shade(km.style.capColor, -18) }, g)
-    el('rect', { x: -cap.top.w / 2, y: -cap.top.h / 2, width: cap.top.w, height: cap.top.h, rx: 1.2, fill: Legends.capFill(keyOf(k), km.style, km.layers).color }, g)
+    const topColour = Legends.capFill(keyOf(k), km.style, km.layers).color
+    const face = faces === 'chicago' && layout.cs && layout.cs[k.cs]
+    if (face) {
+      // the Chicago cap's face from above (cap y points back, so up the drawing; a bottom-row
+      // cap is turned round): darker where it's too steep to print on, outlined
+      const pts = poly => poly.map(([x, y]) => (k.turned ? [-x, y] : [x, -y]).join(',')).join(' ')
+      el('polygon', { points: pts(face.outline), fill: shade(topColour, -45) }, g)
+      for (const f of face.flat) el('polygon', { points: pts(f), fill: topColour }, g)
+      el('polygon', { points: pts(face.outline), fill: 'none', stroke: '#ffffff', 'stroke-opacity': 0.55, 'stroke-width': 0.18 }, g)
+    } else el('rect', { x: -cap.top.w / 2, y: -cap.top.h / 2, width: cap.top.w, height: cap.top.h, rx: 1.2, fill: topColour }, g)
     for (const l of Legends.place(keyOf(k), cap.top, km.style, km.layers, measure)) {
       for (const t of drawLegend(g, l)) if (view !== 'all' && l.layer !== view) t.classList.add('dim')
     }
@@ -310,6 +326,11 @@ function styleFields() {
   const seg = $('view'); seg.querySelectorAll('[data-view]:not([data-view=all]):not([data-view=base]):not([data-view=shift])').forEach(b => b.remove())
   for (const layer of km.layers) { const b = document.createElement('button'); b.dataset.view = layer.id; b.textContent = layer.name; seg.appendChild(b) }
   seg.querySelectorAll('button').forEach(b => { b.classList.toggle('active', b.dataset.view === view); b.onclick = () => { view = b.dataset.view; styleFields(); draw() } })
+  const fseg = $('faces')
+  fseg.querySelectorAll('button').forEach(b => {
+    b.classList.toggle('active', b.dataset.faces === faces)
+    b.onclick = () => { faces = b.dataset.faces; localStorage.setItem('keymapFaces', faces); fseg.querySelectorAll('button').forEach(o => o.classList.toggle('active', o === b)); draw() }
+  })
   $('capColor').value = km.style.capColor
   $('shiftColor').value = km.style.shift.color
   $('shiftSize').value = km.style.shift.size

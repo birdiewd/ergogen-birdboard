@@ -395,25 +395,37 @@ const three = (() => {
   let loading = Promise.resolve()
   // Loads run one at a time so a rebuild during a load can't leave stale meshes behind.
   function load() { return (loading = loading.then(loadNow)) }
-  // Assembled view: each case moved to where it sits in the finished keyboard, from
-  // output/cases/placement.json (written by the build). Off: the STLs' own print positions.
+  // Assembled view: each part moved to where it sits in the finished keyboard, from
+  // output/cases/placement.json (written by the build): [x, y, z] to move a part, or
+  // { instances: [...] } for a part with a copy in several places (the keycaps, one on each of
+  // their keys), each a column-major 4 x 4 transform from where it prints, or { hidden: true }
+  // for a part the assembled view leaves out (the flat keycaps). Off: the STLs' own
+  // print positions. Each file is a group holding its copies, which share one geometry.
   let assembled = store('stlAssembled') !== false, placement = {}
   function place() {
-    for (const [f, m] of Object.entries(meshes)) {
-      const p = (assembled && placement[f]) || [0, 0, 0]
-      m.position.set(p[0], p[1], p[2])
+    for (const [f, g] of Object.entries(meshes)) {
+      g.clear()
+      const p = assembled ? placement[f] : null
+      const copy = () => new T.Mesh(g.userData.geo, g.userData.mat)
+      if (p && p.hidden) continue           // left out of the assembled view
+      if (p && p.instances) {
+        for (const m of p.instances) { const c = copy(); c.matrixAutoUpdate = false; c.matrix.fromArray(m); g.add(c) }
+      } else {
+        const c = copy(); const q = Array.isArray(p) ? p : [0, 0, 0]; c.position.set(q[0], q[1], q[2]); g.add(c)
+      }
     }
   }
   async function loadNow() {
     if (!ctx) return
-    for (const m of Object.values(meshes)) { ctx.group.remove(m); m.geometry.dispose() }
+    for (const g of Object.values(meshes)) { ctx.group.remove(g); g.userData.geo.dispose(); g.userData.mat.dispose() }
     for (const k of Object.keys(meshes)) delete meshes[k]
     placement = await fetch('/output/cases/placement.json?t=' + Date.now()).then(r => (r.ok ? r.json() : {})).catch(() => ({}))
     await Promise.all(files.map(async f => {
       const geo = await ctx.loader.loadAsync('/output/' + f + '?t=' + Date.now())
       geo.computeVertexNormals()
-      const mesh = new T.Mesh(geo, new T.MeshStandardMaterial({ color: color(f), metalness: 0.05, roughness: 0.7 }))
-      meshes[f] = mesh; ctx.group.add(mesh)
+      const g = new T.Group()
+      g.userData = { geo, mat: new T.MeshStandardMaterial({ color: color(f), metalness: 0.05, roughness: 0.7 }) }
+      meshes[f] = g; ctx.group.add(g)
     }))
     place()
     show()

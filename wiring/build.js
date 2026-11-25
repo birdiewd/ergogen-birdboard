@@ -318,14 +318,11 @@ const placement = (results, U, caps) => {
     out[`cases/${name}.stl`] = [0, 0, z[name] || 0]
     out[`cases/${name}_right.stl`] = [dx, 0, z[name] || 0]
   }
-  // the keycaps (as printed) and their holder, in a row in front of the keyboard
-  const front = ext.low[1] - 30
-  out['cases/keycap_1u.stl'] = [ext.low[0] + 20, front, 0]
-  out['cases/keycap_1_5u.stl'] = [ext.low[0] + 50, front, 0]
-  out['cases/keycap_1u_homing.stl'] = [ext.low[0] + 80, front, 0]
-  out['cases/keycap_holder.stl'] = [ext.low[0] + 160, front + 15, 0]
-  // the Chicago-style caps, on their sides as printed, in a row in front of those
-  for (const [i, n] of ['top_1u', 'home_1u', 'home_1u_homing', 'thumb_1_5u'].entries()) out[`cases/keycap_cs_${n}.stl`] = [ext.low[0] + 20 + 30 * i, front - 30, 0]
+  // the keycap holder, in front of the keyboard
+  out['cases/keycap_holder.stl'] = [ext.low[0] + 20, ext.low[1] - 15, 0]
+  // the Chicago keycaps on their keys, { instances: [a column-major 4 x 4 transform for each
+  // copy] }, and the flat ones left out, { hidden: true } (art/keycaps.js, assembledCaps)
+  Object.assign(out, caps.assembled || {})
   return out
 }
 

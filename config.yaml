@@ -101,6 +101,8 @@ units:
   cap_face_chamfer: 0.8   # the face's edge is chamfered this much, at 45 degrees
   # keycap_1u_homing (for F and J) has a homing groove cut into its face: a rounded bar
   # cap_homing_len long, cap_homing_r round, cap_homing_depth deep, cap_homing_in from the front
+  cap_seat: 3         # viewer only: the caps' skirt bottom above the plate's top on an
+                      #   unpressed switch, for the assembled view (an estimate)
   cap_homing_len: 5
   cap_homing_r: 0.6
   cap_homing_in: 2.5
@@ -109,8 +111,8 @@ units:
   # art/cs_profiles.json (traced from art/cs_profiles.png by art/trace-profile.js) running
   # across the width. Printed on the left side, so every layer is the profile.
   cap_cs_edge: 0.6    # 45 degree chamfer along the top's left and right edges
-  cap_cs_rib: 1.2     # rib from the stem post down to the left wall, which is on the bed
-  cap_cs_rib_from: 1  #   starting this far above the post's end, clear of the switch
+  cap_cs_print_slope: 30    # keymap planner only: the face is shaded where it's steeper than
+                            #   this (degrees), as a UV-printed legend lands stretched there
   cap_cs_homing_bump: 0.4   # keycap_cs_home_1u_homing: a rounded bar standing this proud of
                             #   the face (cap_homing_len long, cap_homing_r round, cap_homing_in
                             #   from the front edge)
