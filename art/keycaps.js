@@ -543,6 +543,12 @@ const build = ({ results, right, U, put, say, dx }) => {
   // holder: the same for both halves (each has 23 1u caps and one 1.5u)
   const perHalf = half => keys.filter(k => k.half === half)
   const holder = holderLayout(U, perHalf('left'))
+  // it has to fit on the E1's bed (holder_bed_w x holder_bed_d), either way round
+  if (U.holder_bed_w && U.holder_bed_d) {
+    const [a, b] = [holder.W, holder.H].sort((p, q) => q - p), [bw, bd] = [U.holder_bed_w, U.holder_bed_d].sort((p, q) => q - p)
+    if (a > bw || b > bd) throw new Error(`keycap holder: ${r3(holder.W)} x ${r3(holder.H)} mm doesn't fit on the ${U.holder_bed_w} x ${U.holder_bed_d} mm bed (try holder_cols, holder_pitch or holder_margin)`)
+    say(`keycap holder fits the ${U.holder_bed_w} x ${U.holder_bed_d} mm bed with ${r3(bw - a)} x ${r3(bd - b)} mm to spare`)
+  }
   put('cases/keycap_holder.jscad', LIB + holderSource(U, holder))
 
   // print files, one per half, true size: the drawing is exactly the holder

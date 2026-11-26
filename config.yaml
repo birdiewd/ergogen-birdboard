@@ -171,9 +171,13 @@ units:
   cap_cs_homing_bump: 0.6   # keycap_cs_home_1u_homing: a rounded bar standing this proud of
                             #   the face (cap_homing_len long, cap_homing_r round, cap_homing_in
                             #   from the front edge)
-  # Holder for UV printing the legends on the eufyMake E1: one half's caps at a time, top up
+  # Holder for UV printing the legends on the eufyMake E1: one half's caps at a time, top up,
+  # sized for the E1's mini flatbed (a 330 x 90 mm strip): three long rows of slots, 219 x 81 mm.
+  # The build stops if the holder comes out bigger than the bed.
   holder_pitch: 23    # slot spacing per unit
-  holder_cols: 5      # 1u slots per row
+  holder_cols: 9      # 1u slots per row (24.5 units of caps: 9 + 9 + 6.5)
+  holder_bed_w: 330   # the bed it has to fit on: length
+  holder_bed_d: 90    #   and depth (mini flatbed; the standard one is 420 x 330)
   holder_clear: 0.25  # pocket clearance round each cap's bottom edge
   holder_pocket: 2.4  # pocket depth (the cap sits on the pocket floor by its skirt)
   holder_floor: 2     # under the pockets

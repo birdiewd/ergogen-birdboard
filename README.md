@@ -175,13 +175,15 @@ that many cap heights (1.3).
 
 `npm run stl` writes the print files to `keymap/print/`:
 - `print_left.svg`, `print_right.svg`: one half's legends each, at true size. The drawing is
-  exactly the holder's outline, 127 × 127 mm.
+  exactly the holder's outline, 219 × 81 mm. That fits the E1's mini flatbed (330 × 90 mm),
+  and the build stops if a change to the `holder_*` settings would make it too big for it.
 - `preview_left.svg`, `preview_right.svg`: the same on the holder, with each slot's key named.
 
 1. Print the holder and the caps, then put one half's caps in the holder, top up. The 1.5u
-   cap goes in the wide slot, and the cut-off corner goes top left.
+   cap goes in the wide slot, and the cut-off corner goes top left. Lay the holder along the
+   mini flatbed.
 2. In eufyMake Studio, import that half's print file. Line its edges up with the holder in
-   the camera view, and size it to 127 × 127 mm if it isn't already.
+   the camera view, and size it to 219 × 81 mm if it isn't already.
 3. Use a white underlay if the caps are a dark colour, so the coloured legends stay bright.
 4. Print, then swap in the other half's caps and do the same with its print file. The
    preview shows which key each slot's cap belongs to.
