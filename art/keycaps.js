@@ -98,6 +98,7 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
   const D = ([x, y, z]) => [x * c + z * sn, y, -x * sn + z * c]              // a direction
   const Q = ([x, y, z]) => [(x - 0) * c - (z - lift) * sn, y, x * sn + (z - lift) * c]   // printing -> cap frame
   const R = U.cap_post_d / 2, gap = U.sup_gap, rTip = U.sup_w / 2, rArm = U.sup_arm_w / 2
+  const rFoot = U.sup_foot_w / 2, rRoot = Math.min(U.sup_tine_root_w || U.sup_w, U.sup_arm_w) / 2
   const sub = (p, q) => p.map((v, i) => v - q[i]), add = (p, q) => p.map((v, i) => v + q[i]), mul = (p, k) => p.map(v => v * k)
   const len = v => Math.hypot(...v), unit = v => mul(v, 1 / len(v))
   // where the open end (the skirt's bottom, cap z = 0) is at height z' (x' of that plane's line)
@@ -110,7 +111,7 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
   const jointR = rArm
   const bar = (p, q, r0, r1) => segs.push({ p, q, r0, r1 })
   const lean = Math.tan(U.sup_lean * Math.PI / 180)      // a strut's lean from the vertical
-  const feet = []                                          // where each strut stands on the baseplate (x')
+  const feet = []                                          // where each strut meets the bed (x') and how far its footprint reaches along x
   // the tines' offsets along the cap's height (cap z, which is along the post and across the ceiling's depth): a fan in a vertical plane
   // (closer together than sup_tine_pitch if the hollow is too short for it, as under a dished
   // top: the post's outer tines must stay sup_gap clear of the ceiling and of the open end)
@@ -123,16 +124,18 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
     const zs = ends.reduce((m, e) => m + e[2], 0) / ends.length
     const zJ = zs - zFan
     const J = [openEdge(zJ) + U.sup_clear + rArm, 0, zJ]
-    // one straight strut from the baseplate up to the fan's root, leaning in over the cap (no elbow)
-    // the foot's end disc is square to the strut, so a leaning strut's disc dips by rArm * sin(lean): the
-    // foot is that far (and 0.3 mm more) up inside the plate, so nothing shows through its underside
-    const fz = rArm * Math.sin(U.sup_lean * Math.PI / 180) + 0.3
-    if (fz > U.sup_plate_t - 0.2) throw new Error('supports: the baseplate is too thin for the struts to stand in (sup_plate_t, sup_lean)')
+    // one straight strut from the bed up to the fan's root, leaning in over the cap (no elbow),
+    // sup_foot_w wide at the bed and tapering evenly to sup_arm_w at the top. It starts a little
+    // below the bed (its end disc is square to it, so it dips by rFoot * sin(lean)) and the
+    // whole scaffold is cut flat at the bed, so the foot stands on a round footprint
+    const fz = -(rFoot * Math.sin(U.sup_lean * Math.PI / 180) + 0.1)
     const foot = [J[0] + (J[2] - fz) * lean, 0, fz]
-    feet.push(foot[0])
-    bar(foot, J, rArm, rArm * 0.55)
-    balls.push({ p: J, r: rArm * 0.55 })
-    ends.forEach(e => { bar(J, e, rArm * 0.45, rTip); tips.push({ e, what }) })
+    const rAtBed = rFoot + (rArm - rFoot) * (-fz / (J[2] - fz))
+    feet.push({ x: J[0] + J[2] * lean, reach: rAtBed / Math.cos(U.sup_lean * Math.PI / 180) })
+    bar(foot, J, rFoot, rArm)
+    balls.push({ p: J, r: rArm })
+    // the tines: sup_tine_root_w where they split off, tapering evenly to sup_w at their ends
+    ends.forEach(e => { bar(J, e, rRoot, rTip); tips.push({ e, what }) })
   }
   // (1) the post's underside (cap x = -R, the side facing down when printed), at its length's middle and each side of it
   const zm = postTop / 2
@@ -141,9 +144,10 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
   const zc = ceil(0) / 2
   target(tineZ.map(dz => [xmax(zc + dz), 0, zc + dz]), tineZ.map(() => norm), U.sup_fan, 'ceiling')
 
-  // the baseplate: under both columns, clear of the cap
-  const x0 = Math.max(Math.min(...feet) - U.sup_plate_pad, openEdge(0) + 1.5), x1 = Math.max(...feet) + U.sup_plate_pad, yb = U.sup_plate_w / 2
-  const plate = { c: [(x0 + x1) / 2, 0, U.sup_plate_t / 2], r: [(x1 - x0) / 2, yb, U.sup_plate_t / 2] }
+  // the baseplate: under both feet, with round ends (sup_plate_w across), clear of the cap
+  const pad = f => Math.max(U.sup_plate_pad, f.reach)
+  const x0 = Math.max(Math.min(...feet.map(f => f.x - pad(f))), openEdge(0) + 1.5), x1 = Math.max(...feet.map(f => f.x + pad(f))), yb = U.sup_plate_w / 2
+  const plate = { x0, x1, yb, t: U.sup_plate_t }
 
   // ---- checks: how far a point of the scaffold is from the cap (the nearest of: the hollow's
   // side walls, front and back walls, ceiling and the post; the wall ends for a point outside
@@ -161,6 +165,7 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
     const L = len(sub(sg.q, sg.p)), n = Math.max(2, Math.ceil(L / 0.05))
     for (let i = 0; i <= n; i++) {
       const t = i / n, pt = add(sg.p, mul(sub(sg.q, sg.p), t)), r = sg.r0 + (sg.r1 - sg.r0) * t
+      if (pt[2] < 0) continue                  // below the bed: cut off
       const d = clearance(pt) - r
       if (d < worst) { worst = d; worstAt = Q(pt).map(v => v.toFixed(2)).join(', ') }
     }
@@ -175,17 +180,26 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
   for (const k of ['post', 'ceiling']) if (!(closest[k] < gap + 0.05)) problems.push(`the ${k} tines are ${closest[k] && closest[k].toFixed(2)} mm from it, not ${gap}`)
   if (plateGap < 1) problems.push(`the baseplate is only ${plateGap.toFixed(2)} mm from the cap`)
   if (problems.length) throw new Error(`supports (${cap.w} mm cap): ${problems.join('; ')}`)
-  if (say) say(`supports ${cap.w} mm cap: closest approach ${worst.toFixed(3)} mm, post tines ${closest.post.toFixed(3)} mm and ceiling tines ${closest.ceiling.toFixed(3)} mm off, baseplate ${plateGap.toFixed(1)} mm from the cap, struts stand ${feet.map(v => v.toFixed(1)).join(' and ')} mm out, leaning ${U.sup_lean} degrees`)
+  if (say) say(`supports ${cap.w} mm cap: closest approach ${worst.toFixed(3)} mm, post tines ${closest.post.toFixed(3)} mm and ceiling tines ${closest.ceiling.toFixed(3)} mm off, baseplate ${plateGap.toFixed(1)} mm from the cap, struts stand ${feet.map(f => f.x.toFixed(1)).join(' and ')} mm out, leaning ${U.sup_lean} degrees, ${U.sup_foot_w} mm wide at the bed`)
 
   const V = v => `[${v.map(r3).join(', ')}]`
+  // the baseplate: a slot shape (two round ends joined), or one disc if it's no longer than wide
+  const { x0: px0, x1: px1, yb: pr, t: pt } = plate
+  const plateParts = px1 - px0 > 2 * pr
+    ? [`CSG.cube({ center: ${V([(px0 + px1) / 2, 0, pt / 2])}, radius: ${V([(px1 - px0) / 2 - pr, pr, pt / 2])} })`,
+      `CSG.cylinder({ start: ${V([px0 + pr, 0, 0])}, end: ${V([px0 + pr, 0, pt])}, radius: ${r3(pr)}, resolution: 48 })`,
+      `CSG.cylinder({ start: ${V([px1 - pr, 0, 0])}, end: ${V([px1 - pr, 0, pt])}, radius: ${r3(pr)}, resolution: 48 })`]
+    : [`CSG.cylinder({ start: ${V([(px0 + px1) / 2, 0, 0])}, end: ${V([(px0 + px1) / 2, 0, pt])}, radius: ${r3(pr)}, resolution: 48 })`]
   const parts = [
-    `CSG.cube({ center: ${V(plate.c)}, radius: ${V(plate.r)} })`,
-    ...segs.map(g => `CSG.cylinder({ start: ${V(g.p)}, end: ${V(g.q)}, radiusStart: ${r3(g.r0)}, radiusEnd: ${r3(g.r1)}, resolution: 20 })`),
+    ...plateParts,
+    ...segs.map(g => `CSG.cylinder({ start: ${V(g.p)}, end: ${V(g.q)}, radiusStart: ${r3(g.r0)}, radiusEnd: ${r3(g.r1)}, resolution: 32 })`),
     ...balls.map(b => `CSG.sphere({ center: ${V(b.p)}, radius: ${r3(b.r)}, resolution: 20 })`),
   ]
+  // everything is cut flat at the bed (the struts' feet start a little below it)
   return `
 function scaffold() {
-  return ${parts.map((p, i) => (i ? '    .union(' + p + ')' : p)).join('\n')};
+  return ${parts.map((p, i) => (i ? '    .union(' + p + ')' : p)).join('\n')}
+    .intersect(CSG.cube({ corner1: [-500, -500, 0], corner2: [500, 500, 500] }));
 }
 `
 }
