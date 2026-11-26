@@ -497,7 +497,7 @@ const build = ({ results, right, U, put, say, dx }) => {
       if (!p) { say(`keymap warning: no key ${id}`); continue }
       const units = Math.round(p.meta.width / U.kx * 4) / 4
       const kind = csKind(id, units)
-      keys.push({ half, id, units, x: half === 'left' ? p.x : dx - p.x, y: p.y, r: half === 'left' ? p.r : -p.r, cs: kind.cap, turned: kind.turned })
+      keys.push({ half, id, units, x: half === 'left' ? p.x : dx - p.x, y: p.y, r: half === 'left' ? p.r : -p.r, cs: kind.cap, turned: kind.turned, homing: kind.homing })
     }
     for (const id of Object.keys(P)) if (!ORDER.includes(id)) say(`keymap warning: key ${id} isn't in the keymap order`)
   }
@@ -509,6 +509,9 @@ const build = ({ results, right, U, put, say, dx }) => {
     caps: Object.fromEntries([1, 1.5].map(u => [u, capOf(U, u)])),
     // the Chicago-style caps' faces from above (csFace), and the slope past which they're shaded
     cs: (() => { const pr = csProfiles(); return { slope: U.cap_cs_print_slope, top: csFace(U, capOf(U, 1), pr.top), home: csFace(U, capOf(U, 1), pr.home), thumb: csFace(U, capOf(U, 1.5), pr.home) } })(),
+    // the homing bar on F and J (keys with homing: true), from above, in the cap's frame as
+    // csSource builds it: len long and 2 r wide, centred across the cap, y from its middle
+    homing: { len: U.cap_homing_len, r: U.cap_homing_r, y: r3(-capOf(U, 1).d / 2 + U.cap_draft + U.cap_homing_in), bump: U.cap_cs_homing_bump },
     keys,
   }, null, 2))
   for (const half of ['left', 'right']) for (const id of ORDER) if (!km.keys[half] || !km.keys[half][id]) say(`keymap warning: no legends for ${half} ${id}`)

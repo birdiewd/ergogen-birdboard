@@ -212,6 +212,14 @@ function draw() {
       for (const f of face.flat) el('polygon', { points: pts(f), fill: topColour }, g)
       el('polygon', { points: pts(face.outline), fill: 'none', stroke: '#ffffff', 'stroke-opacity': 0.55, 'stroke-width': 0.18 }, g)
     } else el('rect', { x: -cap.top.w / 2, y: -cap.top.h / 2, width: cap.top.w, height: cap.top.h, rx: 1.2, fill: topColour }, g)
+    // the homing bar on F and J: its shadow on the face (cast down and to the right, as if lit
+    // from the top left), then the bar in the face's colour, faintly outlined, under the legends
+    const hb = k.homing && layout.homing
+    if (hb) {
+      const hy = k.turned ? hb.y : -hb.y, w = hb.len, h = 2 * hb.r, off = Math.max(0.25, hb.bump * 0.6)
+      el('rect', { x: -w / 2 + off * 0.6, y: hy - h / 2 + off, width: w, height: h, rx: hb.r, fill: '#000000', 'fill-opacity': 0.4 }, g)
+      el('rect', { x: -w / 2, y: hy - h / 2, width: w, height: h, rx: hb.r, fill: shade(topColour, -6), stroke: '#000000', 'stroke-opacity': 0.25, 'stroke-width': 0.12 }, g)
+    }
     for (const l of Legends.place(keyOf(k), cap.top, km.style, km.layers, measure)) {
       for (const t of drawLegend(g, l)) if (view !== 'all' && l.layer !== view) t.classList.add('dim')
     }

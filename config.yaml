@@ -147,7 +147,7 @@ units:
   # art/cs_profiles.json (traced from art/cs_profiles.png by art/trace-profile.js) running
   # across the width. Printed on the left side, so every layer is the profile.
   cap_cs_edge: 0.6    # 45 degree chamfer along the top's left and right edges
-  cap_cs_dish: 0.5    # a shallow dip in the middle of the top: this deep at the centre, easing
+  cap_cs_dish: 0.8    # a shallow dip in the middle of the top: this deep at the centre, easing
                       #   to nothing at the left and right edges and the front and back
                       #   (0 for a flat top). The hollow drops to match, so the top keeps cap_top_t.
   cap_cs_dish_cols: 16  #   strips across the width the dished top is built from
@@ -168,7 +168,7 @@ units:
   sup_fan: 1          # a fan's root is this far below its tines' ends
   cap_cs_print_slope: 30    # keymap planner only: the face is shaded where it's steeper than
                             #   this (degrees), as a UV-printed legend lands stretched there
-  cap_cs_homing_bump: 0.4   # keycap_cs_home_1u_homing: a rounded bar standing this proud of
+  cap_cs_homing_bump: 0.6   # keycap_cs_home_1u_homing: a rounded bar standing this proud of
                             #   the face (cap_homing_len long, cap_homing_r round, cap_homing_in
                             #   from the front edge)
   # Holder for UV printing the legends on the eufyMake E1: one half's caps at a time, top up

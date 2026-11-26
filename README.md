@@ -75,7 +75,7 @@ so the post rides on the switch's slider and the skirt can't reach the plate at 
 | --- | --- |
 | `stl/keycap_cs_top_1u.stl` | top row: 8.55 mm at its peak, 7.6 mm near the back, 4.3 mm near the front. Turned round, tall side to the front, it's the bottom row's cap too (print 24) |
 | `stl/keycap_cs_home_1u.stl` | home row: 4.74 mm in the middle, 3.5 mm near the front and back, the same both ways. Also the 1u thumb keys (print 20) |
-| `stl/keycap_cs_home_1u_homing.stl` | home row with a homing bump, for F and J: a rounded bar 5 mm long standing `cap_cs_homing_bump` (0.4 mm) proud of the face, 2.5 mm from the front edge (print 2) |
+| `stl/keycap_cs_home_1u_homing.stl` | home row with a homing bump, for F and J: a rounded bar 5 mm long standing `cap_cs_homing_bump` (0.6 mm) proud of the face, 2.5 mm from the front edge (print 2) |
 | `stl/keycap_cs_thumb_1_5u.stl` | 1.5u inner thumb key, in the home row's profile (print 2) |
 | `stl/keycap_holder.stl` | holds one half's 24 caps, top up, on the E1's bed |
 
@@ -92,7 +92,7 @@ so the post rides on the switch's slider and the skirt can't reach the plate at 
 
 **The cap:** the left and right faces have a draft of `cap_draft` over the cap's height, and the top's
 left and right edges are chamfered `cap_cs_edge` (0.6 mm). The top has a shallow dish:
-`cap_cs_dish` (0.5 mm) deep in the middle, easing to nothing at the left and right edges
+`cap_cs_dish` (0.8 mm) deep in the middle, easing to nothing at the left and right edges
 and at the front and back, on top of the profile (the heights in the table above are the
 profile's, along the edges; set `cap_cs_dish` to 0 for a flat top). Inside, a hollow keeps
 `cap_top_t` (1.2 mm) under the curved top, measured from the dish's lowest line, and is no
