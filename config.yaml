@@ -151,6 +151,9 @@ units:
                       #   to nothing at the left and right edges and the front and back
                       #   (0 for a flat top). The hollow drops to match, so the top keeps cap_top_t.
   cap_cs_dish_cols: 16  #   strips across the width the dished top is built from
+  cap_cs_thumb_round: 2.5  # the 1.5u thumb cap's outer end: its top edge rounded over this
+                      #   radius (not chamfered), down onto the end face. It prints on its other
+                      #   end; on the left half the cap is turned round so the round end is lower
   # Built-in supports for the Chicago caps (the keycap_cs_*_supported files): a scaffold beside
   # the cap, a separate solid that touches it nowhere. A round-ended baseplate on the bed, straight
   # leaning struts from it into the cap's open end, wide and round at the bed and tapering

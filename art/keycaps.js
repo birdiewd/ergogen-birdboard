@@ -213,7 +213,11 @@ function scaffold() {
 // are cap_wall thick, drafted the same). The post sticks out sideways with nothing under it.
 // The outside and the hollow are built as meshes of strips across the width (each a flat
 // four-sided face between two profile points), which keeps the CSG steps that follow sound.
-const csSource = (U, cap, tol, points, { homing = false, supports = false, say = null } = {}) => {
+// The right edge of the top is either that chamfer or, with round (mm), a quarter round of
+// that radius running from the top down onto the right face (smaller where the profile is
+// lower than the radius, near the front and back ends; csRound).
+const csRound = (c, round, z) => round > 0 ? Math.max(c, Math.min(round, z - 0.3)) : c
+const csSource = (U, cap, tol, points, { homing = false, supports = false, say = null, round = 0 } = {}) => {
   const a = U.cap_draft / (U.cap_top_t + U.cap_skirt), z1 = U.cap_skirt, c = U.cap_cs_edge
   const S = zOfProfile(points)
   const X = z => cap.w / 2 - a * z                     // the outside's half width at height z
@@ -233,11 +237,17 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
   const D = U.cap_cs_dish || 0, N = D > 0 ? Math.max(2, U.cap_cs_dish_cols || 16) : 1
   const yA = points[first][0], yB = points[last][0], yc = (yA + yB) / 2, yh = (yB - yA) / 2
   const dishY = y => D * Math.max(0, 1 - ((y - yc) / yh) ** 2)          // the dip along the middle
+  const ARC = 8                                        // steps in the right edge's quarter round
   const ring = points.slice(first, last + 1).map(([y, z]) => {
-    const ck = c, xe = X(z) - ck
+    const ck = c, xl = X(z) - ck, r = csRound(c, round, z), xr = round > 0 ? X(z - r) - r : X(z) - ck
     // the top across the width, left (IL) to right (IR), dipped in the middle
-    const cols = Array.from({ length: N + 1 }, (_, j) => { const u = -1 + 2 * j / N; return [u * xe, y, z - dishY(y) * (1 - u * u)] })
-    return { cols, IR: cols[N], IL: cols[0], OR: [X(z - ck), y, z - ck], OL: [-X(z - ck), y, z - ck], BR: [X(0), y, 0], BL: [-X(0), y, 0] }
+    const cols = Array.from({ length: N + 1 }, (_, j) => { const u = -1 + 2 * j / N; return [(xr - xl) / 2 + u * (xr + xl) / 2, y, z - dishY(y) * (1 - u * u)] })
+    // the right edge, top (IR) to side (OR): the chamfer, or the quarter round about (xr, z - r)
+    // from straight up to straight out (out along the drafted face at its foot)
+    const right = round > 0
+      ? Array.from({ length: ARC + 1 }, (_, i) => { const t = i / ARC * Math.PI / 2; return i === 0 ? cols[N] : i === ARC ? [X(z - r), y, z - r] : [xr + r * Math.sin(t), y, z - r + r * Math.cos(t)] })
+      : [cols[N], [X(z - ck), y, z - ck]]
+    return { cols, right, IR: cols[N], IL: cols[0], OR: right[right.length - 1], OL: [-X(z - ck), y, z - ck], BR: [X(0), y, 0], BL: [-X(0), y, 0] }
   })
   // the first and last rows of the top have no dip, so they're kept as just their two edge
   // points (no points in a line along the ends), and the strips next to them fan out to the
@@ -249,14 +259,15 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
     else if (k === 0) for (let j = 0; j < N; j++) mesh.push(...[[p.IL, q.cols[j + 1], q.cols[j]], ...(j === N - 1 ? [[p.IL, p.IR, q.IR]] : [])].map(meshPoly).filter(Boolean))
     else if (k + 1 === L) for (let j = 0; j < N; j++) mesh.push(...[[p.cols[j], p.cols[j + 1], q.IL], ...(j === N - 1 ? [[p.IR, q.IR, q.IL]] : [])].map(meshPoly).filter(Boolean))
     else for (let j = 0; j < N; j++) push([p.cols[j], p.cols[j + 1], q.cols[j + 1], q.cols[j]])   // top
-    push([p.OR, q.OR, q.IR], [p.OR, q.IR, p.IR],                        // right chamfer
-      [p.BR, q.BR, q.OR, p.OR],                                      // right face
+    for (let i = 0; i + 1 < p.right.length; i++)                       // right chamfer / round
+      push([p.right[i + 1], q.right[i + 1], q.right[i]], [p.right[i + 1], q.right[i], p.right[i]])
+    push([p.BR, q.BR, q.OR, p.OR],                                     // right face
       [q.IL, q.OL, p.OL], [p.IL, q.IL, p.OL],                        // left chamfer
       [p.OL, q.OL, q.BL, p.BL],                                      // left face
       [p.BL, q.BL, q.BR, p.BR])                                      // bottom
   }
   for (const [r, back] of [[ring[0], false], [ring[ring.length - 1], true]]) {   // the ends, if they stand up
-    const wall = [r.BL, r.BR, r.OR, r.IR, r.IL, r.OL]
+    const wall = [r.BL, r.BR, ...r.right.slice().reverse(), r.IL, r.OL]
     push(back ? wall.slice().reverse() : wall)
   }
   // the hollow: its ceiling C(y) = min(skirt, the profile eroded by cap_top_t), from the
@@ -329,10 +340,12 @@ const csPrint = (U, cap) => {
 
 // Which Chicago-style cap a key takes: the top row's cap on the top and bottom rows (turned
 // round on the bottom row), the 1.5u thumb cap on a 1.5u key, the home cap everywhere else;
-// F and J (the index fingers' home keys) have the homing bump.
-const csKind = (id, units) => ({
+// F and J (the index fingers' home keys) have the homing bump. The 1.5u cap's rounded end
+// (its right face, cap_cs_thumb_round) goes at the key's lower end: on the left half that's
+// the key's left end, so the cap is turned round there (its profile is the same both ways).
+const csKind = (id, units, half) => ({
   cap: id.endsWith('_top') || id.endsWith('_bottom') ? 'top' : units === 1.5 ? 'thumb' : 'home',
-  turned: id.endsWith('_bottom'),
+  turned: id.endsWith('_bottom') || (units === 1.5 && half === 'left'),
   homing: id === 'matrix_index_home',
 })
 
@@ -340,10 +353,10 @@ const csKind = (id, units) => ({
 // front, -, to the back, +): its outline (the top between the left and right chamfers, as far
 // down the profile as the cap is built), and the parts of it no steeper than
 // cap_cs_print_slope, where a UV-printed legend lands true. Steeper, the print is stretched.
-const csFace = (U, cap, points) => {
+const csFace = (U, cap, points, round = 0) => {
   const a = U.cap_draft / (U.cap_top_t + U.cap_skirt), c = U.cap_cs_edge
   const ring = points.filter(p => p[1] >= 2 * c)
-  const side = pts => [...pts.map(([y, z]) => [cap.w / 2 - a * z - c, y]), ...pts.slice().reverse().map(([y, z]) => [-(cap.w / 2 - a * z - c), y])].map(p => p.map(r3))
+  const side = pts => [...pts.map(([y, z]) => { const r = csRound(c, round, z); return [round > 0 ? cap.w / 2 - a * (z - r) - r : cap.w / 2 - a * z - c, y] }), ...pts.slice().reverse().map(([y, z]) => [-(cap.w / 2 - a * z - c), y])].map(p => p.map(r3))
   const limit = Math.tan(U.cap_cs_print_slope * Math.PI / 180)
   const flat = []
   let run = []
@@ -385,7 +398,7 @@ const assembledCaps = (U, P, dx) => {
     if (!p) continue
     const units = Math.round(p.meta.width / U.kx * 4) / 4
     const K = M4.mul(M4.T(half === 'left' ? p.x : dx - p.x, p.y, seat), M4.R('z', half === 'left' ? p.r : -p.r))
-    const kind = csKind(id, units)
+    const kind = csKind(id, units, half)
     const cs = kind.cap === 'top' ? 'keycap_cs_top_1u' : kind.homing ? 'keycap_cs_home_1u_homing' : kind.cap === 'thumb' ? 'keycap_cs_thumb_1_5u' : 'keycap_cs_home_1u'
     add(cs, M4.mul(K, kind.turned ? M4.R('z', 180) : M4.T(0, 0, 0), csUp(units)))
   }
@@ -510,7 +523,7 @@ const build = ({ results, right, U, put, say, dx }) => {
       const p = P[id]
       if (!p) { say(`keymap warning: no key ${id}`); continue }
       const units = Math.round(p.meta.width / U.kx * 4) / 4
-      const kind = csKind(id, units)
+      const kind = csKind(id, units, half)
       keys.push({ half, id, units, x: half === 'left' ? p.x : dx - p.x, y: p.y, r: half === 'left' ? p.r : -p.r, cs: kind.cap, turned: kind.turned, homing: kind.homing })
     }
     for (const id of Object.keys(P)) if (!ORDER.includes(id)) say(`keymap warning: key ${id} isn't in the keymap order`)
@@ -522,7 +535,7 @@ const build = ({ results, right, U, put, say, dx }) => {
     cap: { pitch: U.cap_pitch, gap: U.cap_gap, draft: U.cap_draft },
     caps: Object.fromEntries([1, 1.5].map(u => [u, capOf(U, u)])),
     // the Chicago-style caps' faces from above (csFace), and the slope past which they're shaded
-    cs: (() => { const pr = csProfiles(); return { slope: U.cap_cs_print_slope, top: csFace(U, capOf(U, 1), pr.top), home: csFace(U, capOf(U, 1), pr.home), thumb: csFace(U, capOf(U, 1.5), pr.home) } })(),
+    cs: (() => { const pr = csProfiles(); return { slope: U.cap_cs_print_slope, top: csFace(U, capOf(U, 1), pr.top), home: csFace(U, capOf(U, 1), pr.home), thumb: csFace(U, capOf(U, 1.5), pr.home, U.cap_cs_thumb_round) } })(),
     // the homing bar on F and J (keys with homing: true), from above, in the cap's frame as
     // csSource builds it: len long and 2 r wide, centred across the cap, y from its middle
     homing: { len: U.cap_homing_len, r: U.cap_homing_r, y: r3(-capOf(U, 1).d / 2 + U.cap_draft + U.cap_homing_in), bump: U.cap_cs_homing_bump },
@@ -552,7 +565,7 @@ const build = ({ results, right, U, put, say, dx }) => {
   capCs('top_1u', 1, prof.top)
   capCs('home_1u', 1, prof.home)
   capCs('home_1u_homing', 1, prof.home, { homing: true })
-  capCs('thumb_1_5u', 1.5, prof.home)
+  capCs('thumb_1_5u', 1.5, prof.home, { round: U.cap_cs_thumb_round })
 
   // holder: the same for both halves (each has 23 1u caps and one 1.5u)
   const perHalf = half => keys.filter(k => k.half === half)

@@ -97,6 +97,11 @@ and at the front and back, on top of the profile (the heights in the table above
 profile's, along the edges; set `cap_cs_dish` to 0 for a flat top). Inside, a hollow keeps
 `cap_top_t` (1.2 mm) under the curved top, measured from the dish's lowest line, and is no
 higher than the 3.3 mm skirt, so it's lower near a rounded edge and under the dish. The top over the stem is 1.24 mm thick on the home cap.
+On the 1.5u thumb cap, the right end isn't chamfered: its top edge is rounded over
+`cap_cs_thumb_round` (2.5 mm) down onto the end face, leaving at least 1.4 mm of wall over the
+hollow. It still prints on its plain left end, so the round end is the top of the print. The
+round end goes at the key's lower end: on the left half the cap is turned round, and on the
+right half it isn't. Its profile is the same both ways, so only that end shows which way it goes.
 
 **Printing:** the caps print lying on their left face, and the STLs are already turned that
 way. So every layer is the profile, and the curve comes out smooth whatever its shape.
