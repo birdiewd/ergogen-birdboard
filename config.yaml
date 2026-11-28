@@ -151,9 +151,6 @@ units:
                       #   to nothing at the left and right edges and the front and back
                       #   (0 for a flat top). The hollow drops to match, so the top keeps cap_top_t.
   cap_cs_dish_cols: 16  #   strips across the width the dished top is built from
-  cap_cs_thumb_round: 2.5  # the 1.5u thumb cap's outer end: its top edge rounded over this
-                      #   radius (not chamfered), down onto the end face. It prints on its other
-                      #   end; on the left half the cap is turned round so the round end is lower
   # Built-in supports for the Chicago caps (the keycap_cs_*_supported files): a scaffold beside
   # the cap, a separate solid that touches it nowhere. A round-ended baseplate on the bed, straight
   # leaning struts from it into the cap's open end, wide and round at the bed and tapering
@@ -172,6 +169,8 @@ units:
   sup_plate_pad: 2.5  #   how far it runs past each strut's foot (at least the foot's own reach)
   sup_lean: 30        # a strut's lean from the vertical, degrees: more is a wider, stabler stance and longer struts
   sup_clear: 1.3      # a strut's end stays this far outside the cap's open end
+  sup_overhang_ok: 2  # a sloping ceiling (the 1.5u thumb cap's) gets no tines if it overhangs past
+                      #   45 degrees for less than this (mm, along it)
   sup_fan: 1          # a fan's root is this far below its tines' ends
   cap_cs_print_slope: 30    # keymap planner only: the face is shaded where it's steeper than
                             #   this (degrees), as a UV-printed legend lands stretched there

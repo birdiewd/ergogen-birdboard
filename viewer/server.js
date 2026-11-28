@@ -149,7 +149,7 @@ const schedule = rel => {
 // Watch the folder rather than the file, so editors that save by replacing the file still trigger.
 fs.watch(ROOT, (_, name) => { if (name === 'config.yaml') schedule('config.yaml') })
 fs.watch(path.join(ROOT, 'wiring'), (_, name) => { if (name && name.endsWith('.js')) schedule() })
-fs.watch(path.join(ROOT, 'art'), (_, name) => { if (name && name.endsWith('.js')) schedule() })
+fs.watch(path.join(ROOT, 'art'), (_, name) => { if (name && (name.endsWith('.js') || name === 'cs_thumb_curve.json')) schedule() })
 fs.mkdirSync(path.join(ROOT, 'keymap'), { recursive: true })
 fs.watch(path.join(ROOT, 'keymap'), (_, name) => { if (name === 'legends.json') schedule() })
 fs.mkdirSync(FP_DIR, { recursive: true })

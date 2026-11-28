@@ -1,0 +1,17 @@
+{
+ "note": "The 1.5u thumb cap's top across its width, traced from a sketch over the viewer's side view. Each point is [t, f]: t from the round end (0, the key's lower end) to the plain end (1, which it prints on), f the top's height there as a share of the side profile's (1 = the profile's full height). Read through a smooth curve that never overshoots (monotone cubic).",
+ "points": [
+  [0, 0],
+  [0.018, 0.16],
+  [0.04, 0.32],
+  [0.075, 0.48],
+  [0.124, 0.6],
+  [0.195, 0.7],
+  [0.294, 0.76],
+  [0.393, 0.8],
+  [0.534, 0.856],
+  [0.675, 0.904],
+  [0.816, 0.944],
+  [1, 1]
+ ]
+}

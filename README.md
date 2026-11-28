@@ -97,11 +97,17 @@ and at the front and back, on top of the profile (the heights in the table above
 profile's, along the edges; set `cap_cs_dish` to 0 for a flat top). Inside, a hollow keeps
 `cap_top_t` (1.2 mm) under the curved top, measured from the dish's lowest line, and is no
 higher than the 3.3 mm skirt, so it's lower near a rounded edge and under the dish. The top over the stem is 1.24 mm thick on the home cap.
-On the 1.5u thumb cap, the right end isn't chamfered: its top edge is rounded over
-`cap_cs_thumb_round` (2.5 mm) down onto the end face, leaving at least 1.4 mm of wall over the
-hollow. It still prints on its plain left end, so the round end is the top of the print. The
-round end goes at the key's lower end: on the left half the cap is turned round, and on the
-right half it isn't. Its profile is the same both ways, so only that end shows which way it goes.
+The 1.5u thumb cap's top isn't level across its width. It follows the curve in
+`art/cs_thumb_curve.json`, which was traced from a sketch: a long gentle slope up to its plain
+end, and a sweep down to the bottom at its other end, with no chamfer or end face there. At
+the middle of the profile the top is 4.7 mm high at the plain end, 4.0 mm over the stem and
+2.5 mm 2.4 mm from the swept end. It has no dish. The hollow follows the curve, so the top is
+`cap_top_t` thick all the way down, and the hollow stops with a straight drop where its
+ceiling gets down to 0.4 mm. Over the socket the top is about 0.9 mm thick. The cap still
+prints on its plain end. The swept end goes at the key's lower end: on the left half the cap
+is turned round, and on the right half it isn't. Its side profile is the same both ways, so
+only that end shows which way it goes. To change the curve, edit the json: each point is the
+height, as a share of the profile's, at a place from the swept end (0) to the plain end (1).
 
 **Printing:** the caps print lying on their left face, and the STLs are already turned that
 way. So every layer is the profile, and the curve comes out smooth whatever its shape.
@@ -119,6 +125,9 @@ evenly to `sup_arm_w` (1.6 mm) at the top, where it splits into a fan of three t
 tines are `sup_tine_root_w` (1.2 mm) wide where they split off and taper evenly to `sup_w`
 (0.8 mm) at their ends, which stop `sup_gap` (0.08 mm, one layer) short of the stem post's
 underside and of the hollow's ceiling, so the scaffold breaks away by hand.
+The 1.5u thumb cap has only the post's strut. Its ceiling slopes, so printed upright it
+overhangs past 45 degrees for only 0.5 mm, and a ceiling gets tines only if that's over
+`sup_overhang_ok` (2 mm).
 The build checks every part's distance to the cap and stops if one is closer than the gap.
 Print the plain STL if you'd rather use the slicer's supports.
 

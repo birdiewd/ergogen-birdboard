@@ -61,6 +61,29 @@ function loft(a, za, b, zb) {
 // The side profiles (art/cs_profiles.json): points (y, z) front to back, y from the front (-)
 // to the back (+), z up from the bottom of the skirt.
 const csProfiles = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'art', 'cs_profiles.json'), 'utf8'))
+// The 1.5u thumb cap's top across its width (art/cs_thumb_curve.json): its height as a share
+// of the side profile's, from the round end (t = 0) to the plain end (t = 1)
+const csThumbCurve = () => monotoneCurve(JSON.parse(fs.readFileSync(path.join(ROOT, 'art', 'cs_thumb_curve.json'), 'utf8')).points)
+// A smooth curve through points [t, f] (t increasing) that never overshoots between them: a
+// monotone cubic (Fritsch-Carlson)
+const monotoneCurve = pts => {
+  const n = pts.length, h = [], d = []
+  for (let i = 0; i + 1 < n; i++) { h[i] = pts[i + 1][0] - pts[i][0]; d[i] = (pts[i + 1][1] - pts[i][1]) / h[i] }
+  const m = pts.map((_, i) => i === 0 ? d[0] : i === n - 1 ? d[n - 2] : d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2)
+  for (let i = 0; i + 1 < n; i++) {
+    if (d[i] === 0) { m[i] = m[i + 1] = 0; continue }
+    const p = m[i] / d[i], q = m[i + 1] / d[i], s = p * p + q * q
+    if (s > 9) { const k = 3 / Math.sqrt(s); m[i] = k * p * d[i]; m[i + 1] = k * q * d[i] }
+  }
+  return t => {
+    if (t <= pts[0][0]) return pts[0][1]
+    if (t >= pts[n - 1][0]) return pts[n - 1][1]
+    let i = 0
+    while (t > pts[i + 1][0]) i++
+    const s = (t - pts[i][0]) / h[i], s2 = s * s, s3 = s2 * s
+    return (2 * s3 - 3 * s2 + 1) * pts[i][1] + (s3 - 2 * s2 + s) * h[i] * m[i] + (-2 * s3 + 3 * s2) * pts[i + 1][1] + (s3 - s2) * h[i] * m[i + 1]
+  }
+}
 const zOfProfile = pts => y => {
   if (y <= pts[0][0] || y >= pts[pts.length - 1][0]) return 0
   for (let k = 1; k < pts.length; k++) if (pts[k][0] >= y) { const t = (y - pts[k - 1][0]) / ((pts[k][0] - pts[k - 1][0]) || 1); return pts[k - 1][1] + t * (pts[k][1] - pts[k - 1][1]) }
@@ -91,7 +114,10 @@ const meshPoly = pts => {
 //           middle of its height, high above the post, so the tines pass over it.
 // Every sample along every part is checked against the cap, and the build stops if a part
 // comes closer than sup_gap, so a support can never be fused to the cap.
-const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
+// With ceilXY (a cap whose top sweeps down across it, csSource's across), the ceiling varies
+// across as well: the ceiling tines go to its sloping part on the right (xRight: the hollow's
+// furthest point right at a height), with the slope's normal, and the checks measure to it.
+const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say, ceilXY = null, xRight = null }) => {
   const { turn, lift } = csPrint(U, cap)
   const th = turn * Math.PI / 180, c = Math.cos(th), sn = Math.sin(th)
   const P = ([x, y, z]) => [x * c + z * sn, y, -x * sn + z * c + lift]      // cap frame -> printing frame
@@ -104,7 +130,7 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
   // where the open end (the skirt's bottom, cap z = 0) is at height z' (x' of that plane's line)
   const openEdge = z => c * (z - lift) / -sn
   const norm = [-1, 0, -a].map(v => v / Math.hypot(1, a))          // ceiling's normal, into the hollow
-  const postTop = ceil(0)                                          // the post's visible length
+  const postTop = ceilXY ? ceilXY(-R, 0) : ceil(0)                 // the post's visible length
   const segs = []        // { p, q, r0, r1 }: a tapered round bar
   const balls = []       // { p, r }
   const tips = []        // the tine ends, to check the gap
@@ -141,8 +167,30 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
   const zm = postTop / 2
   target(tineZ.map(dz => [-R, 0, zm + dz]), tineZ.map(() => [-1, 0, 0]), U.sup_fan, 'post')
   // (2) the ceiling: x = xmax(z), at the middle of its height and each side of it
+  //     (with ceilXY: where the sloping ceiling is at those heights, square to it)
   const zc = ceil(0) / 2
-  target(tineZ.map(dz => [xmax(zc + dz), 0, zc + dz]), tineZ.map(() => norm), U.sup_fan, 'ceiling')
+  const onCeil = z => {
+    if (!ceilXY) return { s: [xmax(z), 0, z], n: norm }
+    const x = xRight(0, z)
+    if (x >= xmax(z) - 0.01) return { s: [xmax(z), 0, z], n: norm }
+    const sl = (ceilXY(x + 0.05, 0) - ceilXY(x - 0.05, 0)) / 0.1
+    return { s: [x, 0, z], n: [sl, 0, -1].map(v => v / Math.hypot(sl, 1)) }
+  }
+  // A sloping ceiling only overhangs past 45 degrees (printed, the cap's +x is up) where it's
+  // steeper than 1 in 1 across; if that's under sup_overhang_ok long, it needs no tines
+  let overhang = null
+  if (ceilXY) {
+    overhang = 0
+    for (let x = xmin(0); x < xmax(0); x += 0.05) {
+      const sl = (ceilXY(x + 0.025, 0) - ceilXY(x - 0.025, 0)) / 0.05
+      if (sl < -1 && ceilXY(x, 0) > 0.05 && ceilXY(x, 0) < U.cap_skirt - 0.01) overhang += 0.05 * Math.hypot(1, sl)
+    }
+  }
+  const ceilingTines = overhang === null || overhang > U.sup_overhang_ok
+  if (ceilingTines) {
+    const cs = tineZ.map(dz => onCeil(zc + dz))
+    target(cs.map(o => o.s), cs.map(o => o.n), U.sup_fan, 'ceiling')
+  }
 
   // the baseplate: under both feet, with round ends (sup_plate_w across), clear of the cap
   const pad = f => Math.max(U.sup_plate_pad, f.reach)
@@ -157,7 +205,11 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
     const [x, y, z] = Q(pt), zz = Math.max(z, 0)
     const lat = Math.min(x - xmin(zz), xmax(zz) - x, yi - Math.abs(y), Math.hypot(x, y) - R)
     if (z < 0) return lat > 0 ? Math.hypot(lat, z) : -z
-    return Math.min(lat, ceil(y) - z)
+    if (!ceilXY) return Math.min(lat, ceil(y) - z)
+    // the sloping ceiling: up to it (v) and right to it (h); the line between those two points
+    // of it is nearer than it anywhere (the hollow is convex there), so measure to that line
+    const v = ceilXY(x, y) - z, h = xRight(y, z) - x
+    return Math.min(lat, v, h, v > 0 && h > 0 ? v * h / Math.hypot(v, h) : Math.min(v, h))
   }
   let worst = 1e9, worstAt = null
   const closest = {}
@@ -177,10 +229,10 @@ const scaffoldSource = (U, cap, { xmin, xmax, ceil, yi, a, say }) => {
   const plateGap = x0 - openEdge(0)           // the cap's open end leans away higher up, so this is the nearest
   const problems = []
   if (worst < gap - 0.01) problems.push(`a support comes within ${worst.toFixed(3)} mm of the cap (needs ${gap}), at (${worstAt}) in the cap's own frame`)
-  for (const k of ['post', 'ceiling']) if (!(closest[k] < gap + 0.05)) problems.push(`the ${k} tines are ${closest[k] && closest[k].toFixed(2)} mm from it, not ${gap}`)
+  for (const k of ceilingTines ? ['post', 'ceiling'] : ['post']) if (!(closest[k] < gap + 0.05)) problems.push(`the ${k} tines are ${closest[k] && closest[k].toFixed(2)} mm from it, not ${gap}`)
   if (plateGap < 1) problems.push(`the baseplate is only ${plateGap.toFixed(2)} mm from the cap`)
   if (problems.length) throw new Error(`supports (${cap.w} mm cap): ${problems.join('; ')}`)
-  if (say) say(`supports ${cap.w} mm cap: closest approach ${worst.toFixed(3)} mm, post tines ${closest.post.toFixed(3)} mm and ceiling tines ${closest.ceiling.toFixed(3)} mm off, baseplate ${plateGap.toFixed(1)} mm from the cap, struts stand ${feet.map(f => f.x.toFixed(1)).join(' and ')} mm out, leaning ${U.sup_lean} degrees, ${U.sup_foot_w} mm wide at the bed`)
+  if (say) say(`supports ${cap.w} mm cap: closest approach ${worst.toFixed(3)} mm, post tines ${closest.post.toFixed(3)} mm${ceilingTines ? ` and ceiling tines ${closest.ceiling.toFixed(3)} mm` : ''} off${overhang === null ? '' : `, ceiling overhangs past 45 degrees for ${overhang.toFixed(1)} mm${ceilingTines ? '' : ' (no tines needed)'}`}, baseplate ${plateGap.toFixed(1)} mm from the cap, struts stand ${feet.map(f => f.x.toFixed(1)).join(' and ')} mm out, leaning ${U.sup_lean} degrees, ${U.sup_foot_w} mm wide at the bed`)
 
   const V = v => `[${v.map(r3).join(', ')}]`
   // the baseplate: a slot shape (two round ends joined), or one disc if it's no longer than wide
@@ -213,11 +265,11 @@ function scaffold() {
 // are cap_wall thick, drafted the same). The post sticks out sideways with nothing under it.
 // The outside and the hollow are built as meshes of strips across the width (each a flat
 // four-sided face between two profile points), which keeps the CSG steps that follow sound.
-// The right edge of the top is either that chamfer or, with round (mm), a quarter round of
-// that radius running from the top down onto the right face (smaller where the profile is
-// lower than the radius, near the front and back ends; csRound).
-const csRound = (c, round, z) => round > 0 ? Math.max(c, Math.min(round, z - 0.3)) : c
-const csSource = (U, cap, tol, points, { homing = false, supports = false, say = null, round = 0 } = {}) => {
+// With across (a function of t, 0 at the right edge to 1 at the left), the top isn't the same
+// all the way across: its height is the profile's times across(t), so it sweeps down to the
+// bottom at the right end (no right chamfer or right face there), and there's no dish. The
+// hollow's ceiling then follows it too (the top eroded by cap_top_t across as well as along).
+const csSource = (U, cap, tol, points, { homing = false, supports = false, say = null, across = null } = {}) => {
   const a = U.cap_draft / (U.cap_top_t + U.cap_skirt), z1 = U.cap_skirt, c = U.cap_cs_edge
   const S = zOfProfile(points)
   const X = z => cap.w / 2 - a * z                     // the outside's half width at height z
@@ -234,19 +286,26 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
   // the dish: a shallow dip cap_cs_dish deep at the middle of the top, easing to nothing at the
   // left and right edges (where the chamfers start) and at the front and back ends of the top,
   // (1 - u^2)(1 - v^2) with u across the width and v front to back, both -1 to 1
-  const D = U.cap_cs_dish || 0, N = D > 0 ? Math.max(2, U.cap_cs_dish_cols || 16) : 1
+  const D = across ? 0 : U.cap_cs_dish || 0, N = across ? 40 : D > 0 ? Math.max(2, U.cap_cs_dish_cols || 16) : 1
   const yA = points[first][0], yB = points[last][0], yc = (yA + yB) / 2, yh = (yB - yA) / 2
   const dishY = y => D * Math.max(0, 1 - ((y - yc) / yh) ** 2)          // the dip along the middle
-  const ARC = 8                                        // steps in the right edge's quarter round
+  // across: t at x (0 at the right end's foot, x = w/2, to 1 at the left chamfer), and the
+  // columns' t, closer together towards the right end, where the top drops steeply
+  const tOf = x => Math.min(1, Math.max(0, (cap.w / 2 - x) / (cap.w - c)))
+  const colT = k => (k / N) ** 1.8                                     // k = 0 at the right end
   const ring = points.slice(first, last + 1).map(([y, z]) => {
-    const ck = c, xl = X(z) - ck, r = csRound(c, round, z), xr = round > 0 ? X(z - r) - r : X(z) - ck
-    // the top across the width, left (IL) to right (IR), dipped in the middle
-    const cols = Array.from({ length: N + 1 }, (_, j) => { const u = -1 + 2 * j / N; return [(xr - xl) / 2 + u * (xr + xl) / 2, y, z - dishY(y) * (1 - u * u)] })
-    // the right edge, top (IR) to side (OR): the chamfer, or the quarter round about (xr, z - r)
-    // from straight up to straight out (out along the drafted face at its foot)
-    const right = round > 0
-      ? Array.from({ length: ARC + 1 }, (_, i) => { const t = i / ARC * Math.PI / 2; return i === 0 ? cols[N] : i === ARC ? [X(z - r), y, z - r] : [xr + r * Math.sin(t), y, z - r + r * Math.cos(t)] })
-      : [cols[N], [X(z - ck), y, z - ck]]
+    const ck = c, xl = X(z) - ck, xr = X(z) - ck
+    // the top across the width, left (IL) to right (IR): dipped in the middle, or across's sweep
+    const cols = across
+      ? Array.from({ length: N + 1 }, (_, j) => {
+        if (j === N) return [X(0), y, 0]                               // the right end's foot
+        const t = colT(N - j), x = j === 0 ? -xl : cap.w / 2 - t * (cap.w - c)
+        return [x, y, z * across(j === 0 ? 1 : t)]
+      })
+      : Array.from({ length: N + 1 }, (_, j) => { const u = -1 + 2 * j / N; return [u * xl, y, z - dishY(y) * (1 - u * u)] })
+    // the right edge, top (IR) to side (OR): the chamfer (none with across: the top meets the
+    // bottom there)
+    const right = across ? [cols[N]] : [cols[N], [X(z - ck), y, z - ck]]
     return { cols, right, IR: cols[N], IL: cols[0], OR: right[right.length - 1], OL: [-X(z - ck), y, z - ck], BR: [X(0), y, 0], BL: [-X(0), y, 0] }
   })
   // the first and last rows of the top have no dip, so they're kept as just their two edge
@@ -256,6 +315,7 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
   for (let k = 0; k + 1 < ring.length; k++) {
     const p = ring[k], q = ring[k + 1]
     if (N === 1) push([p.IL, p.IR, q.IR, q.IL])                       // top (flat)
+    else if (across) for (let j = 0; j < N; j++) push([p.cols[j], p.cols[j + 1], q.cols[j + 1], q.cols[j]])
     else if (k === 0) for (let j = 0; j < N; j++) mesh.push(...[[p.IL, q.cols[j + 1], q.cols[j]], ...(j === N - 1 ? [[p.IL, p.IR, q.IR]] : [])].map(meshPoly).filter(Boolean))
     else if (k + 1 === L) for (let j = 0; j < N; j++) mesh.push(...[[p.cols[j], p.cols[j + 1], q.IL], ...(j === N - 1 ? [[p.IR, q.IR, q.IL]] : [])].map(meshPoly).filter(Boolean))
     else for (let j = 0; j < N; j++) push([p.cols[j], p.cols[j + 1], q.cols[j + 1], q.cols[j]])   // top
@@ -267,14 +327,14 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
       [p.BL, q.BL, q.BR, p.BR])                                      // bottom
   }
   for (const [r, back] of [[ring[0], false], [ring[ring.length - 1], true]]) {   // the ends, if they stand up
-    const wall = [r.BL, r.BR, ...r.right.slice().reverse(), r.IL, r.OL]
+    const wall = across ? [r.BL, ...r.cols.slice().reverse(), r.OL] : [r.BL, r.BR, ...r.right.slice().reverse(), r.IL, r.OL]
     push(back ? wall.slice().reverse() : wall)
   }
   // the hollow: its ceiling C(y) = min(skirt, the profile eroded by cap_top_t), from the
   // bottom (and 0.5 below it) up; both sides drafted. The profile here is the dished top's
   // middle (its lowest line), so the top is never thinner than cap_top_t
   const T = U.cap_top_t, yi = cap.d / 2 - U.cap_wall
-  const ceil = y => {
+  let ceil = y => {
     if (Math.abs(y) > yi) return 0
     let m = z1
     for (let u = -T; u <= T + 1e-9; u += 0.05) m = Math.min(m, S(y + u) - dishY(y + u) - Math.sqrt(Math.max(0, T * T - u * u)))
@@ -284,23 +344,85 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
   const xmin = z => -(xi0 - a * z), xmax = z => xi0 - a * z      // both sides drafted, cap_wall thick
   let ys = []
   for (let y = -yi; y <= yi + 1e-9; y += 0.2) ys.push(y)
-  // only the stretch round the middle where there's room, closed at C = 0 at its ends
-  let lo = ys.findIndex(y => ceil(y) > 0.02), hi = ys.length - 1 - ys.slice().reverse().findIndex(y => ceil(y) > 0.02)
-  ys = ys.slice(Math.max(0, lo - 1), hi + 2)
-  const hol = ys.map((y, k) => {
-    const C = k === 0 || k === ys.length - 1 ? 0 : ceil(y)
-    return { TL: [xmin(C), y, C], TR: [xmax(C), y, C], BL: [xmin(-0.5), y, -0.5], BR: [xmax(-0.5), y, -0.5] }
-  })
   const cav = []
   const pushC = (...ps) => { for (const p of ps) { const q = meshPoly(p); if (q) cav.push(...tris(q)) } }
-  for (let k = 0; k + 1 < hol.length; k++) {
-    const p = hol[k], q = hol[k + 1]
-    pushC([p.TL, p.TR, q.TR, q.TL], [p.BR, q.BR, q.TR, p.TR], [p.TL, q.TL, q.BL, p.BL], [p.BL, q.BL, q.BR, p.BR])
+  let ceilXY = null, xRight = null
+  if (!across) {
+    // only the stretch round the middle where there's room, closed at C = 0 at its ends
+    let lo = ys.findIndex(y => ceil(y) > 0.02), hi = ys.length - 1 - ys.slice().reverse().findIndex(y => ceil(y) > 0.02)
+    ys = ys.slice(Math.max(0, lo - 1), hi + 2)
+    const hol = ys.map((y, k) => {
+      const C = k === 0 || k === ys.length - 1 ? 0 : ceil(y)
+      return { TL: [xmin(C), y, C], TR: [xmax(C), y, C], BL: [xmin(-0.5), y, -0.5], BR: [xmax(-0.5), y, -0.5] }
+    })
+    for (let k = 0; k + 1 < hol.length; k++) {
+      const p = hol[k], q = hol[k + 1]
+      pushC([p.TL, p.TR, q.TR, q.TL], [p.BR, q.BR, q.TR, p.TR], [p.TL, q.TL, q.BL, p.BL], [p.BL, q.BL, q.BR, p.BR])
+    }
+    pushC([hol[0].BL, hol[0].BR, hol[0].TR, hol[0].TL], [hol[hol.length - 1].TL, hol[hol.length - 1].TR, hol[hol.length - 1].BR, hol[hol.length - 1].BL])
+  } else {
+    // with across, the ceiling C(x, y) varies across too: the top (the profile times across)
+    // eroded by a ball of radius cap_top_t, on a 0.1 mm grid, no higher than the skirt
+    const St = [], Ft = []
+    for (let i = 0; i <= 2000; i++) St.push(S(-10 + i * 0.01))
+    for (let i = 0; i <= 1000; i++) Ft.push(across(i / 1000))
+    const lerpT = (tb, v0, dv, v) => { const f = Math.min(tb.length - 1.001, Math.max(0, (v - v0) / dv)), i = Math.floor(f); return tb[i] + (tb[i + 1] - tb[i]) * (f - i) }
+    const top = (x, y) => lerpT(St, -10, 0.01, y) * lerpT(Ft, 0, 0.001, tOf(x))
+    const ball = []
+    for (let u = -T; u <= T + 1e-9; u += 0.2) for (let v = -T; v <= T + 1e-9; v += 0.2) if (u * u + v * v <= T * T + 1e-9) ball.push([u, v, Math.sqrt(Math.max(0, T * T - u * u - v * v))])
+    const g = 0.1, gx0 = -cap.w / 2, nx = Math.round(cap.w / g) + 1, gy0 = -yi, ny = Math.round(2 * yi / g) + 1
+    const grid = new Float64Array(nx * ny)
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const x = gx0 + i * g, y = gy0 + j * g
+      let m = z1
+      for (const [u, v, h] of ball) m = Math.min(m, top(x + u, y + v) - h)
+      grid[j * nx + i] = m
+    }
+    ceilXY = (x, y) => {
+      if (Math.abs(y) > yi) return -1
+      const fx = Math.min(nx - 1.001, Math.max(0, (x - gx0) / g)), fy = Math.min(ny - 1.001, Math.max(0, (y - gy0) / g))
+      const i = Math.floor(fx), j = Math.floor(fy), s = fx - i, t = fy - j, G = (ii, jj) => grid[jj * nx + ii]
+      return (G(i, j) * (1 - s) + G(i + 1, j) * s) * (1 - t) + (G(i, j + 1) * (1 - s) + G(i + 1, j + 1) * s) * t
+    }
+    // the hollow's furthest point right at height z (x on the ceiling there, or the right wall)
+    xRight = (y, z) => { let x = xmax(z); while (x > xmin(z) && ceilXY(x, y) < z) x -= 0.02; return x }
+    ceil = y => ceilXY(0, y)
+    // each row across: up the left wall, along the ceiling, down the right wall, the ceiling kept
+    // inside both drafted walls. Where the ceiling gets down to cMin, the hollow stops with a
+    // straight drop to below the bottom (fading out instead, it would meet the bottom face at a
+    // glancing angle, which leaves slivers in the cut); columns closer together towards there
+    const M = 48, cMin = 0.4
+    const rowMax = y => { let m = -1; for (let x = xmin(0); x <= xmax(0); x += 0.2) m = Math.max(m, ceilXY(x, y)); return m }
+    let lo = ys.findIndex(y => rowMax(y) > cMin), hi = ys.length - 1 - ys.slice().reverse().findIndex(y => rowMax(y) > cMin)
+    ys = ys.slice(Math.max(0, lo - 1), hi + 2)
+    const hol = ys.map((y, k) => {
+      const end = k === 0 || k === ys.length - 1
+      const Cw = x => Math.min(ceilXY(x, y), z1, (xi0 - x) / a, (xi0 + x) / a)   // the ceiling, inside the walls
+      let CL = Math.min(z1, ceilXY(xmin(0), y)); CL = Math.min(z1, ceilXY(xmin(CL), y))
+      const xL = xmin(CL)
+      // the ceiling's right end: the right wall, or where it first gets down to cMin
+      let xb = xL, drop = false
+      if (!end && CL > cMin) { while (xb < xmax(0) && Cw(xb + 0.02) > cMin) xb += 0.02; drop = Cw(xb + 0.02) <= cMin }
+      const cols = Array.from({ length: M + 1 }, (_, i) => {
+        if (end || CL <= cMin) return [xL + (xmax(-0.25) - xL) * i / M, y, -0.25]
+        if (!drop) { const x = i === M ? xmax(Cw(xb)) : xL + (xb - xL) * (1 - (1 - i / M) ** 1.6); return [x, y, i === 0 ? CL : Cw(x)] }
+        if (i === M) return [xb, y, -0.25]
+        const x = xL + (xb - xL) * (1 - (1 - i / (M - 1)) ** 1.6)
+        return [x, y, i === 0 ? CL : Cw(x)]
+      })
+      return { cols, BL: [xmin(-0.5), y, -0.5], BR: [xmax(-0.5), y, -0.5] }
+    })
+    for (let k = 0; k + 1 < hol.length; k++) {
+      const p = hol[k], q = hol[k + 1]
+      for (let i = 0; i < M; i++) pushC([p.cols[i], p.cols[i + 1], q.cols[i + 1], q.cols[i]])
+      pushC([p.BR, q.BR, q.cols[M], p.cols[M]], [p.cols[0], q.cols[0], q.BL, p.BL], [p.BL, q.BL, q.BR, p.BR])
+    }
+    const h0 = hol[0], h1 = hol[hol.length - 1]
+    pushC([h0.BL, h0.BR, ...h0.cols.slice().reverse()], [...h1.cols, h1.BR, h1.BL])
   }
-  pushC([hol[0].BL, hol[0].BR, hol[0].TR, hol[0].TL], [hol[hol.length - 1].TL, hol[hol.length - 1].TR, hol[hol.length - 1].BR, hol[hol.length - 1].BL])
   // Built-in supports (the *_supported files): a scaffold beside the cap, a separate solid that
   // touches the cap nowhere (see scaffoldSource).
-  const scaffold = supports ? scaffoldSource(U, cap, { xmin, xmax, ceil, yi, a, say }) : ''
+  const scaffold = supports ? scaffoldSource(U, cap, { xmin, xmax, ceil, yi, a, say, ceilXY, xRight }) : ''
   const cl = U.cap_cross + tol, cw = U.cap_cross_w + tol
   // homing: a rounded bar across the face, standing cap_cs_homing_bump proud of it
   const hr = U.cap_homing_r, hy = -cap.d / 2 + U.cap_draft + U.cap_homing_in, hz = S(hy) - dishY(hy) + U.cap_cs_homing_bump - hr
@@ -340,8 +462,8 @@ const csPrint = (U, cap) => {
 
 // Which Chicago-style cap a key takes: the top row's cap on the top and bottom rows (turned
 // round on the bottom row), the 1.5u thumb cap on a 1.5u key, the home cap everywhere else;
-// F and J (the index fingers' home keys) have the homing bump. The 1.5u cap's rounded end
-// (its right face, cap_cs_thumb_round) goes at the key's lower end: on the left half that's
+// F and J (the index fingers' home keys) have the homing bump. The 1.5u cap's swept-down end
+// (its right end, art/cs_thumb_curve.json) goes at the key's lower end: on the left half that's
 // the key's left end, so the cap is turned round there (its profile is the same both ways).
 const csKind = (id, units, half) => ({
   cap: id.endsWith('_top') || id.endsWith('_bottom') ? 'top' : units === 1.5 ? 'thumb' : 'home',
@@ -353,10 +475,11 @@ const csKind = (id, units, half) => ({
 // front, -, to the back, +): its outline (the top between the left and right chamfers, as far
 // down the profile as the cap is built), and the parts of it no steeper than
 // cap_cs_print_slope, where a UV-printed legend lands true. Steeper, the print is stretched.
-const csFace = (U, cap, points, round = 0) => {
+const csFace = (U, cap, points, across = false) => {
   const a = U.cap_draft / (U.cap_top_t + U.cap_skirt), c = U.cap_cs_edge
   const ring = points.filter(p => p[1] >= 2 * c)
-  const side = pts => [...pts.map(([y, z]) => { const r = csRound(c, round, z); return [round > 0 ? cap.w / 2 - a * (z - r) - r : cap.w / 2 - a * z - c, y] }), ...pts.slice().reverse().map(([y, z]) => [-(cap.w / 2 - a * z - c), y])].map(p => p.map(r3))
+  // (with across, the top runs right out to the right end's foot)
+  const side = pts => [...pts.map(([y, z]) => [across ? cap.w / 2 : cap.w / 2 - a * z - c, y]), ...pts.slice().reverse().map(([y, z]) => [-(cap.w / 2 - a * z - c), y])].map(p => p.map(r3))
   const limit = Math.tan(U.cap_cs_print_slope * Math.PI / 180)
   const flat = []
   let run = []
@@ -535,7 +658,7 @@ const build = ({ results, right, U, put, say, dx }) => {
     cap: { pitch: U.cap_pitch, gap: U.cap_gap, draft: U.cap_draft },
     caps: Object.fromEntries([1, 1.5].map(u => [u, capOf(U, u)])),
     // the Chicago-style caps' faces from above (csFace), and the slope past which they're shaded
-    cs: (() => { const pr = csProfiles(); return { slope: U.cap_cs_print_slope, top: csFace(U, capOf(U, 1), pr.top), home: csFace(U, capOf(U, 1), pr.home), thumb: csFace(U, capOf(U, 1.5), pr.home, U.cap_cs_thumb_round) } })(),
+    cs: (() => { const pr = csProfiles(); return { slope: U.cap_cs_print_slope, top: csFace(U, capOf(U, 1), pr.top), home: csFace(U, capOf(U, 1), pr.home), thumb: csFace(U, capOf(U, 1.5), pr.home, true) } })(),
     // the homing bar on F and J (keys with homing: true), from above, in the cap's frame as
     // csSource builds it: len long and 2 r wide, centred across the cap, y from its middle
     homing: { len: U.cap_homing_len, r: U.cap_homing_r, y: r3(-capOf(U, 1).d / 2 + U.cap_draft + U.cap_homing_in), bump: U.cap_cs_homing_bump },
@@ -565,7 +688,7 @@ const build = ({ results, right, U, put, say, dx }) => {
   capCs('top_1u', 1, prof.top)
   capCs('home_1u', 1, prof.home)
   capCs('home_1u_homing', 1, prof.home, { homing: true })
-  capCs('thumb_1_5u', 1.5, prof.home, { round: U.cap_cs_thumb_round })
+  capCs('thumb_1_5u', 1.5, prof.home, { across: csThumbCurve() })
 
   // holder: the same for both halves (each has 23 1u caps and one 1.5u)
   const perHalf = half => keys.filter(k => k.half === half)
