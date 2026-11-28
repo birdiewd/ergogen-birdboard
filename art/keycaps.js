@@ -269,7 +269,9 @@ function scaffold() {
 // all the way across: its height is the profile's times across(t), so it sweeps down to the
 // bottom at the right end (no right chamfer or right face there), and there's no dish. The
 // hollow's ceiling then follows it too (the top eroded by cap_top_t across as well as along).
-const csSource = (U, cap, tol, points, { homing = false, supports = false, say = null, across = null } = {}) => {
+// With corner (mm), the right end's two corners are rounded that radius seen from above: each
+// cut away outside a quarter circle, along with the hollow and the socket (in the same cut).
+const csSource = (U, cap, tol, points, { homing = false, supports = false, say = null, across = null, corner = 0 } = {}) => {
   const a = U.cap_draft / (U.cap_top_t + U.cap_skirt), z1 = U.cap_skirt, c = U.cap_cs_edge
   const S = zOfProfile(points)
   const X = z => cap.w / 2 - a * z                     // the outside's half width at height z
@@ -455,6 +457,11 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
   // homing: a rounded bar across the face, standing cap_cs_homing_bump proud of it
   const hr = U.cap_homing_r, hy = -cap.d / 2 + U.cap_draft + U.cap_homing_in, hz = S(hy) - dishY(hy) + U.cap_cs_homing_bump - hr
   const { turn, lift } = csPrint(U, cap)
+  // the right end's rounded corners: for each, a box over the corner less a cylinder of radius
+  // corner, centred corner in from the right end and from the front (or back) face
+  const yEdge = Math.max(-points[0][0], points[points.length - 1][0]), cx = cap.w / 2 - corner, cy = yEdge - corner
+  const cornerCut = [1, -1].map(s => `.union(CSG.cube({ corner1: [${r3(cx)}, ${r3(s * cy)}, -1], corner2: [${r3(cap.w / 2 + 1)}, ${r3(s * (yEdge + 1))}, ${r3(z1 + 10)}] })` +
+    `.subtract(CSG.cylinder({ start: [${r3(cx)}, ${r3(s * cy)}, -1], end: [${r3(cx)}, ${r3(s * cy)}, ${r3(z1 + 10)}], radius: ${r3(corner)}, resolution: 96 })))`).join('')
   const solid = polys => `CSG.fromPolygons(${JSON.stringify(polys)}.map(p => new CSG.Polygon(p.map(v => new CSG.Vertex(new CSG.Vector3D(v[0], v[1], v[2]))))))`
   return `
 function cap() {
@@ -465,7 +472,7 @@ function cap() {
     .union(CSG.cube({ center: [0, 0, ${r3((U.cap_socket - 0.5) / 2)}], radius: [${r3(cw / 2)}, ${r3(cl / 2)}, ${r3((U.cap_socket + 0.5) / 2)}] }));
   // everything taken out of the outside, as one cut: the hollow (less the post, which stays)
   // and the socket. (Cut one at a time, the CSG steps leave holes.)
-  const cut = hollow.subtract(post).union(socket);
+  const cut = hollow.subtract(post).union(socket)${corner > 0 ? cornerCut : ''};
   let cap = ${homing ? `body.union(CSG.roundedCylinder({ start: [${r3(-U.cap_homing_len / 2 + hr)}, ${r3(hy)}, ${r3(hz)}], end: [${r3(U.cap_homing_len / 2 - hr)}, ${r3(hy)}, ${r3(hz)}], radius: ${hr}, resolution: 32 }))` : 'body'}.subtract(cut);
   // laid on its left face for printing
   cap = cap.rotateY(${turn}).translate([0, 0, ${lift}]);
@@ -503,11 +510,14 @@ const csKind = (id, units, half) => ({
 // front, -, to the back, +): its outline (the top between the left and right chamfers, as far
 // down the profile as the cap is built), and the parts of it no steeper than
 // cap_cs_print_slope, where a UV-printed legend lands true. Steeper, the print is stretched.
-const csFace = (U, cap, points, across = false) => {
+const csFace = (U, cap, points, across = false, corner = 0) => {
   const a = U.cap_draft / (U.cap_top_t + U.cap_skirt), c = U.cap_cs_edge
   const ring = points.filter(p => p[1] >= 2 * c)
-  // (with across, the top runs right out to the right end's foot)
-  const side = pts => [...pts.map(([y, z]) => [across ? cap.w / 2 : cap.w / 2 - a * z - c, y]), ...pts.slice().reverse().map(([y, z]) => [-(cap.w / 2 - a * z - c), y])].map(p => p.map(r3))
+  // (with across, the top runs right out to the right end's foot; with corner, the right
+  // end's corners are rounded, as csSource cuts them)
+  const yEdge = Math.max(-points[0][0], points[points.length - 1][0]), cy = yEdge - corner
+  const rightX = y => Math.abs(y) <= cy || !corner ? cap.w / 2 : cap.w / 2 - corner + Math.sqrt(Math.max(0, corner ** 2 - (Math.abs(y) - cy) ** 2))
+  const side = pts => [...pts.map(([y, z]) => [across ? rightX(y) : cap.w / 2 - a * z - c, y]), ...pts.slice().reverse().map(([y, z]) => [-(cap.w / 2 - a * z - c), y])].map(p => p.map(r3))
   const limit = Math.tan(U.cap_cs_print_slope * Math.PI / 180)
   const flat = []
   let run = []
@@ -686,7 +696,7 @@ const build = ({ results, right, U, put, say, dx }) => {
     cap: { pitch: U.cap_pitch, gap: U.cap_gap, draft: U.cap_draft },
     caps: Object.fromEntries([1, 1.5].map(u => [u, capOf(U, u)])),
     // the Chicago-style caps' faces from above (csFace), and the slope past which they're shaded
-    cs: (() => { const pr = csProfiles(); return { slope: U.cap_cs_print_slope, top: csFace(U, capOf(U, 1), pr.top), home: csFace(U, capOf(U, 1), pr.home), thumb: csFace(U, capOf(U, 1.5), pr.home, true) } })(),
+    cs: (() => { const pr = csProfiles(); return { slope: U.cap_cs_print_slope, top: csFace(U, capOf(U, 1), pr.top), home: csFace(U, capOf(U, 1), pr.home), thumb: csFace(U, capOf(U, 1.5), pr.home, true, U.cap_cs_thumb_corner_r) } })(),
     // the homing bar on F and J (keys with homing: true), from above, in the cap's frame as
     // csSource builds it: len long and 2 r wide, centred across the cap, y from its middle
     homing: { len: U.cap_homing_len, r: U.cap_homing_r, y: r3(-capOf(U, 1).d / 2 + U.cap_draft + U.cap_homing_in), bump: U.cap_cs_homing_bump },
@@ -716,7 +726,7 @@ const build = ({ results, right, U, put, say, dx }) => {
   capCs('top_1u', 1, prof.top)
   capCs('home_1u', 1, prof.home)
   capCs('home_1u_homing', 1, prof.home, { homing: true })
-  capCs('thumb_1_5u', 1.5, prof.home, { across: csThumbCurve() })
+  capCs('thumb_1_5u', 1.5, prof.home, { across: csThumbCurve(), corner: U.cap_cs_thumb_corner_r })
 
   // holder: the same for both halves (each has 23 1u caps and one 1.5u)
   const perHalf = half => keys.filter(k => k.half === half)

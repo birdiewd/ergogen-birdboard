@@ -103,7 +103,8 @@ end, and a sweep down to the bottom at its other end, with no chamfer or end fac
 the middle of the profile the top is 4.7 mm high at the plain end, 4.0 mm over the stem and
 2.5 mm 2.4 mm from the swept end. It has no dish. The hollow follows the curve, so the top is
 `cap_top_t` thick all the way down, and the hollow stops with a straight drop where its
-ceiling gets down to 0.4 mm. Over the socket the top is about 0.9 mm thick. The cap still
+ceiling gets down to 0.4 mm. The swept end's two corners are rounded `cap_cs_thumb_corner_r`
+(3 mm) seen from above. Over the socket the top is about 0.9 mm thick. The cap still
 prints on its plain end. The swept end goes at the key's lower end: on the left half the cap
 is turned round, and on the right half it isn't. Its side profile is the same both ways, so
 only that end shows which way it goes. To change the curve, edit the json: each point is the
