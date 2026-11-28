@@ -323,12 +323,24 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
       push([p.right[i + 1], q.right[i + 1], q.right[i]], [p.right[i + 1], q.right[i], p.right[i]])
     push([p.BR, q.BR, q.OR, p.OR],                                     // right face
       [q.IL, q.OL, p.OL], [p.IL, q.IL, p.OL],                        // left chamfer
-      [p.OL, q.OL, q.BL, p.BL],                                      // left face
-      [p.BL, q.BL, q.BR, p.BR])                                      // bottom
+      [p.OL, q.OL, q.BL, p.BL])                                      // left face
+    // bottom (with across, the end walls are cut into strips standing on points along the
+    // bottom's edge, so the bottom's first and last strips have those points too)
+    const bot = r => r.cols.slice(0, -1).map(c => [c[0], c[1], 0])
+    // (each started from a corner off the edge with the points in a line: a fan from one of
+    // those would be flat triangles, dropped, leaving the edge open)
+    if (across && k === 0) push([q.BL, q.BR, p.BR, ...bot(p).reverse(), p.BL])
+    else if (across && k + 1 === L) push([p.BR, p.BL, q.BL, ...bot(q), q.BR])
+    else push([p.BL, q.BL, q.BR, p.BR])
   }
   for (const [r, back] of [[ring[0], false], [ring[ring.length - 1], true]]) {   // the ends, if they stand up
-    const wall = across ? [r.BL, ...r.cols.slice().reverse(), r.OL] : [r.BL, r.BR, ...r.right.slice().reverse(), r.IL, r.OL]
-    push(back ? wall.slice().reverse() : wall)
+    // with across, in strips (one under each column of the top, down to the bottom): one fan
+    // over the whole long, low wall is all slivers, which leave cracks along its top in the cut
+    const walls = across
+      ? [[r.BL, [r.cols[0][0], r.cols[0][1], 0], r.cols[0], r.OL],
+        ...r.cols.slice(0, -1).map((c, j) => [[c[0], c[1], 0], j + 1 === r.cols.length - 1 ? r.BR : [r.cols[j + 1][0], c[1], 0], r.cols[j + 1], c])]
+      : [[r.BL, r.BR, ...r.right.slice().reverse(), r.IL, r.OL]]
+    for (const wall of walls) push(back ? wall.slice().reverse() : wall)
   }
   // the hollow: its ceiling C(y) = min(skirt, the profile eroded by cap_top_t), from the
   // bottom (and 0.5 below it) up; both sides drafted. The profile here is the dished top's
@@ -412,13 +424,17 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
       })
       return { cols, BL: [xmin(-0.5), y, -0.5], BR: [xmax(-0.5), y, -0.5] }
     })
+    // the end rows (closed, below the bottom) take their neighbour's columns, so the strips
+    // between them stand straight (spread differently, they'd twist into a spike at the corners)
+    for (const [e, n] of [[0, 1], [hol.length - 1, hol.length - 2]])
+      hol[e].cols = hol[n].cols.map(([x]) => [x, hol[e].BL[1], -0.25])
     for (let k = 0; k + 1 < hol.length; k++) {
       const p = hol[k], q = hol[k + 1]
       for (let i = 0; i < M; i++) pushC([p.cols[i], p.cols[i + 1], q.cols[i + 1], q.cols[i]])
       pushC([p.BR, q.BR, q.cols[M], p.cols[M]], [p.cols[0], q.cols[0], q.BL, p.BL], [p.BL, q.BL, q.BR, p.BR])
     }
     const h0 = hol[0], h1 = hol[hol.length - 1]
-    pushC([h0.BL, h0.BR, ...h0.cols.slice().reverse()], [...h1.cols, h1.BR, h1.BL])
+    pushC([h0.BL, h0.BR, ...h0.cols.slice().reverse()], [h1.BL, ...h1.cols, h1.BR])   // (fans from BL: the end rows' ceilings are in a line)
   }
   // Built-in supports (the *_supported files): a scaffold beside the cap, a separate solid that
   // touches the cap nowhere (see scaffoldSource).
