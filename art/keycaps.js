@@ -358,7 +358,7 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
   for (let y = -yi; y <= yi + 1e-9; y += 0.2) ys.push(y)
   const cav = []
   const pushC = (...ps) => { for (const p of ps) { const q = meshPoly(p); if (q) cav.push(...tris(q)) } }
-  let ceilXY = null, xRight = null
+  let ceilXY = null, xRight = null, yHol = yi     // yHol: how far front and back the hollow reaches
   if (!across) {
     // only the stretch round the middle where there's room, closed at C = 0 at its ends
     let lo = ys.findIndex(y => ceil(y) > 0.02), hi = ys.length - 1 - ys.slice().reverse().findIndex(y => ceil(y) > 0.02)
@@ -406,17 +406,17 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
     const M = 48, cMin = 0.4
     const rowMax = y => { let m = -1; for (let x = xmin(0); x <= xmax(0); x += 0.2) m = Math.max(m, ceilXY(x, y)); return m }
     let lo = ys.findIndex(y => rowMax(y) > cMin), hi = ys.length - 1 - ys.slice().reverse().findIndex(y => rowMax(y) > cMin)
-    ys = ys.slice(Math.max(0, lo - 1), hi + 2)
-    const hol = ys.map((y, k) => {
-      const end = k === 0 || k === ys.length - 1
+    ys = ys.slice(lo, hi + 1)
+    yHol = Math.min(-ys[0], ys[ys.length - 1])
+    const hol = ys.map(y => {
       const Cw = x => Math.min(ceilXY(x, y), z1, (xi0 - x) / a, (xi0 + x) / a)   // the ceiling, inside the walls
       let CL = Math.min(z1, ceilXY(xmin(0), y)); CL = Math.min(z1, ceilXY(xmin(CL), y))
       const xL = xmin(CL)
       // the ceiling's right end: the right wall, or where it first gets down to cMin
       let xb = xL, drop = false
-      if (!end && CL > cMin) { while (xb < xmax(0) && Cw(xb + 0.02) > cMin) xb += 0.02; drop = Cw(xb + 0.02) <= cMin }
+      if (CL > cMin) { while (xb < xmax(0) && Cw(xb + 0.02) > cMin) xb += 0.02; drop = Cw(xb + 0.02) <= cMin }
       const cols = Array.from({ length: M + 1 }, (_, i) => {
-        if (end || CL <= cMin) return [xL + (xmax(-0.25) - xL) * i / M, y, -0.25]
+        if (CL <= cMin) return [xL + (xmax(-0.25) - xL) * i / M, y, -0.25]
         if (!drop) { const x = i === M ? xmax(Cw(xb)) : xL + (xb - xL) * (1 - (1 - i / M) ** 1.6); return [x, y, i === 0 ? CL : Cw(x)] }
         if (i === M) return [xb, y, -0.25]
         const x = xL + (xb - xL) * (1 - (1 - i / (M - 1)) ** 1.6)
@@ -424,21 +424,33 @@ const csSource = (U, cap, tol, points, { homing = false, supports = false, say =
       })
       return { cols, BL: [xmin(-0.5), y, -0.5], BR: [xmax(-0.5), y, -0.5] }
     })
-    // the end rows (closed, below the bottom) take their neighbour's columns, so the strips
-    // between them stand straight (spread differently, they'd twist into a spike at the corners)
-    for (const [e, n] of [[0, 1], [hol.length - 1, hol.length - 2]])
-      hol[e].cols = hol[n].cols.map(([x]) => [x, hol[e].BL[1], -0.25])
+    const foot = c => [c[0], c[1], -0.5]
     for (let k = 0; k + 1 < hol.length; k++) {
       const p = hol[k], q = hol[k + 1]
       for (let i = 0; i < M; i++) pushC([p.cols[i], p.cols[i + 1], q.cols[i + 1], q.cols[i]])
-      pushC([p.BR, q.BR, q.cols[M], p.cols[M]], [p.cols[0], q.cols[0], q.BL, p.BL], [p.BL, q.BL, q.BR, p.BR])
+      pushC([p.BR, q.BR, q.cols[M], p.cols[M]], [p.cols[0], q.cols[0], q.BL, p.BL])
+      // the floor; its first and last strips have the end walls' feet along their edges (and
+      // start from a corner off that edge, so the fan has no flat triangles)
+      const feet = h => h.cols.map(foot)
+      if (k === 0 && k + 2 < hol.length) pushC([q.BL, q.BR, p.BR, ...feet(p).reverse(), p.BL])
+      else if (k + 2 === hol.length && k > 0) pushC([p.BR, p.BL, q.BL, ...feet(q), q.BR])
+      else pushC([p.BL, q.BL, q.BR, p.BR])
     }
-    const h0 = hol[0], h1 = hol[hol.length - 1]
-    pushC([h0.BL, h0.BR, ...h0.cols.slice().reverse()], [h1.BL, ...h1.cols, h1.BR])   // (fans from BL: the end rows' ceilings are in a line)
+    // the front and back: straight walls down from the first and last rows, in strips (one
+    // under each column; one fan over the long, low wall would be slivers, which the cut turns
+    // into cracks)
+    for (const [h, back] of [[hol[0], false], [hol[hol.length - 1], true]]) {
+      const cs = h.cols
+      const walls = [[h.BL, foot(cs[0]), cs[0]], [foot(cs[M]), h.BR, cs[M]],
+        // (the drop's two points share an x: the strip before it takes both on its edge)
+        ...cs.slice(0, -1).flatMap((c, i) => cs[i + 1][0] === c[0] ? []
+          : [[foot(c), foot(cs[i + 1]), ...(cs[i + 2] && cs[i + 2][0] === cs[i + 1][0] ? [cs[i + 2]] : []), cs[i + 1], c]])]
+      for (const w of walls) pushC(back ? w.slice().reverse() : w)
+    }
   }
   // Built-in supports (the *_supported files): a scaffold beside the cap, a separate solid that
   // touches the cap nowhere (see scaffoldSource).
-  const scaffold = supports ? scaffoldSource(U, cap, { xmin, xmax, ceil, yi, a, say, ceilXY, xRight }) : ''
+  const scaffold = supports ? scaffoldSource(U, cap, { xmin, xmax, ceil, yi: yHol, a, say, ceilXY, xRight }) : ''
   const cl = U.cap_cross + tol, cw = U.cap_cross_w + tol
   // homing: a rounded bar across the face, standing cap_cs_homing_bump proud of it
   const hr = U.cap_homing_r, hy = -cap.d / 2 + U.cap_draft + U.cap_homing_in, hz = S(hy) - dishY(hy) + U.cap_cs_homing_bump - hr

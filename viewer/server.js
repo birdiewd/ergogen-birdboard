@@ -15,6 +15,7 @@ const { spawn } = require('child_process')
 const ROOT = path.resolve(__dirname, '..')
 const OUTPUT = path.join(ROOT, 'output')
 const { build: runErgogen } = require('./build')
+const { repairFile, isKeycap } = require('./stl-repair')
 const OPENJSCAD = path.join(ROOT, 'node_modules', '@jscad', 'openjscad', 'src', 'cli', 'cli.js')
 const THREE = path.join(ROOT, 'node_modules', 'three')
 const MONACO = path.join(ROOT, 'node_modules', 'monaco-editor', 'min')
@@ -60,9 +61,14 @@ const convertCases = async (attempt = 1) => {
   await Promise.all(jscads.map(async rel => {
     const src = path.join(OUTPUT, 'cases', rel)
     if (!fs.existsSync(src)) { vanished = true; return }
-    const { code, log } = await run(process.execPath, [OPENJSCAD, src, '-of', 'stla', '-o', src.replace(/\.jscad$/i, '.stl')])
+    const dst = src.replace(/\.jscad$/i, '.stl')
+    const { code, log } = await run(process.execPath, [OPENJSCAD, src, '-of', 'stla', '-o', dst])
     if (!fs.existsSync(src) || /ENOENT/.test(log)) { vanished = true; return }
     if (code !== 0 || /error/i.test(log)) logs.push(`${rel}:\n${log}`)
+    else if (isKeycap(dst) && fs.existsSync(dst)) {
+      // a keycap's mesh is repaired (see stl-repair.js; written back as binary)
+      try { const r = repairFile(dst); if (r.open) logs.push(`${rel}: ${r.open} open edges left after the repair`) } catch (e) { logs.push(`${rel}: repair failed: ${e.message}`) }
+    }
   }))
   if (vanished) {
     if (attempt >= 3) return 'output/ kept changing during the STL conversion (another build was running): press Rebuild.'

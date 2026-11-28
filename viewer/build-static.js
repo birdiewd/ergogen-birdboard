@@ -16,6 +16,7 @@ const path = require('path')
 const zlib = require('zlib')
 const { spawn } = require('child_process')
 const { build } = require('./build')
+const { repairFile, isKeycap } = require('./stl-repair')
 
 const ROOT = path.resolve(__dirname, '..')
 const OUT = path.join(ROOT, 'output')
@@ -32,7 +33,10 @@ const convert = (src, dst) => new Promise(resolve => {
   proc.stdout.on('data', d => (log += d))
   proc.stderr.on('data', d => (log += d))
   proc.on('error', err => resolve({ code: -1, log: String(err) }))
-  proc.on('close', code => resolve({ code, log: log.trim() }))
+  proc.on('close', code => {
+    if (code === 0 && isKeycap(dst) && fs.existsSync(dst)) repairFile(dst)   // see stl-repair.js
+    resolve({ code, log: log.trim() })
+  })
 })
 
 const walk = (dir, base = '') => {

@@ -7,18 +7,26 @@ const fs = require('fs')
 const path = require('path')
 const { spawn } = require('child_process')
 const { build } = require('./build')
+const { repairFile, isKeycap } = require('./stl-repair')
 
 const ROOT = path.resolve(__dirname, '..')
 const CASES = path.join(ROOT, 'output', 'cases')
 const STL = path.join(ROOT, 'stl')
 const OPENJSCAD = path.join(ROOT, 'node_modules', '@jscad', 'openjscad', 'src', 'cli', 'cli.js')
 
+// (a keycap's mesh is repaired after: see stl-repair.js)
 const convert = (src, dst) => new Promise(resolve => {
   const proc = spawn(process.execPath, [OPENJSCAD, src, '-of', 'stlb', '-o', dst], { cwd: ROOT })
   let log = ''
   proc.stdout.on('data', d => (log += d))
   proc.stderr.on('data', d => (log += d))
-  proc.on('close', code => resolve({ code, log: log.trim() }))
+  proc.on('close', code => {
+    if (code === 0 && isKeycap(dst) && fs.existsSync(dst)) {
+      const r = repairFile(dst)
+      if (r.open) log += `\n${path.basename(dst)}: ${r.open} open edges left after the repair`
+    }
+    resolve({ code, log: log.trim() })
+  })
 })
 
 const main = async () => {
